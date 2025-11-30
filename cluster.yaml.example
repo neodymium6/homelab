@@ -1,0 +1,28 @@
+proxmox:
+  endpoint: "https://192.168.1.100:8006/api2/json"
+  node_name: "pve"
+  datastore: "local-zfs"
+  debian_template_vmid: 9100
+
+network:
+  base_prefix: "192.168.1"
+  cidr_suffix: 24
+  gateway_v4: "192.168.1.1"
+  dns:
+    - "192.168.1.1"
+    - "8.8.8.8"
+
+login_user: "your_username"
+
+vms:
+  bastion-01:
+    vmid: 121
+    role: "bastion"
+    cpu_cores: 2
+    memory_mb: 2048
+
+  debian-01:
+    vmid: 122
+    role: "internal"
+    cpu_cores: 2
+    memory_mb: 2048

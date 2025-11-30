@@ -1,0 +1,2 @@
+- import_playbook: plays/inventory_from_cluster.yaml
+- import_playbook: plays/bootstrap_bastion.yaml

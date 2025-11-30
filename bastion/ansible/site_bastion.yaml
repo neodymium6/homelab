@@ -1,0 +1,4 @@
+- import_playbook: plays/inventory_from_cluster.yaml
+- import_playbook: plays/bastion/generate_internal_key.yaml
+- import_playbook: plays/bastion/ssh_hardening.yaml
+- import_playbook: plays/bastion/ssh_config.yaml

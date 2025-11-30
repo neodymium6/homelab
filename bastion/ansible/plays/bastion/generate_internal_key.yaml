@@ -1,0 +1,23 @@
+- name: Generate internal SSH keypair on bastion
+  hosts: bastion
+  gather_facts: false
+  become: false
+
+  vars:
+    bastion_internal_key_path: "~/.ssh/id_ed25519_internal"
+
+  tasks:
+    - name: Ensure .ssh directory exists
+      ansible.builtin.file:
+        path: "{{ bastion_internal_key_path | dirname }}"
+        state: directory
+        mode: "0700"
+
+    - name: Generate ed25519 keypair for internal access
+      community.crypto.openssh_keypair:
+        path: "{{ bastion_internal_key_path }}"
+        type: ed25519
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0600"
+

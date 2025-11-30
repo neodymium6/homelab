@@ -1,0 +1,54 @@
+- name: Harden SSH on bastion
+  hosts: bastion
+  become: true
+  gather_facts: true
+
+  vars:
+    sshd_config_path: /etc/ssh/sshd_config
+
+  tasks:
+    - name: Ensure base packages are installed
+      ansible.builtin.apt:
+        name:
+          - chrony
+          - fail2ban
+          - ufw
+        state: present
+        update_cache: yes
+
+    - name: Allow SSH in ufw
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Enable ufw
+      community.general.ufw:
+        state: enabled
+
+    - name: Disable root password login
+      ansible.builtin.lineinfile:
+        path: "{{ sshd_config_path }}"
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+        backup: yes
+
+    - name: Disable password authentication
+      ansible.builtin.lineinfile:
+        path: "{{ sshd_config_path }}"
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        backup: yes
+
+    - name: Ensure PubkeyAuthentication is enabled
+      ansible.builtin.lineinfile:
+        path: "{{ sshd_config_path }}"
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication yes'
+        backup: yes
+
+    - name: Restart ssh service
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+

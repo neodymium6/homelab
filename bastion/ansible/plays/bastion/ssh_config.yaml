@@ -1,0 +1,32 @@
+- name: Configure SSH client on bastion for internal hosts
+  hosts: bastion
+  gather_facts: false
+  become: false
+
+  vars_files:
+    - ../../../../cluster.yaml
+
+  vars:
+    ssh_config_path: "~/.ssh/config"
+
+  tasks:
+    - name: Ensure .ssh directory exists on bastion
+      ansible.builtin.file:
+        path: "{{ ssh_config_path | dirname }}"
+        state: directory
+        mode: "0700"
+
+    - name: Insert homelab SSH config block
+      ansible.builtin.blockinfile:
+        path: "{{ ssh_config_path }}"
+        create: true
+        mode: "0600"
+        marker: "# {mark} homelab managed"
+        block: |
+          {% for name, vm in vms.items() if vm.role != 'bastion' %}
+          Host {{ name }}
+            HostName {{ network.base_prefix }}.{{ vm.vmid }}
+            User {{ login_user }}
+            IdentityFile ~/.ssh/id_ed25519_internal
+          {% endfor %}
+

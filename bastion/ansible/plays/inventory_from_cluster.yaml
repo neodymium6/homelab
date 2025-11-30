@@ -1,0 +1,29 @@
+- name: Build in-memory inventory from cluster.yaml (on bastion)
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    cluster: "{{ lookup('file', '../../../cluster.yaml') | from_yaml }}"
+
+  tasks:
+    - name: Add bastion hosts
+      ansible.builtin.add_host:
+        name: "{{ item.key }}"
+        groups: "bastion"
+        ansible_connection: local
+        ansible_user: "{{ cluster.login_user }}"
+        ansible_python_interpreter: /usr/bin/python3
+      loop: "{{ cluster.vms | dict2items }}"
+      when: item.value.role == 'bastion'
+
+    - name: Add internal hosts
+      ansible.builtin.add_host:
+        name: "{{ item.key }}"
+        groups: "internal"
+        ansible_host: "{{ cluster.network.base_prefix }}.{{ item.value.vmid }}"
+        ansible_user: "{{ cluster.login_user }}"
+        ansible_python_interpreter: /usr/bin/python3
+        ansible_ssh_private_key_file: "/home/{{ cluster.login_user }}/.ssh/id_ed25519_internal"
+      loop: "{{ cluster.vms | dict2items }}"
+      when: item.value.role != 'bastion'
+
