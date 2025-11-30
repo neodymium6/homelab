@@ -23,6 +23,12 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
+  dns-01:
+    vmid: 100
+    role: "dns"
+    cpu_cores: 2
+    memory_mb: 2048
+
   debian-01:
     vmid: 122
     role: "internal"
