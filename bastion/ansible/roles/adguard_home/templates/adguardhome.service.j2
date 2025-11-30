@@ -6,10 +6,12 @@ After=network.target
 Type=simple
 User={{ agh_user }}
 Group={{ agh_group }}
-WorkingDirectory={{ agh_install_dir }}
-ExecStart={{ agh_install_dir }}/AdGuardHome -c {{ agh_config_dir }}/AdGuardHome.yaml -w {{ agh_install_dir }}
+WorkingDirectory={{ agh_install_dir }}/AdGuardHome
+ExecStart={{ agh_install_dir }}/AdGuardHome/AdGuardHome -c {{ agh_config_dir }}/AdGuardHome.yaml -w {{ agh_install_dir }}/AdGuardHome
 Restart=on-failure
 LimitNOFILE=1048576
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target
