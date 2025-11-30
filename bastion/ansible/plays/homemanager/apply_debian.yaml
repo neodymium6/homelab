@@ -1,0 +1,108 @@
+- name: Install Nix + Home Manager for cluster Debian hosts
+  hosts: cluster
+  gather_facts: false
+  become: true
+
+  vars:
+    user_name: "{{ login_user }}"
+    user_home: "/home/{{ user_name }}"
+    nix_installer_url: "https://nixos.org/nix/install"
+    hm_repo_url: "https://github.com/neodymium6/home-manager"
+    hm_config_dir: "{{ user_home }}/.config/home-manager"
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
+
+    - name: Ensure prerequisites for Nix installer are installed
+      ansible.builtin.apt:
+        name:
+          - curl
+          - xz-utils
+          - ca-certificates
+          - git
+        state: present
+        update_cache: yes
+
+    - name: Check if Nix is already installed
+      ansible.builtin.stat:
+        path: /nix/var/nix/profiles/default
+      register: nix_profile
+
+    - name: Install Nix (multi-user daemon) if not installed
+      ansible.builtin.shell: |
+        set -o errexit -o pipefail
+        curl -L {{ nix_installer_url }} | sh -s -- --daemon
+      args:
+        executable: /bin/bash
+      when: not nix_profile.stat.exists
+
+    - name: Ensure ~/.config/nix directory exists
+      become: false
+      ansible.builtin.file:
+        path: "{{ user_home }}/.config/nix"
+        state: directory
+        mode: "0755"
+
+    - name: Configure experimental features in nix.conf
+      become: false
+      ansible.builtin.copy:
+        dest: "{{ user_home }}/.config/nix/nix.conf"
+        content: |
+          experimental-features = nix-command flakes
+        mode: "0644"
+
+    - name: Ensure user Nix state profile directory exists
+      become: false
+      ansible.builtin.file:
+        path: "{{ user_home }}/.local/state/nix/profiles"
+        state: directory
+        mode: "0755"
+
+    - name: Ensure ~/.config exists
+      become: false
+      ansible.builtin.file:
+        path: "{{ user_home }}/.config"
+        state: directory
+        mode: "0755"
+
+    - name: Check if ~/.config/home-manager is a git repo
+      become: false
+      ansible.builtin.stat:
+        path: "{{ hm_config_dir }}/.git"
+      register: hm_git
+
+    - name: Remove existing non-git home-manager config dir
+      become: false
+      ansible.builtin.file:
+        path: "{{ hm_config_dir }}"
+        state: absent
+      when: not hm_git.stat.exists
+
+    - name: Clone home-manager repo into ~/.config/home-manager
+      become: false
+      ansible.builtin.git:
+        repo: "{{ hm_repo_url }}"
+        dest: "{{ hm_config_dir }}"
+        version: main
+        update: yes
+
+    - name: Run home-manager switch via nix run
+      become: false
+      ansible.builtin.shell: |
+        export PATH="/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin"
+        nix run home-manager/master -- switch -b backup --flake "{{ hm_config_dir }}"
+      args:
+        chdir: "{{ hm_config_dir }}"
+        executable: /bin/bash
+      environment:
+        HOME: "{{ user_home }}"
+        USER: "{{ user_name }}"
+        NIX_CONFIG: "experimental-features = nix-command flakes"
+
