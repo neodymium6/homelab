@@ -4,7 +4,7 @@
   become: true
 
   vars_files:
-    - ../../cluster.yaml
+    - ../../../../cluster.yaml
 
   vars:
     user_name: "{{ login_user }}"
