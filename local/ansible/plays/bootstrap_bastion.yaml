@@ -87,19 +87,29 @@
         line: 'export PATH="$HOME/.local/bin:$PATH"'
         insertafter: EOF
 
-    - name: Ensure checkout directory exists
+    - name: Clone homelab repo to bastion
       become: false
-      ansible.builtin.file:
-        path: "{{ checkout_dir }}"
-        state: directory
-        mode: "0755"
+      ansible.builtin.git:
+        repo: "https://github.com/neodymium6/homelab.git"
+        dest: "{{ checkout_dir }}"
+        version: main
+        update: yes
 
-    - name: Copy homelab repo from local to bastion
+    - name: Copy cluster.yaml to bastion (not in git)
       become: false
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../../../"
-        dest: "{{ checkout_dir }}"
+        src: "{{ playbook_dir }}/../../../cluster.yaml"
+        dest: "{{ checkout_dir }}/cluster.yaml"
         owner: "{{ login_user }}"
         group: "{{ login_user }}"
-        mode: "0755"
+        mode: "0644"
+
+    - name: Copy bastion terraform.tfvars to bastion (not in git)
+      become: false
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../bastion/terraform/terraform.tfvars"
+        dest: "{{ checkout_dir }}/bastion/terraform/terraform.tfvars"
+        owner: "{{ login_user }}"
+        group: "{{ login_user }}"
+        mode: "0600"
 
