@@ -17,3 +17,20 @@
       vars:
         ssh_allow_from_ip: "{{ bastion_ip }}"
         install_fail2ban: false
+
+- name: Install and configure Unbound on DNS hosts
+  hosts: dns
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    unbound_listen_interfaces:
+      - "127.0.0.1"
+      - "{{ network.base_prefix }}.{{ vms[inventory_hostname].vmid }}"
+    unbound_access_control:
+      - "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
+    unbound_upstream_dns: "{{ network.upstream_dns }}"
+

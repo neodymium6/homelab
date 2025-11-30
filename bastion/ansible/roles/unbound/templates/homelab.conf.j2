@@ -1,0 +1,22 @@
+server:
+  directory: "/var/lib/unbound"
+  username: "unbound"
+
+  {% for ifc in unbound_listen_interfaces %}
+  interface: {{ ifc }}
+  {% endfor %}
+
+  {% for net in unbound_access_control %}
+  access-control: {{ net }} allow
+  {% endfor %}
+
+  hide-identity: yes
+  hide-version: yes
+  qname-minimisation: yes
+
+forward-zone:
+  name: "."
+  {% for dns in unbound_upstream_dns %}
+  forward-addr: {{ dns }}
+  {% endfor %}
+

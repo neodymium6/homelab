@@ -1,0 +1,7 @@
+---
+unbound_listen_interfaces:
+  - "127.0.0.1"
+unbound_access_control: []
+unbound_upstream_dns: []
+unbound_config_path: /etc/unbound/unbound.conf.d/homelab.conf
+
