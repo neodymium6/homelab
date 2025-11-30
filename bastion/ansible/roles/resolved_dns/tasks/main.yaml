@@ -1,0 +1,16 @@
+---
+- name: Ensure systemd-resolved drop-in directory exists
+  ansible.builtin.file:
+    path: "{{ resolved_dropin_path | dirname }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Configure systemd-resolved DNS for homelab
+  ansible.builtin.template:
+    src: 10-homelab-dns.conf.j2
+    dest: "{{ resolved_dropin_path }}"
+    mode: "0644"
+  notify: Restart systemd-resolved
+  become: true
+

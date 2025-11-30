@@ -34,3 +34,32 @@
       - "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
     unbound_upstream_dns: "{{ network.upstream_dns }}"
 
+  roles:
+    - role: unbound
+
+- name: Point DNS hosts systemd-resolved to local Unbound
+  hosts: dns
+  become: true
+  gather_facts: false
+
+  vars:
+    resolved_dns_servers:
+      - "127.0.0.1"
+
+  roles:
+    - role: resolved_dns
+
+- name: Point internal hosts systemd-resolved to dns-01
+  hosts: internal
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    resolved_dns_servers: "{{ network.homelab_dns }}"
+
+  roles:
+    - role: resolved_dns
+
