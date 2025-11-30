@@ -1,0 +1,86 @@
+---
+- name: Ensure base packages are installed
+  ansible.builtin.apt:
+    name:
+      - chrony
+      - ufw
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Ensure fail2ban is installed when enabled
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+    update_cache: yes
+  when: install_fail2ban | bool
+  become: true
+
+- name: Configure ufw firewall rules
+  when: ssh_allow_from_ip is none
+  block:
+    - name: Allow SSH in ufw (from anywhere)
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+      become: true
+
+- name: Configure ufw firewall rules (restricted)
+  when: ssh_allow_from_ip is not none
+  block:
+    - name: Enable ufw with default deny incoming
+      community.general.ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+      become: true
+
+    - name: Allow SSH from specific IP only
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+        src: "{{ ssh_allow_from_ip }}"
+      become: true
+
+    - name: Allow all outgoing traffic
+      community.general.ufw:
+        direction: outgoing
+        policy: allow
+      become: true
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+  become: true
+
+- name: Disable root password login
+  ansible.builtin.lineinfile:
+    path: "{{ sshd_config_path }}"
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin prohibit-password'
+    backup: yes
+  become: true
+
+- name: Disable password authentication
+  ansible.builtin.lineinfile:
+    path: "{{ sshd_config_path }}"
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    backup: yes
+  become: true
+
+- name: Ensure PubkeyAuthentication is enabled
+  ansible.builtin.lineinfile:
+    path: "{{ sshd_config_path }}"
+    regexp: '^#?PubkeyAuthentication'
+    line: 'PubkeyAuthentication yes'
+    backup: yes
+  become: true
+
+- name: Restart ssh service
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+  become: true

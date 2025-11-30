@@ -1,2 +1,19 @@
+---
 - import_playbook: plays/inventory_from_cluster.yaml
-- import_playbook: plays/bootstrap_bastion.yaml
+
+- name: Bootstrap bastion as Terraform/Ansible controller
+  hosts: bastion
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    git_branch: "main"  # Can be overridden with -e git_branch=<branch>
+
+  roles:
+    - role: controller_bootstrap
+      vars:
+        checkout_dir: "/home/{{ login_user }}/homelab"
+        ansible_venv_dir: "/home/{{ login_user }}/.venv/ansible"

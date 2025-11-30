@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Install Nix package manager with flakes support
+  min_ansible_version: "2.15"
+
+dependencies: []
