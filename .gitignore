@@ -19,7 +19,6 @@ override.tf.json
 *.retry
 collections/
 roles/
-ansible.cfg
 *.vault
 
 # SSH Keys - CRITICAL: Never commit private keys
