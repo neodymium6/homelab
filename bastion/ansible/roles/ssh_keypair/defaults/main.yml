@@ -1,0 +1,3 @@
+---
+ssh_key_path: "~/.ssh/id_ed25519_internal"
+ssh_key_type: "ed25519"

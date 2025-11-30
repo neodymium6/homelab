@@ -1,0 +1,64 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+  become: true
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: yes
+  become: true
+
+- name: Ensure prerequisites for Nix installer are installed
+  ansible.builtin.apt:
+    name:
+      - curl
+      - xz-utils
+      - ca-certificates
+      - git
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Check if Nix is already installed
+  ansible.builtin.stat:
+    path: /nix/var/nix/profiles/default
+  register: nix_profile
+
+- name: Install Nix (multi-user daemon) if not installed
+  ansible.builtin.shell: |
+    set -o errexit -o pipefail
+    curl -L {{ nix_installer_url }} | sh -s -- --daemon
+  args:
+    executable: /bin/bash
+  when: not nix_profile.stat.exists
+  become: true
+
+- name: Ensure ~/.config/nix directory exists
+  ansible.builtin.file:
+    path: "{{ nix_config_dir }}"
+    state: directory
+    mode: "0755"
+  become: false
+
+- name: Configure experimental features in nix.conf
+  ansible.builtin.template:
+    src: nix.conf.j2
+    dest: "{{ nix_config_dir }}/nix.conf"
+    mode: "0644"
+  become: false
+
+- name: Ensure user Nix state profile directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/state/nix/profiles"
+    state: directory
+    mode: "0755"
+  become: false
+
+- name: Ensure ~/.config exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config"
+    state: directory
+    mode: "0755"
+  become: false

@@ -1,0 +1,73 @@
+---
+- name: Install base packages (Python, git, unzip, venv)
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-venv
+      - python3-pip
+      - git
+      - unzip
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Create Ansible virtualenv on bastion
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ ansible_venv_dir }}"
+  args:
+    creates: "{{ ansible_venv_dir }}/bin/activate"
+  become: false
+
+- name: Upgrade pip inside Ansible venv
+  ansible.builtin.pip:
+    name: pip
+    state: latest
+    executable: "{{ ansible_venv_dir }}/bin/pip"
+  become: false
+
+- name: Install Ansible into venv
+  ansible.builtin.pip:
+    name: ansible
+    executable: "{{ ansible_venv_dir }}/bin/pip"
+  become: false
+
+- name: Download Terraform
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_amd64.zip"
+    dest: "/tmp/terraform_{{ terraform_version }}_linux_amd64.zip"
+    mode: "0644"
+  become: false
+
+- name: Install Terraform binary into /usr/local/bin
+  ansible.builtin.unarchive:
+    src: "/tmp/terraform_{{ terraform_version }}_linux_amd64.zip"
+    dest: "/usr/local/bin"
+    remote_src: true
+    mode: "0755"
+  become: true
+
+- name: Clone homelab repo to bastion
+  ansible.builtin.git:
+    repo: "{{ homelab_repo_url }}"
+    dest: "{{ checkout_dir }}"
+    version: "{{ git_branch }}"
+    update: yes
+  become: false
+
+- name: Copy cluster.yaml to bastion (not in git)
+  ansible.builtin.copy:
+    src: "{{ repo_root }}/cluster.yaml"
+    dest: "{{ checkout_dir }}/cluster.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+  become: false
+
+- name: Copy bastion terraform.tfvars to bastion (not in git)
+  ansible.builtin.copy:
+    src: "{{ repo_root }}/bastion/terraform/terraform.tfvars"
+    dest: "{{ checkout_dir }}/bastion/terraform/terraform.tfvars"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+  become: false

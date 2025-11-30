@@ -1,0 +1,7 @@
+---
+checkout_dir: "/home/{{ ansible_user }}/homelab"
+ansible_venv_dir: "/home/{{ ansible_user }}/.venv/ansible"
+terraform_version: "1.8.5"
+git_branch: "main"
+homelab_repo_url: "https://github.com/neodymium6/homelab.git"
+repo_root: "{{ playbook_dir }}/../.."

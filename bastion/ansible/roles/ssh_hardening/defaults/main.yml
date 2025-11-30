@@ -1,0 +1,4 @@
+---
+sshd_config_path: /etc/ssh/sshd_config
+ssh_allow_from_ip: null              # null = allow all, IP = restrict
+install_fail2ban: true

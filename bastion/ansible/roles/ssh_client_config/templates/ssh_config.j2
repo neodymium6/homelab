@@ -1,0 +1,6 @@
+{% for name, vm in vms.items() if vm.role != 'bastion' %}
+Host {{ name }}
+  HostName {{ network.base_prefix }}.{{ vm.vmid }}
+  User {{ login_user }}
+  IdentityFile ~/.ssh/id_ed25519_internal
+{% endfor %}

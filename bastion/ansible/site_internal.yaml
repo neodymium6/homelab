@@ -1,2 +1,19 @@
+---
 - import_playbook: plays/inventory_from_cluster.yaml
-- import_playbook: plays/internal/ssh_hardening.yaml
+
+- name: Harden SSH on internal hosts
+  hosts: internal
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    bastion_ip: "{{ network.base_prefix }}.{{ vms['bastion-01'].vmid }}"
+
+  roles:
+    - role: ssh_hardening
+      vars:
+        ssh_allow_from_ip: "{{ bastion_ip }}"
+        install_fail2ban: false

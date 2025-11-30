@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Generate SSH keypairs
+  min_ansible_version: "2.15"
+
+dependencies: []

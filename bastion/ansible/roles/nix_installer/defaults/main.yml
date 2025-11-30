@@ -1,0 +1,6 @@
+---
+nix_installer_url: "https://nixos.org/nix/install"
+user_name: "{{ login_user }}"
+user_home: "/home/{{ user_name }}"
+nix_config_dir: "{{ user_home }}/.config/nix"
+nix_experimental_features: "nix-command flakes"

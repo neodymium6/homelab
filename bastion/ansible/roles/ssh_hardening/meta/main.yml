@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: SSH hardening and firewall configuration
+  min_ansible_version: "2.15"
+
+dependencies: []

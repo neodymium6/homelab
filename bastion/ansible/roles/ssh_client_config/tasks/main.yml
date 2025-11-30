@@ -1,0 +1,14 @@
+---
+- name: Ensure .ssh directory exists on bastion
+  ansible.builtin.file:
+    path: "{{ ssh_config_path | dirname }}"
+    state: directory
+    mode: "0700"
+
+- name: Insert homelab SSH config block
+  ansible.builtin.blockinfile:
+    path: "{{ ssh_config_path }}"
+    create: true
+    mode: "0600"
+    marker: "# {mark} {{ ssh_config_marker }}"
+    block: "{{ lookup('template', 'ssh_config.j2') }}"

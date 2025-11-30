@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Bootstrap bastion as Terraform/Ansible controller
+  min_ansible_version: "2.15"
+
+dependencies: []

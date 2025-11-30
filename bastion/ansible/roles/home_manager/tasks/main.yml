@@ -1,0 +1,30 @@
+---
+- name: Check if ~/.config/home-manager is a git repo
+  ansible.builtin.stat:
+    path: "{{ hm_config_dir }}/.git"
+  register: hm_git
+
+- name: Remove existing non-git home-manager config dir
+  ansible.builtin.file:
+    path: "{{ hm_config_dir }}"
+    state: absent
+  when: not hm_git.stat.exists
+
+- name: Clone home-manager repo into ~/.config/home-manager
+  ansible.builtin.git:
+    repo: "{{ hm_repo_url }}"
+    dest: "{{ hm_config_dir }}"
+    version: "{{ hm_branch }}"
+    update: yes
+
+- name: Run home-manager switch via nix run
+  ansible.builtin.shell: |
+    export PATH="/nix/var/nix/profiles/default/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin"
+    nix run home-manager/master -- switch -b backup --flake "{{ hm_config_dir }}"
+  args:
+    chdir: "{{ hm_config_dir }}"
+    executable: /bin/bash
+  environment:
+    HOME: "{{ user_home }}"
+    USER: "{{ user_name }}"
+    NIX_CONFIG: "experimental-features = nix-command flakes"

@@ -1,3 +1,14 @@
+---
 - import_playbook: plays/inventory_from_cluster.yaml
-- import_playbook: plays/homemanager/apply_debian.yaml
 
+- name: Install Nix + Home Manager on cluster hosts
+  hosts: cluster
+  gather_facts: false
+  become: true
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: nix_installer
+    - role: home_manager

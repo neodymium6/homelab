@@ -11,6 +11,7 @@ This project automates the deployment and configuration of VMs on Proxmox VE usi
 - **Internal VMs**: Managed exclusively from the bastion host
 
 All VMs are configured with Nix and Home Manager for declarative system configuration.
+All required Ansible roles are vendored in this repository—no external role dependencies. Standard collections (`community.general`, `community.crypto`) are installed via `ansible-galaxy`.
 
 ## Architecture
 
@@ -140,9 +141,10 @@ Example: VMID 100 → 192.168.1.100/24
 ├────────────────────────────────────────────────────┤
 │ 1. terraform: Create bastion VM                    │
 │ 2. ansible: Bootstrap bastion                      │
-│    - Install Terraform, Ansible                    │
+│    - Install Python + Ansible venv                 │
+│    - Download Terraform to /usr/local/bin          │
 │    - Clone homelab repo                            │
-│    - Copy credentials                              │
+│    - Copy cluster.yaml + terraform.tfvars          │
 └────────────┬───────────────────────────────────────┘
              │ SSH to bastion
              ▼
@@ -151,15 +153,15 @@ Example: VMID 100 → 192.168.1.100/24
 ├────────────────────────────────────────────────────┤
 │ 1. terraform: Create internal VMs                  │
 │ 2. ansible: Configure bastion                      │
-│    - Generate SSH keys for internal access         │
-│    - SSH hardening                                 │
-│    - SSH config                                    │
+│    - Generate internal SSH keypair                 │
+│    - SSH hardening (UFW + optional fail2ban)       │
+│    - SSH client config for internal hosts          │
 │ 3. ansible: Configure internal VMs                 │
-│    - SSH hardening                                 │
+│    - SSH hardening (allow only from bastion)       │
 │ 4. ansible: Install Home Manager on all VMs        │
-│    - Install Nix                                   │
-│    - Clone home-manager config                     │
-│    - Apply Home Manager switch                     │
+│    - Install Nix (multi-user daemon)               │
+│    - Clone home-manager config repository          │
+│    - Apply Home Manager switch via flakes          │
 └────────────────────────────────────────────────────┘
 ```
 
@@ -198,8 +200,8 @@ ssh -i ~/.ssh/id_ed25519_internal <login_user>@<internal_vm_ip>
 
 ## Security Features
 
-- **SSH Hardening**: Password authentication disabled, key-only access
-- **Dedicated Keys**: Separate SSH key (`id_ed25519_internal`) for internal VM access
+- **SSH Hardening**: UFW with optional fail2ban, password authentication disabled, key-only access enforced
+- **Managed SSH Access**: Generated internal key (`id_ed25519_internal`) plus templated SSH client config for internal hosts
 - **Bastion Pattern**: Internal VMs not directly accessible from outside
 - **Git Ignored Secrets**: All sensitive files (`.tfvars`, keys) excluded from git
 
@@ -208,6 +210,15 @@ ssh -i ~/.ssh/id_ed25519_internal <login_user>@<internal_vm_ip>
 All VMs receive Nix and Home Manager for declarative system configuration. The Home Manager configuration is maintained in a separate repository and cloned to `~/.config/home-manager` on each VM.
 
 Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager)
+
+## Ansible Roles (vendored)
+
+- `local/ansible/roles/controller_bootstrap`: Installs Python + venv, installs Ansible, downloads Terraform to `/usr/local/bin`, clones this repo on the bastion, and copies `cluster.yaml` + `terraform.tfvars`.
+- `bastion/ansible/roles/ssh_keypair`: Generates `~/.ssh/id_ed25519_internal` for accessing internal VMs from the bastion.
+- `bastion/ansible/roles/ssh_hardening`: Applies UFW rules (open or bastion-restricted), disables password SSH, enables pubkey auth, optional fail2ban.
+- `bastion/ansible/roles/ssh_client_config`: Renders SSH `config` entries for all internal VMs using the internal key.
+- `bastion/ansible/roles/nix_installer`: Installs Nix (multi-user daemon) and writes `~/.config/nix/nix.conf` with experimental features.
+- `bastion/ansible/roles/home_manager`: Clones the Home Manager repo and runs `nix run home-manager/master -- switch` via flakes.
 
 ## Troubleshooting
 

@@ -1,0 +1,6 @@
+---
+hm_repo_url: "https://github.com/neodymium6/home-manager"
+user_name: "{{ login_user }}"
+user_home: "/home/{{ user_name }}"
+hm_config_dir: "{{ user_home }}/.config/home-manager"
+hm_branch: "main"

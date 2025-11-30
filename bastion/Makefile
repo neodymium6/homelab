@@ -4,7 +4,7 @@ ANSIBLE_DIR := ansible
 ANSIBLE_VENV_BIN ?= $(HOME)/.venv/ansible/bin
 ANSIBLE_PLAYBOOK ?= $(ANSIBLE_VENV_BIN)/ansible-playbook
 ANSIBLE_GALAXY   ?= $(ANSIBLE_VENV_BIN)/ansible-galaxy
-TERRAFORM        ?= $(HOME)/.local/bin/terraform
+TERRAFORM        ?= /usr/local/bin/terraform
 
 .PHONY: tf-init tf-apply \
         ansible-deps bastion-setup internal-setup \
