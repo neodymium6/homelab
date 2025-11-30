@@ -1,6 +1,7 @@
 server:
   directory: "/var/lib/unbound"
   username: "unbound"
+  port: {{ unbound_listen_port }}
 
   {% for ifc in unbound_listen_interfaces %}
   interface: {{ ifc }}
