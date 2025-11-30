@@ -8,6 +8,7 @@ TERRAFORM        ?= $(HOME)/.local/bin/terraform
 
 .PHONY: tf-init tf-apply \
         ansible-deps bastion-setup internal-setup \
+				homemanager \
         all clean
 
 tf-init:
@@ -28,7 +29,11 @@ internal-setup: ansible-deps
 	cd $(ANSIBLE_DIR) && \
 	  $(ANSIBLE_PLAYBOOK) -i localhost, site_internal.yaml
 
-all: tf-init bastion-setup tf-apply internal-setup
+homemanager: ansible-deps
+	cd $(ANSIBLE_DIR) && \
+	  $(ANSIBLE_PLAYBOOK) -i localhost, site_homemanager.yaml
+
+all: tf-init bastion-setup tf-apply internal-setup homemanager
 
 clean:
 	cd $(TF_DIR) && $(TERRAFORM) destroy -auto-approve || true

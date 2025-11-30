@@ -1,0 +1,3 @@
+- import_playbook: plays/inventory_from_cluster.yaml
+- import_playbook: plays/homemanager/apply_debian.yaml
+

@@ -9,7 +9,7 @@
     - name: Add bastion hosts
       ansible.builtin.add_host:
         name: "{{ item.key }}"
-        groups: "bastion"
+        groups: "bastion,cluster"
         ansible_connection: local
         ansible_user: "{{ cluster.login_user }}"
         ansible_python_interpreter: /usr/bin/python3
@@ -19,7 +19,7 @@
     - name: Add internal hosts
       ansible.builtin.add_host:
         name: "{{ item.key }}"
-        groups: "internal"
+        groups: "internal,cluster"
         ansible_host: "{{ cluster.network.base_prefix }}.{{ item.value.vmid }}"
         ansible_user: "{{ cluster.login_user }}"
         ansible_python_interpreter: /usr/bin/python3
