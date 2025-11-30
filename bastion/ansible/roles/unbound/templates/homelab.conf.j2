@@ -14,6 +14,18 @@ server:
   hide-version: yes
   qname-minimisation: yes
 
+  {% if unbound_zone_name and unbound_zone_vms %}
+  local-zone: "{{ unbound_zone_name }}." static
+
+  {% for name, vm in unbound_zone_vms.items() %}
+  local-data: "{{ name }}.{{ unbound_zone_name }}. IN A {{ unbound_zone_base_prefix }}.{{ vm.vmid }}"
+  {% endfor %}
+
+  {% for name, vm in unbound_zone_vms.items() %}
+  local-data-ptr: "{{ unbound_zone_base_prefix }}.{{ vm.vmid }} {{ name }}.{{ unbound_zone_name }}."
+  {% endfor %}
+  {% endif %}
+
 forward-zone:
   name: "."
   {% for dns in unbound_upstream_dns %}

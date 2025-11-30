@@ -13,6 +13,7 @@ network:
   upstream_dns:
     - "192.168.1.1"
     - "1.1.1.1"
+  domain: "home.arpa"
 
 login_user: "your_username"
 

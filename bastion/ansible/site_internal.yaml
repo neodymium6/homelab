@@ -35,6 +35,10 @@
     unbound_upstream_dns: "{{ network.upstream_dns }}"
     unbound_ufw_allow_cidrs:
       - "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
+    unbound_zone_name: "{{ network.domain | default('home.arpa') }}"
+    unbound_zone_vms: "{{ vms }}"
+    unbound_zone_base_prefix: "{{ network.base_prefix }}"
+    unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
 
   roles:
     - role: unbound
