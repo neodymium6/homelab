@@ -1,17 +1,9 @@
 TF_DIR := terraform
 ANSIBLE_DIR := ansible
 
-CLUSTER_YAML := ../cluster.yaml
-
-BASTION_USER       := $(shell yq -r '.login_user' $(CLUSTER_YAML))
-BASTION_IP_PREFIX  := $(shell yq -r '.network.base_prefix' $(CLUSTER_YAML))
-BASTION_VMID       := $(shell yq -r '.vms["bastion-01"].vmid' $(CLUSTER_YAML))
-BASTION_HOST       := $(BASTION_IP_PREFIX).$(BASTION_VMID)
-BASTION_HOMELAB_DIR ?= /home/$(BASTION_USER)/homelab
-
 .PHONY: bastion-tf-init bastion-tf-apply \
-        ansible-deps bastion-bootstrap bastion-all-remote \
-        all clean bastion-clean-remote
+        ansible-deps bastion-bootstrap bastion-bootstrap-debug \
+        all clean debug
 
 bastion-tf-init:
 	cd $(TF_DIR) && terraform init
@@ -27,19 +19,19 @@ bastion-bootstrap: ansible-deps
 	cd $(ANSIBLE_DIR) && \
 	  ansible-playbook -i localhost, site_local.yaml
 
-bastion-all-remote:
-	@echo "==> Executing 'make all' on bastion ($(BASTION_USER)@$(BASTION_HOST))..."
-	@ssh $(BASTION_USER)@$(BASTION_HOST) \
-	  'cd $(BASTION_HOMELAB_DIR)/bastion && make all'
+bastion-bootstrap-debug: ansible-deps
+	@if [ -z "$(GIT_BRANCH)" ]; then \
+	  echo "Error: GIT_BRANCH is not set. Use: make debug GIT_BRANCH=<branch-name>"; \
+	  exit 1; \
+	fi
+	cd $(ANSIBLE_DIR) && \
+	  ansible-playbook -i localhost, site_local.yaml -e "git_branch=$(GIT_BRANCH)"
 
-all: bastion-tf-init bastion-tf-apply bastion-bootstrap bastion-all-remote
+all: bastion-tf-init bastion-tf-apply bastion-bootstrap
 
-bastion-clean-remote:
-	@echo "==> Executing 'make clean' on bastion ($(BASTION_USER)@$(BASTION_HOST))..."
-	@ssh $(BASTION_USER)@$(BASTION_HOST) 'cd $(BASTION_HOMELAB_DIR)/bastion && make clean' || \
-		echo "==> WARN: Could not execute clean on bastion (it may already be broken/unreachable). Continuing..."
+debug: bastion-tf-init bastion-tf-apply bastion-bootstrap-debug
 
-clean: bastion-clean-remote
+clean:
 	@echo "==> Destroying bastion-01 from local..."
 	cd $(TF_DIR) && terraform destroy -auto-approve || true
 	rm -rf $(TF_DIR)/.terraform $(TF_DIR)/terraform.tfstate*

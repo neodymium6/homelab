@@ -10,6 +10,7 @@
   vars:
     checkout_dir: "/home/{{ login_user }}/homelab"
     ansible_venv_dir: "/home/{{ login_user }}/.venv/ansible"
+    git_branch: "main"  # Default branch, can be overridden with -e git_branch=<branch>
 
   tasks:
     - name: Install base packages (Python, git, unzip, venv)
@@ -92,7 +93,7 @@
       ansible.builtin.git:
         repo: "https://github.com/neodymium6/homelab.git"
         dest: "{{ checkout_dir }}"
-        version: main
+        version: "{{ git_branch }}"
         update: yes
 
     - name: Copy cluster.yaml to bastion (not in git)
