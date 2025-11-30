@@ -1,0 +1,107 @@
+---
+- name: Ensure adguardhome group exists
+  ansible.builtin.group:
+    name: "{{ agh_group }}"
+    system: true
+    state: present
+
+- name: Ensure adguardhome user exists
+  ansible.builtin.user:
+    name: "{{ agh_user }}"
+    group: "{{ agh_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ agh_install_dir }}"
+    create_home: false
+
+- name: Ensure install directory exists
+  ansible.builtin.file:
+    path: "{{ agh_install_dir }}"
+    state: directory
+    owner: "{{ agh_user }}"
+    group: "{{ agh_group }}"
+    mode: "0755"
+
+- name: Ensure config directory exists
+  ansible.builtin.file:
+    path: "{{ agh_config_dir }}"
+    state: directory
+    owner: "{{ agh_user }}"
+    group: "{{ agh_group }}"
+    mode: "0755"
+
+- name: Download AdGuard Home archive
+  ansible.builtin.get_url:
+    url: "https://github.com/AdguardTeam/AdGuardHome/releases/download/{{ agh_version }}/AdGuardHome_linux_amd64.tar.gz"
+    dest: "/tmp/AdGuardHome_{{ agh_version }}_linux_amd64.tar.gz"
+    mode: "0644"
+  register: agh_download
+  until: agh_download is succeeded
+  retries: 3
+  delay: 5
+
+- name: Unpack AdGuard Home archive
+  ansible.builtin.unarchive:
+    src: "/tmp/AdGuardHome_{{ agh_version }}_linux_amd64.tar.gz"
+    dest: "{{ agh_install_dir }}"
+    remote_src: true
+    creates: "{{ agh_install_dir }}/AdGuardHome"
+  notify: Restart adguardhome
+
+- name: Ensure install dir owned by adguardhome
+  ansible.builtin.file:
+    path: "{{ agh_install_dir }}"
+    state: directory
+    recurse: true
+    owner: "{{ agh_user }}"
+    group: "{{ agh_group }}"
+    mode: "0755"
+
+- name: Deploy AdGuard Home configuration
+  ansible.builtin.template:
+    src: "AdGuardHome.yaml.j2"
+    dest: "{{ agh_config_dir }}/AdGuardHome.yaml"
+    owner: "{{ agh_user }}"
+    group: "{{ agh_group }}"
+    mode: "0644"
+  notify: Restart adguardhome
+
+- name: Deploy systemd unit for AdGuard Home
+  ansible.builtin.template:
+    src: "adguardhome.service.j2"
+    dest: "/etc/systemd/system/adguardhome.service"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify: Restart adguardhome
+
+- name: Reload systemd and enable AdGuard Home
+  ansible.builtin.systemd:
+    name: "adguardhome.service"
+    daemon_reload: true
+    enabled: true
+    state: "started"
+
+- name: Allow AdGuard Home DNS (TCP) via ufw from allowed CIDRs
+  when: agh_ufw_allow_cidrs | length > 0
+  loop: "{{ agh_ufw_allow_cidrs }}"
+  loop_control:
+    loop_var: cidr
+  community.general.ufw:
+    rule: allow
+    port: "{{ agh_dns_port | string }}"
+    proto: tcp
+    src: "{{ cidr }}"
+  become: true
+
+- name: Allow AdGuard Home DNS (UDP) via ufw from allowed CIDRs
+  when: agh_ufw_allow_cidrs | length > 0
+  loop: "{{ agh_ufw_allow_cidrs }}"
+  loop_control:
+    loop_var: cidr
+  community.general.ufw:
+    rule: allow
+    port: "{{ agh_dns_port | string }}"
+    proto: udp
+    src: "{{ cidr }}"
+  become: true

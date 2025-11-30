@@ -1,0 +1,22 @@
+http:
+  address: "{{ agh_http_bind_host }}:{{ agh_http_port }}"
+
+users: []
+
+dns:
+  bind_hosts:
+{% for h in agh_dns_bind_hosts %}
+    - "{{ h }}"
+{% endfor %}
+  port: {{ agh_dns_port }}
+  upstream_dns:
+{% for u in agh_upstream_dns %}
+    - "{{ u }}"
+{% endfor %}
+{% if agh_bootstrap_dns | length > 0 %}
+  bootstrap_dns:
+{% for b in agh_bootstrap_dns %}
+    - "{{ b }}"
+{% endfor %}
+{% endif %}
+
