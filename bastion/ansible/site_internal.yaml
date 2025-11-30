@@ -33,6 +33,8 @@
     unbound_access_control:
       - "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
     unbound_upstream_dns: "{{ network.upstream_dns }}"
+    unbound_ufw_allow_cidrs:
+      - "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
 
   roles:
     - role: unbound

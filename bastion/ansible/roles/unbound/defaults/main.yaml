@@ -4,4 +4,5 @@ unbound_listen_interfaces:
 unbound_access_control: []
 unbound_upstream_dns: []
 unbound_config_path: /etc/unbound/unbound.conf.d/homelab.conf
+unbound_ufw_allow_cidrs: []
 
