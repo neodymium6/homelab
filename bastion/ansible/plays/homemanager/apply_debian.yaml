@@ -3,6 +3,9 @@
   gather_facts: false
   become: true
 
+  vars_files:
+    - ../../cluster.yaml
+
   vars:
     user_name: "{{ login_user }}"
     user_home: "/home/{{ user_name }}"
