@@ -50,7 +50,7 @@
     - role: resolved_dns
 
 - name: Point internal hosts systemd-resolved to dns-01
-  hosts: internal
+  hosts: "cluster:!dns"
   become: true
   gather_facts: false
 
