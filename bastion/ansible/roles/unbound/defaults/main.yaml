@@ -10,3 +10,4 @@ unbound_zone_name: "home.arpa"
 unbound_zone_vms: {}
 unbound_zone_base_prefix: ""
 unbound_zone_cidr_suffix: 24
+unbound_zone_services: {}

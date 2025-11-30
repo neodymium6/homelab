@@ -39,6 +39,7 @@
     unbound_zone_vms: "{{ vms }}"
     unbound_zone_base_prefix: "{{ network.base_prefix }}"
     unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
+    unbound_zone_services: "{{ dns_services | default({}) }}"
 
   roles:
     - role: unbound
