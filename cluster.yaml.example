@@ -8,9 +8,11 @@ network:
   base_prefix: "192.168.1"
   cidr_suffix: 24
   gateway_v4: "192.168.1.1"
-  dns:
+  homelab_dns:
+    - "192.168.1.100"
+  upstream_dns:
     - "192.168.1.1"
-    - "8.8.8.8"
+    - "1.1.1.1"
 
 login_user: "your_username"
 

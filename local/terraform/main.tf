@@ -79,7 +79,7 @@ resource "proxmox_virtual_environment_vm" "bastion" {
     }
 
     dns {
-      servers = local.cluster.network.dns
+      servers = local.cluster.network.upstream_dns
     }
   }
 
