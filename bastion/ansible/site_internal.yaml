@@ -51,7 +51,8 @@
 
   vars:
     agh_dns_bind_hosts:
-      - "0.0.0.0"
+      - "127.0.0.1"
+      - "{{ network.base_prefix }}.{{ vms['dns-01'].vmid }}"
     agh_dns_port: 53
     agh_ufw_allow_cidrs:
       - "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
