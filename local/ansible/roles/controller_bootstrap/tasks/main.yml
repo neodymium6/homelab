@@ -31,49 +31,20 @@
     executable: "{{ ansible_venv_dir }}/bin/pip"
   become: false
 
-- name: Add alias for ansible-playbook in venv
-  ansible.builtin.lineinfile:
-    path: "/home/{{ ansible_user }}/.bashrc"
-    insertafter: EOF
-    line: 'alias ansible-playbook="$HOME/.venv/ansible/bin/ansible-playbook"'
-  become: false
-
-- name: Add alias for ansible-galaxy in venv
-  ansible.builtin.lineinfile:
-    path: "/home/{{ ansible_user }}/.bashrc"
-    insertafter: EOF
-    line: 'alias ansible-galaxy="$HOME/.venv/ansible/bin/ansible-galaxy"'
-  become: false
-
 - name: Download Terraform
   ansible.builtin.get_url:
     url: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_amd64.zip"
-    dest: "/home/{{ ansible_user }}/terraform.zip"
+    dest: "/tmp/terraform_{{ terraform_version }}_linux_amd64.zip"
     mode: "0644"
   become: false
 
-- name: Ensure ~/.local/bin exists on bastion
-  ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.local/bin"
-    state: directory
-    mode: "0755"
-  become: false
-
-- name: Unzip Terraform binary
+- name: Install Terraform binary into /usr/local/bin
   ansible.builtin.unarchive:
-    src: "/home/{{ ansible_user }}/terraform.zip"
-    dest: "/home/{{ ansible_user }}/.local/bin"
+    src: "/tmp/terraform_{{ terraform_version }}_linux_amd64.zip"
+    dest: "/usr/local/bin"
     remote_src: true
     mode: "0755"
-  become: false
-
-- name: Ensure ~/.local/bin in PATH (bash)
-  ansible.builtin.lineinfile:
-    path: "/home/{{ ansible_user }}/.bashrc"
-    regexp: '(^export PATH=.*\.local/bin.*$)'
-    line: 'export PATH="$HOME/.local/bin:$PATH"'
-    insertafter: EOF
-  become: false
+  become: true
 
 - name: Clone homelab repo to bastion
   ansible.builtin.git:
