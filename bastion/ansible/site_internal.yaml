@@ -60,7 +60,7 @@
     agh_http_port: 3000
 
     agh_upstream_dns:
-      - "127.0.0.1:5335"
+      - "127.0.0.1:5353"
 
     agh_bootstrap_dns: "{{ network.upstream_dns | default([]) }}"
 
