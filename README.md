@@ -116,7 +116,7 @@ network:
   upstream_dns:
     - "192.168.1.1"
     - "1.1.1.1"
-  domain: "home.arpa"
+  domain: "internal.example.com"
 
 login_user: "youruser"
 
@@ -133,19 +133,47 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
-  sample-node-01:
+  proxy-01:
     vmid: 103
+    role: "proxy"
+    cpu_cores: 2
+    memory_mb: 2048
+
+  sample-node-01:
+    vmid: 201
     role: "internal"
     cpu_cores: 2
     memory_mb: 2048
 
-dns_services:
-  bastion:
+services:
+  - name: "bastion"
     target_vm: "bastion-01"
-  dns:
+  - name: "dns"
     target_vm: "dns-01"
-  sample-node:
+  - name: "proxy"
+    target_vm: "proxy-01"
+  - name: "sample-node"
     target_vm: "sample-node-01"
+  - name: "agh"
+    target_vm: "dns-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3000
+  - name: "traefik"
+    target_vm: "proxy-01"
+    proxy:
+      enable: true
+      service: "api@internal"
+      auth:
+        users:
+          - "admin:$apr1$CHANGE_ME"
+      allow_cidrs:
+        - "192.168.1.0/24"
+
+proxy:
+  acme_email: "you@example.net"
+  cloudflare_dns_api_token: "CF_TOKEN_HERE"
 ```
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
@@ -177,6 +205,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - SSH client config for internal hosts          │
 │ 3. ansible: Configure internal VMs                 │
 │    - SSH hardening (allow only from bastion)       │
+│    - Install and configure Traefik (proxy role)    │
 │    - Install and configure Unbound (dns role)      │
 │    - Install and configure AdGuard Home (dns role) │
 │    - Configure systemd-resolved (all VMs)          │
@@ -248,6 +277,146 @@ DNS resolution flow:
 VM → systemd-resolved → AdGuard Home (port 53) → Unbound (port 5353) → Upstream DNS
 ```
 
+## Reverse Proxy with Traefik
+
+VMs with `role: proxy` are configured with Traefik as a reverse proxy for exposing internal services via HTTPS.
+
+### Features
+
+- **Automatic HTTPS**: Let's Encrypt certificates via ACME DNS challenge (Cloudflare)
+- **Wildcard Certificates**: Automatically covers `*.internal.example.com`
+- **HTTP → HTTPS Redirect**: All HTTP traffic redirected to HTTPS
+- **Dynamic Configuration**: Services auto-configured from `cluster.yaml`
+- **Dashboard**: Traefik API dashboard with authentication and IP filtering
+- **Middleware Support**: IP whitelisting and basic authentication per service
+
+### Configuration
+
+Traefik is configured in two parts: static configuration (entrypoints, ACME resolver) and dynamic configuration (routers, services, middlewares).
+
+#### Static Configuration (traefik.yml)
+
+- **Entrypoints**: HTTP (port 80) and HTTPS (port 443)
+- **ACME Resolver**: Cloudflare DNS challenge with wildcard certificate
+- **File Provider**: Watches `/etc/traefik/dynamic` for dynamic config
+
+#### Dynamic Configuration (dynamic.yml)
+
+Auto-generated from `cluster.yaml` services with `proxy.enable: true`:
+
+```yaml
+services:
+  - name: "agh"
+    target_vm: "dns-01"
+    proxy:
+      enable: true
+      scheme: "http"          # Backend protocol (default: http)
+      port: 3000              # Backend port
+
+  - name: "traefik"
+    target_vm: "proxy-01"
+    proxy:
+      enable: true
+      service: "api@internal"  # Special: Traefik dashboard
+      auth:
+        users:
+          - "admin:$apr1$..."   # htpasswd format
+      allow_cidrs:
+        - "192.168.1.0/24"      # IP whitelist
+```
+
+This creates:
+- **Router**: `agh-proxy.internal.example.com` → `http://agh.internal.example.com:3000`
+- **Router**: `traefik-proxy.internal.example.com` → Traefik dashboard (with auth + IP filter)
+
+#### Proxy Configuration Block
+
+The `proxy` section in `cluster.yaml` defines global Traefik settings:
+
+```yaml
+proxy:
+  acme_email: "you@example.net"              # Let's Encrypt email
+  cloudflare_dns_api_token: "CF_TOKEN_HERE"  # Cloudflare API token for DNS challenge
+```
+
+### Service Proxy Options
+
+Per-service proxy configuration options:
+
+| Option | Description | Required | Default |
+|--------|-------------|----------|---------|
+| `enable` | Enable proxying for this service | Yes | `false` |
+| `scheme` | Backend protocol (http/https) | No | `http` |
+| `port` | Backend service port | Yes (unless `service` set) | - |
+| `service` | Use Traefik internal service (e.g., `api@internal`) | No | - |
+| `auth.users` | Basic auth users (htpasswd format) | No | - |
+| `allow_cidrs` | IP whitelist (CIDR notation) | No | - |
+
+### DNS Integration
+
+Traefik-proxied services automatically get CNAME entries in Unbound:
+
+- Service: `agh.internal.example.com` → `192.168.1.102` (dns-01)
+- Proxy endpoint: `agh-proxy.internal.example.com` → `proxy.internal.example.com` (CNAME)
+
+### Deployment
+
+Traefik runs as a Docker container managed by Docker Compose:
+
+```yaml
+# /etc/traefik/docker-compose.yml
+services:
+  traefik:
+    image: traefik:v2.11
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - /etc/traefik/dynamic:/etc/traefik/dynamic:ro
+      - /etc/traefik/acme.json:/etc/traefik/acme.json
+    env_file:
+      - /etc/traefik/traefik.env
+    restart: unless-stopped
+```
+
+Configuration files:
+- `/etc/traefik/traefik.yml` - Static configuration
+- `/etc/traefik/dynamic/dynamic.yml` - Dynamic configuration (auto-generated)
+- `/etc/traefik/acme.json` - Certificate storage
+- `/etc/traefik/traefik.env` - Environment variables (Cloudflare token)
+
+### Accessing Services
+
+After deployment, proxied services are accessible via:
+
+```
+https://<service-name>-proxy.internal.example.com
+```
+
+Examples:
+- AdGuard Home UI: `https://agh-proxy.internal.example.com`
+- Traefik Dashboard: `https://traefik-proxy.internal.example.com`
+
+### Security
+
+- **Firewall**: UFW allows HTTP/HTTPS from `192.168.1.0/24` on proxy VMs
+- **Fail2ban**: Enabled on proxy VMs for SSH protection
+- **TLS**: All traffic encrypted with Let's Encrypt certificates
+- **IP Whitelisting**: Optional per-service CIDR restrictions
+- **Basic Auth**: Optional per-service authentication
+
+### Certificate Management
+
+Let's Encrypt certificates are automatically:
+- **Obtained**: On first request via Cloudflare DNS challenge
+- **Renewed**: Before expiration (Traefik handles renewal)
+- **Stored**: In `/etc/traefik/acme.json` (persisted across restarts)
+
+Wildcard certificate covers:
+- `internal.example.com`
+- `*.internal.example.com`
+
 ## Home Manager Integration
 
 All VMs receive Nix and Home Manager for declarative system configuration. The Home Manager configuration is maintained in a separate repository and cloned to `~/.config/home-manager` on each VM.
@@ -260,6 +429,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/ssh_keypair`: Generates `~/.ssh/id_ed25519_internal` for accessing internal VMs from the bastion.
 - `bastion/ansible/roles/ssh_hardening`: Applies UFW rules (open or bastion-restricted), disables password SSH, enables pubkey auth, optional fail2ban.
 - `bastion/ansible/roles/ssh_client_config`: Renders SSH `config` entries for all internal VMs using the internal key.
+- `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `bastion/ansible/roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
 - `bastion/ansible/roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.
 - `bastion/ansible/roles/resolved_dns`: Configures systemd-resolved to use homelab DNS servers.

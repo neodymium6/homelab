@@ -1,0 +1,79 @@
+http:
+  routers:
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+    {{ s.name }}:
+{%     if s.proxy.service is defined and s.proxy.service == 'api@internal' %}
+      rule: "Host(`{{ s.name }}-proxy.{{ network.domain }}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      entryPoints: ["websecure"]
+      service: "api@internal"
+{%     else %}
+      rule: "Host(`{{ s.name }}-proxy.{{ network.domain }}`)"
+      entryPoints: ["websecure"]
+      service: {{ s.name }}-svc
+{%     endif %}
+{%     set mw = [] %}
+{%     if s.proxy.allow_cidrs is defined and s.proxy.allow_cidrs | length > 0 %}
+{%       set _ = mw.append(s.name ~ '-allow') %}
+{%     endif %}
+{%     if s.proxy.auth is defined and s.proxy.auth.users is defined and s.proxy.auth.users | length > 0 %}
+{%       set _ = mw.append(s.name ~ '-auth') %}
+{%     endif %}
+{%     if mw | length > 0 %}
+      middlewares:
+{%       for m in mw %}
+        - "{{ m }}"
+{%       endfor %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+
+{% set ns = namespace(any_service=false) %}
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
+{%     set ns.any_service = true %}
+{%   endif %}
+{% endfor %}
+{% if ns.any_service %}
+  services:
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
+    {{ s.name }}-svc:
+      loadBalancer:
+        servers:
+          - url: "{{ s.proxy.scheme | default('http') }}://{{ s.name }}.{{ network.domain }}:{{ s.proxy.port }}"
+{%   endif %}
+{% endfor %}
+{% endif %}
+
+{% set ns = namespace(any_mw=false) %}
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+{%     if (s.proxy.allow_cidrs is defined and s.proxy.allow_cidrs | length > 0) or (s.proxy.auth is defined and s.proxy.auth.users is defined and s.proxy.auth.users | length > 0) %}
+{%       set ns.any_mw = true %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+{% if ns.any_mw %}
+  middlewares:
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+{%     if s.proxy.allow_cidrs is defined and s.proxy.allow_cidrs | length > 0 %}
+    {{ s.name }}-allow:
+      ipWhiteList:
+        sourceRange:
+{%       for cidr in s.proxy.allow_cidrs %}
+          - "{{ cidr }}"
+{%       endfor %}
+{%     endif %}
+{%     if s.proxy.auth is defined and s.proxy.auth.users is defined and s.proxy.auth.users | length > 0 %}
+    {{ s.name }}-auth:
+      basicAuth:
+        users:
+{%       for user in s.proxy.auth.users %}
+          - "{{ user }}"
+{%       endfor %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+{% endif %}

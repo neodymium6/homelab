@@ -18,6 +18,48 @@
         ssh_allow_from_ip: "{{ bastion_ip }}"
         install_fail2ban: false
 
+- name: Harden SSH on proxy hosts and allow web traffic
+  hosts: proxy
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    bastion_ip: "{{ network.base_prefix }}.{{ vms['bastion-01'].vmid }}"
+    proxy_allow_cidr: "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
+
+  roles:
+    - role: ssh_hardening
+      vars:
+        ssh_allow_from_ip: "{{ bastion_ip }}"
+        install_fail2ban: true
+
+  tasks:
+    - name: Allow HTTP/HTTPS to proxy via ufw
+      loop:
+        - "80"
+        - "443"
+      loop_control:
+        loop_var: proxy_port
+      community.general.ufw:
+        rule: allow
+        port: "{{ proxy_port }}"
+        proto: tcp
+        src: "{{ proxy_allow_cidr }}"
+
+- name: Configure Traefik on proxy hosts
+  hosts: proxy
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: traefik
+
 - name: Install and configure Unbound on DNS hosts
   hosts: dns
   become: true
@@ -37,7 +79,29 @@
     unbound_zone_vms: "{{ vms }}"
     unbound_zone_base_prefix: "{{ network.base_prefix }}"
     unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
-    unbound_zone_services: "{{ dns_services | default({}) }}"
+    unbound_proxy_service_name: "proxy"
+
+  pre_tasks:
+    - name: Initialize Unbound service maps from services
+      ansible.builtin.set_fact:
+        unbound_zone_services: {}
+        unbound_proxy_entries: []
+
+    - name: Build Unbound zone services from services
+      ansible.builtin.set_fact:
+        unbound_zone_services: "{{ unbound_zone_services | combine({ item.name: {'target_vm': item.target_vm} }) }}"
+      loop: "{{ services | default([]) }}"
+      when:
+        - item.name is defined
+        - item.target_vm is defined
+
+    - name: Build Unbound proxy entries from services
+      ansible.builtin.set_fact:
+        unbound_proxy_entries: "{{ unbound_proxy_entries + [item.name ~ '-proxy'] }}"
+      loop: "{{ services | default([]) }}"
+      when:
+        - item.proxy is defined
+        - item.proxy.enable | default(false) | bool
 
   roles:
     - role: unbound
@@ -92,4 +156,3 @@
 
   roles:
     - role: resolved_dns
-

@@ -1,0 +1,73 @@
+---
+- name: Install Docker packages
+  ansible.builtin.apt:
+    name: "{{ traefik_docker_packages }}"
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Ensure Docker service is enabled and running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+  become: true
+
+- name: Ensure Traefik directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ traefik_dir }}"
+    - "{{ traefik_dynamic_dir }}"
+  become: true
+
+- name: Ensure Traefik ACME storage exists
+  ansible.builtin.file:
+    path: "{{ traefik_acme_path }}"
+    state: touch
+    mode: "0600"
+  become: true
+
+- name: Deploy Traefik static configuration
+  ansible.builtin.template:
+    src: traefik.yml.j2
+    dest: "{{ traefik_static_path }}"
+    mode: "0644"
+  notify: Restart traefik
+  become: true
+
+- name: Deploy Traefik dynamic configuration
+  ansible.builtin.template:
+    src: dynamic.yml.j2
+    dest: "{{ traefik_dynamic_path }}"
+    mode: "0644"
+  notify: Restart traefik
+  become: true
+
+- name: Deploy Traefik environment file
+  ansible.builtin.template:
+    src: traefik.env.j2
+    dest: "{{ traefik_env_path }}"
+    mode: "0600"
+  notify: Restart traefik
+  become: true
+
+- name: Deploy Traefik compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ traefik_compose_path }}"
+    mode: "0644"
+  notify: Restart traefik
+  become: true
+
+- name: Start Traefik via Docker Compose
+  ansible.builtin.command:
+    argv:
+      - docker-compose
+      - -f
+      - "{{ traefik_compose_path }}"
+      - up
+      - -d
+  become: true

@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Install and configure Traefik (file provider + Cloudflare DNS-01)
+  min_ansible_version: "2.15"
+
+dependencies: []
