@@ -8,9 +8,12 @@ network:
   base_prefix: "192.168.1"
   cidr_suffix: 24
   gateway_v4: "192.168.1.1"
-  dns:
+  homelab_dns:
+    - "192.168.1.100"
+  upstream_dns:
     - "192.168.1.1"
-    - "8.8.8.8"
+    - "1.1.1.1"
+  domain: "home.arpa"
 
 login_user: "your_username"
 
@@ -21,8 +24,22 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
+  dns-01:
+    vmid: 100
+    role: "dns"
+    cpu_cores: 2
+    memory_mb: 2048
+
   debian-01:
     vmid: 122
     role: "internal"
     cpu_cores: 2
     memory_mb: 2048
+
+dns_services:
+  bastion:
+    target_vm: "bastion-01"
+  dns:
+    target_vm: "dns-01"
+  debian:
+    target_vm: "debian-01"

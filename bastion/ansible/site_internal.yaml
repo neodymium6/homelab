@@ -17,3 +17,79 @@
       vars:
         ssh_allow_from_ip: "{{ bastion_ip }}"
         install_fail2ban: false
+
+- name: Install and configure Unbound on DNS hosts
+  hosts: dns
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    unbound_listen_interfaces:
+      - "127.0.0.1"
+    unbound_listen_port: 5353
+    unbound_access_control:
+      - "127.0.0.0/8"
+    unbound_upstream_dns: "{{ network.upstream_dns }}"
+    unbound_zone_name: "{{ network.domain | default('home.arpa') }}"
+    unbound_zone_vms: "{{ vms }}"
+    unbound_zone_base_prefix: "{{ network.base_prefix }}"
+    unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
+    unbound_zone_services: "{{ dns_services | default({}) }}"
+
+  roles:
+    - role: unbound
+
+- name: Install and configure AdGuard Home on DNS hosts
+  hosts: dns
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    agh_dns_bind_hosts:
+      - "127.0.0.1"
+      - "{{ network.base_prefix }}.{{ vms['dns-01'].vmid }}"
+    agh_dns_port: 53
+    agh_ufw_allow_cidrs:
+      - "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
+    agh_http_bind_host: "0.0.0.0"
+    agh_http_port: 3000
+
+    agh_upstream_dns:
+      - "127.0.0.1:5353"
+
+    agh_bootstrap_dns: "{{ network.upstream_dns | default([]) }}"
+
+  roles:
+    - adguard_home
+
+- name: Point DNS hosts systemd-resolved to local Unbound
+  hosts: dns
+  become: true
+  gather_facts: false
+
+  vars:
+    resolved_dns_servers:
+      - "127.0.0.1"
+
+  roles:
+    - role: resolved_dns
+
+- name: Point internal hosts systemd-resolved to dns-01
+  hosts: "cluster:!dns"
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    resolved_dns_servers: "{{ network.homelab_dns }}"
+
+  roles:
+    - role: resolved_dns
+

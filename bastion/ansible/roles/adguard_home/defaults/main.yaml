@@ -1,0 +1,21 @@
+---
+agh_version: "v0.107.52"
+
+agh_user: "adguardhome"
+agh_group: "adguardhome"
+
+agh_install_dir: "/opt"
+agh_config_dir: "/etc/adguardhome"
+
+agh_http_bind_host: "0.0.0.0"
+agh_http_port: 3000
+
+agh_dns_bind_hosts:
+  - "0.0.0.0"
+agh_dns_port: 53
+
+agh_upstream_dns:
+  - "127.0.0.1:5335"
+
+agh_bootstrap_dns: []
+agh_ufw_allow_cidrs: []

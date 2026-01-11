@@ -1,0 +1,45 @@
+server:
+  directory: "/var/lib/unbound"
+  username: "unbound"
+  port: {{ unbound_listen_port }}
+
+  {% for ifc in unbound_listen_interfaces %}
+  interface: {{ ifc }}
+  {% endfor %}
+
+  {% for net in unbound_access_control %}
+  access-control: {{ net }} allow
+  {% endfor %}
+
+  hide-identity: yes
+  hide-version: yes
+  qname-minimisation: yes
+
+  {% if unbound_zone_name and unbound_zone_vms %}
+  local-zone: "{{ unbound_zone_name }}." static
+
+  {# A: <vm name>.domain -> base_prefix.vmid #}
+  {% for name, vm in unbound_zone_vms.items() %}
+  local-data: "{{ name }}.{{ unbound_zone_name }}. IN A {{ unbound_zone_base_prefix }}.{{ vm.vmid }}"
+  {% endfor %}
+
+  {# CNAME: <service name>.domain -> <target_vm>.domain #}
+  {% for svc_name, svc in unbound_zone_services.items() %}
+  {%   set target = svc.target_vm %}
+  {%   if target in unbound_zone_vms %}
+  local-data: "{{ svc_name }}.{{ unbound_zone_name }}. IN CNAME {{ target }}.{{ unbound_zone_name }}."
+  {%   endif %}
+  {% endfor %}
+
+  {# PTR: base_prefix.vmid → <vm name>.domain #}
+  {% for name, vm in unbound_zone_vms.items() %}
+  local-data-ptr: "{{ unbound_zone_base_prefix }}.{{ vm.vmid }} {{ name }}.{{ unbound_zone_name }}."
+  {% endfor %}
+  {% endif %}
+
+forward-zone:
+  name: "."
+  {% for dns in unbound_upstream_dns %}
+  forward-addr: {{ dns }}
+  {% endfor %}
+

@@ -27,3 +27,9 @@
       loop: "{{ cluster.vms | dict2items }}"
       when: item.value.role != 'bastion'
 
+    - name: Add dns hosts
+      ansible.builtin.add_host:
+        name: "{{ item.key }}"
+        groups: "dns"
+      loop: "{{ cluster.vms | dict2items }}"
+      when: item.value.role == 'dns'

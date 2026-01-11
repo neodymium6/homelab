@@ -1,0 +1,4 @@
+---
+resolved_dns_servers: []
+resolved_dropin_path: /etc/systemd/resolved.conf.d/10-homelab-dns.conf
+

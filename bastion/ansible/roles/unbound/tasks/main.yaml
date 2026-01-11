@@ -1,0 +1,53 @@
+---
+- name: Install Unbound
+  ansible.builtin.apt:
+    name: unbound
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Ensure Unbound config directory exists
+  ansible.builtin.file:
+    path: "{{ unbound_config_path | dirname }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Deploy Unbound homelab config
+  ansible.builtin.template:
+    src: homelab.conf.j2
+    dest: "{{ unbound_config_path }}"
+    mode: "0644"
+  notify: Restart unbound
+  become: true
+
+- name: Ensure unbound service is enabled and running
+  ansible.builtin.service:
+    name: unbound
+    state: started
+    enabled: true
+  become: true
+
+- name: Allow DNS (TCP 53) via ufw from allowed CIDRs
+  when: unbound_ufw_allow_cidrs | length > 0
+  loop: "{{ unbound_ufw_allow_cidrs }}"
+  loop_control:
+    loop_var: cidr
+  community.general.ufw:
+    rule: allow
+    port: "53"
+    proto: tcp
+    src: "{{ cidr }}"
+  become: true
+
+- name: Allow DNS (UDP 53) via ufw from allowed CIDRs
+  when: unbound_ufw_allow_cidrs | length > 0
+  loop: "{{ unbound_ufw_allow_cidrs }}"
+  loop_control:
+    loop_var: cidr
+  community.general.ufw:
+    rule: allow
+    port: "53"
+    proto: udp
+    src: "{{ cidr }}"
+  become: true

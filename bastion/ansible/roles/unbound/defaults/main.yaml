@@ -1,0 +1,15 @@
+---
+unbound_listen_interfaces:
+  - "127.0.0.1"
+unbound_listen_port: 5335
+unbound_access_control:
+  - "127.0.0.0/8"
+unbound_upstream_dns: []
+unbound_config_path: /etc/unbound/unbound.conf.d/homelab.conf
+unbound_ufw_allow_cidrs: []
+unbound_zone_name: "home.arpa"
+
+unbound_zone_vms: {}
+unbound_zone_base_prefix: ""
+unbound_zone_cidr_suffix: 24
+unbound_zone_services: {}

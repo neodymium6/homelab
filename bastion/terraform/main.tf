@@ -83,7 +83,7 @@ resource "proxmox_virtual_environment_vm" "internal" {
     }
 
     dns {
-      servers = local.cluster.network.dns
+      servers = local.cluster.network.upstream_dns
     }
   }
 

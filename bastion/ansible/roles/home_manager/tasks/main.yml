@@ -3,12 +3,14 @@
   ansible.builtin.stat:
     path: "{{ hm_config_dir }}/.git"
   register: hm_git
+  become: false
 
 - name: Remove existing non-git home-manager config dir
   ansible.builtin.file:
     path: "{{ hm_config_dir }}"
     state: absent
   when: not hm_git.stat.exists
+  become: false
 
 - name: Clone home-manager repo into ~/.config/home-manager
   ansible.builtin.git:
@@ -16,6 +18,7 @@
     dest: "{{ hm_config_dir }}"
     version: "{{ hm_branch }}"
     update: yes
+  become: false
 
 - name: Run home-manager switch via nix run
   ansible.builtin.shell: |
@@ -28,3 +31,4 @@
     HOME: "{{ user_home }}"
     USER: "{{ user_name }}"
     NIX_CONFIG: "experimental-features = nix-command flakes"
+  become: false
