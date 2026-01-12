@@ -36,11 +36,11 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
-  sample-node-01:
+  app-01:
     vmid: 201
-    role: "internal"
-    cpu_cores: 2
-    memory_mb: 2048
+    role: "app"
+    cpu_cores: 4
+    memory_mb: 8192
 
 services:
   - name: "bastion"
@@ -49,8 +49,8 @@ services:
     target_vm: "dns-01"
   - name: "proxy"
     target_vm: "proxy-01"
-  - name: "sample-node"
-    target_vm: "sample-node-01"
+  - name: "app"
+    target_vm: "app-01"
   - name: "agh"
     target_vm: "dns-01"
     proxy:

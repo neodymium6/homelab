@@ -60,6 +60,20 @@
   roles:
     - role: traefik
 
+- name: Install Docker on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: docker
+      vars:
+        docker_users:
+          - "{{ login_user }}"
+
 - name: Install and configure Unbound on DNS hosts
   hosts: dns
   become: true
