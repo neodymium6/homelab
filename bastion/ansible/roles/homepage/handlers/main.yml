@@ -1,0 +1,10 @@
+---
+- name: Restart homepage
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ homepage_compose_path }}"
+      - restart
+  become: true

@@ -1,0 +1,54 @@
+---
+- name: Ensure homepage directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ homepage_dir }}"
+    - "{{ homepage_config_dir }}"
+    - "{{ homepage_config_dir }}/logs"
+  become: true
+
+- name: Deploy Homepage docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ homepage_compose_path }}"
+    mode: "0644"
+  notify: Restart homepage
+  become: true
+
+- name: Deploy Homepage config files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ homepage_config_dir }}/{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - { src: "settings.yaml.j2",   dest: "settings.yaml" }
+    - { src: "services.yaml.j2",   dest: "services.yaml" }
+    - { src: "bookmarks.yaml.j2",  dest: "bookmarks.yaml" }
+    - { src: "widgets.yaml.j2",    dest: "widgets.yaml" }
+  notify: Restart homepage
+  become: true
+
+- name: Start Homepage via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ homepage_compose_path }}"
+      - up
+      - -d
+  become: true
+
+- name: Allow proxy-01 to reach Homepage backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ homepage_proxy_ip }}"
+    port: "{{ homepage_port | string }}"
+  when:
+    - homepage_enable_ufw | bool
+    - homepage_allow_from_proxy_only | bool
+  become: true

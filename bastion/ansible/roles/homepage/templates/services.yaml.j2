@@ -1,0 +1,28 @@
+{% set categories = {} %}
+{% for s in services | default([]) %}
+{%   if s.homepage is defined and s.proxy is defined and s.proxy.enable | default(false) %}
+{%     set category = s.homepage.category | default('Services') %}
+{%     if category not in categories %}
+{%       set _ = categories.update({category: []}) %}
+{%     endif %}
+{%     set service_path = s.homepage.path | default('') %}
+{%     set service_dict = {
+         'name': s.homepage.display_name | default(s.name),
+         'href': 'https://' ~ s.name ~ '-proxy.' ~ network.domain ~ service_path
+       } %}
+{%     if s.homepage.icon is defined %}
+{%       set _ = service_dict.update({'icon': s.homepage.icon}) %}
+{%     endif %}
+{%     set _ = categories[category].append(service_dict) %}
+{%   endif %}
+{% endfor %}
+{% for category, items in categories.items() %}
+- {{ category }}:
+{%   for item in items %}
+    - {{ item.name }}:
+        href: "{{ item.href }}"
+{%     if item.icon is defined %}
+        icon: "{{ item.icon }}"
+{%     endif %}
+{%   endfor %}
+{% endfor %}
