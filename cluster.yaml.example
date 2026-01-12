@@ -60,6 +60,7 @@ services:
     homepage:
       display_name: "AdGuard Home"
       category: "Infrastructure"
+      icon: "si-adguard"
   - name: "homepage"
     target_vm: "app-01"
     proxy:
@@ -82,6 +83,7 @@ services:
       display_name: "Traefik"
       category: "Infrastructure"
       path: "/dashboard/"
+      icon: "si-traefikproxy"
   # Proxmox Web UI reverse proxy example
   # Accessible at: https://proxmox-proxy.internal.example.com/
   - name: "proxmox"
@@ -100,6 +102,7 @@ services:
     homepage:
       display_name: "Proxmox VE"
       category: "Infrastructure"
+      icon: "si-proxmox"
 
 proxy:
   acme_email: "you@example.net"
