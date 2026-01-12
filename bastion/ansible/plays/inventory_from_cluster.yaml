@@ -25,7 +25,7 @@
         ansible_python_interpreter: /usr/bin/python3
         ansible_ssh_private_key_file: "/home/{{ cluster.login_user }}/.ssh/id_ed25519_internal"
       loop: "{{ cluster.vms | dict2items }}"
-      when: item.value.role in ['internal', 'dns']
+      when: item.value.role in ['app', 'dns']
 
     - name: Add proxy hosts
       ansible.builtin.add_host:
@@ -44,3 +44,10 @@
         groups: "dns"
       loop: "{{ cluster.vms | dict2items }}"
       when: item.value.role == 'dns'
+
+    - name: Add app hosts
+      ansible.builtin.add_host:
+        name: "{{ item.key }}"
+        groups: "app"
+      loop: "{{ cluster.vms | dict2items }}"
+      when: item.value.role == 'app'

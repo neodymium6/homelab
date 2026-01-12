@@ -38,7 +38,7 @@ vms:
 
   app-01:
     vmid: 201
-    role: "internal"
+    role: "app"
     cpu_cores: 4
     memory_mb: 8192
 
