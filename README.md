@@ -29,11 +29,15 @@ All required Ansible roles are vendored in this repository—no external role de
 │ - Home Manager  │  │
 └─────────────────┘  │
                      ▼
-            ┌──────────────────────┐
-            │ Internal VMs         │
-            │ - DNS (Unbound + AGH)│
-            │ - Home Manager       │
-            └──────────────────────┘
+            ┌──────────────────────────────┐
+            │ Internal VMs                 │
+            │ - DNS (Unbound + AGH)        │
+            │ - Proxy (Traefik)            │
+            │ - Apps (Docker)              │
+            │ - Monitoring (Prometheus +   │
+            │   Grafana + Node Exporter)   │
+            │ - Home Manager               │
+            └──────────────────────────────┘
 ```
 
 ## Project Structure
@@ -174,6 +178,17 @@ services:
 proxy:
   acme_email: "you@example.net"
   cloudflare_dns_api_token: "CF_TOKEN_HERE"
+
+docker:
+  reserved_cidr: "172.30.0.0/16"
+  networks:
+    monitoring:
+      subnet: "172.30.10.0/28"
+
+secrets:
+  monitoring:
+    grafana_admin_user: "admin"
+    grafana_admin_password: "changeme"
 ```
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
@@ -208,6 +223,9 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Install and configure Traefik (proxy role)    │
 │    - Install and configure Unbound (dns role)      │
 │    - Install and configure AdGuard Home (dns role) │
+│    - Install Node Exporter (all VMs)               │
+│    - Install Prometheus (app role)                 │
+│    - Install Grafana (app role)                    │
 │    - Configure systemd-resolved (all VMs)          │
 │ 4. ansible: Install Home Manager on all VMs        │
 │    - Install Nix (multi-user daemon)               │
@@ -284,6 +302,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **Docker Engine**: Docker runtime for running containers
 - **Docker Compose**: Tool for defining and running multi-container applications
 - **User Access**: Login user added to docker group for non-root Docker access
+- **Monitoring**: Prometheus and Grafana deployed for infrastructure observability
 
 The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
 
@@ -437,6 +456,173 @@ Wildcard certificate covers:
 - `internal.example.com`
 - `*.internal.example.com`
 
+## Monitoring Stack
+
+The homelab includes a comprehensive monitoring stack for infrastructure observability, deployed on VMs with `role: app`.
+
+### Components
+
+#### Prometheus
+
+**Metrics Collection and Time-Series Database**
+
+- **Version**: v2.49.0
+- **Port**: 9090
+- **Deployment**: Docker container via Docker Compose
+- **Storage**: `/opt/stacks/prometheus/data`
+- **Configuration**: Auto-generated from `cluster.yaml` to scrape all VMs
+
+Prometheus collects metrics from:
+- **Node Exporter** on all VMs (system metrics: CPU, memory, disk, network)
+- **Proxmox VE** API (via optional Proxmox exporter)
+
+**Scrape Configuration**:
+```yaml
+scrape_configs:
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+          - '192.168.1.121:9100'  # bastion-01
+          - '192.168.1.122:9100'  # app-01
+          - '192.168.1.123:9100'  # dns-01
+          - '192.168.1.124:9100'  # proxy-01
+```
+
+**Access**: `https://prometheus-proxy.internal.example.com` via Traefik
+
+**Networking**: Uses dedicated monitoring network (`172.30.10.0/28`) isolated from application networks
+
+**Firewall**: UFW allows access only from proxy VM for web UI, and from monitoring Docker network for container-based scrapers
+
+#### Grafana
+
+**Metrics Visualization and Dashboards**
+
+- **Version**: v10.3.0
+- **Port**: 3001
+- **Deployment**: Docker container via Docker Compose
+- **Storage**: `/opt/stacks/grafana/data`
+- **Credentials**: Configured in `cluster.yaml` under `secrets.monitoring`
+
+**Pre-provisioned Dashboards**:
+1. **Node Exporter Full** (`node-exporter-full.json`)
+   - Comprehensive system metrics visualization
+   - CPU, memory, disk I/O, network, filesystem metrics
+   - 15KB+ dashboard with detailed graphs
+
+2. **Proxmox Nodes** (`proxmox-nodes.json`)
+   - Proxmox-specific monitoring
+   - Hypervisor resource usage
+
+**Datasource**: Prometheus automatically configured as default datasource
+
+**Access**: `https://grafana-proxy.internal.example.com` via Traefik
+
+**Firewall**: UFW allows access only from proxy VM
+
+#### Node Exporter
+
+**System Metrics Export**
+
+- **Version**: v1.10.2
+- **Port**: 9100
+- **Deployment**: Systemd service (binary installation)
+- **Installation**: On all VMs in the cluster
+
+Node Exporter exposes hardware and OS metrics for Prometheus scraping:
+- CPU usage and load average
+- Memory and swap usage
+- Disk I/O and filesystem metrics
+- Network interface statistics
+- System uptime
+
+**Firewall**: UFW rules allow access from:
+- App VM IP (for Prometheus scraper)
+- Monitoring Docker network subnet (for containerized Prometheus)
+
+### Network Architecture
+
+The monitoring stack uses a dedicated external Docker network for isolation:
+
+```yaml
+docker:
+  reserved_cidr: "172.30.0.0/16"
+  networks:
+    monitoring:
+      subnet: "172.30.10.0/28"
+```
+
+This network:
+- **Isolates** monitoring traffic from application containers
+- **Enables** Prometheus container to scrape node_exporter on the same host
+- **Secured** with UFW rules allowing only necessary traffic
+
+### Configuration
+
+Add monitoring services to `cluster.yaml`:
+
+```yaml
+services:
+  - name: "prometheus"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 9090
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Prometheus"
+      category: "Monitoring"
+      icon: "si-prometheus"
+
+  - name: "grafana"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3001
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Grafana"
+      category: "Monitoring"
+      icon: "si-grafana"
+
+docker:
+  reserved_cidr: "172.30.0.0/16"
+  networks:
+    monitoring:
+      subnet: "172.30.10.0/28"
+
+secrets:
+  monitoring:
+    grafana_admin_user: "admin"
+    grafana_admin_password: "changeme"
+```
+
+### Deployment Flow
+
+1. **Node Exporter** installed on all VMs via systemd service
+2. **Prometheus** deployed on app-01 with auto-generated scrape config
+3. **Grafana** deployed on app-01 with Prometheus datasource pre-configured
+4. **Dashboards** automatically provisioned on Grafana startup
+5. **UFW Rules** configured to allow monitoring traffic
+
+### Accessing Monitoring
+
+After deployment, access the monitoring stack via:
+
+- **Grafana Dashboard**: `https://grafana-proxy.internal.example.com`
+  - Login with credentials from `cluster.yaml` secrets
+  - Pre-loaded dashboards available immediately
+
+- **Prometheus UI**: `https://prometheus-proxy.internal.example.com`
+  - Query metrics directly
+  - View scrape targets and configuration
+
+- **Homepage**: Links to both services in "Monitoring" category
+
 ## Home Manager Integration
 
 All VMs receive Nix and Home Manager for declarative system configuration. The Home Manager configuration is maintained in a separate repository and cloned to `~/.config/home-manager` on each VM.
@@ -452,6 +638,9 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `bastion/ansible/roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
+- `bastion/ansible/roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export, with UFW rules allowing access from app VM and monitoring Docker network.
+- `bastion/ansible/roles/prometheus`: Deploys Prometheus (v2.49.0) via Docker Compose on VMs with `role: app`, with auto-generated scrape configuration from `cluster.yaml` and dedicated monitoring network.
+- `bastion/ansible/roles/grafana`: Deploys Grafana (v10.3.0) via Docker Compose on VMs with `role: app`, with pre-provisioned Prometheus datasource and dashboards (Node Exporter Full, Proxmox Nodes).
 - `bastion/ansible/roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
 - `bastion/ansible/roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.
 - `bastion/ansible/roles/resolved_dns`: Configures systemd-resolved to use homelab DNS servers.
