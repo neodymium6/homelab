@@ -35,6 +35,7 @@
     src: traefik.yml.j2
     dest: "{{ traefik_static_path }}"
     mode: "0644"
+  notify: Restart traefik
   become: true
 
 - name: Deploy Traefik dynamic configuration
@@ -42,6 +43,7 @@
     src: dynamic.yml.j2
     dest: "{{ traefik_dynamic_path }}"
     mode: "0644"
+  notify: Restart traefik
   become: true
 
 - name: Deploy Traefik environment file
@@ -49,6 +51,7 @@
     src: traefik.env.j2
     dest: "{{ traefik_env_path }}"
     mode: "0600"
+  notify: Restart traefik
   become: true
 
 - name: Deploy Traefik compose file
@@ -56,6 +59,7 @@
     src: docker-compose.yml.j2
     dest: "{{ traefik_compose_path }}"
     mode: "0644"
+  notify: Restart traefik
   become: true
 
 - name: Start Traefik via Docker Compose
