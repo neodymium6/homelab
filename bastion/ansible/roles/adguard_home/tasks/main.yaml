@@ -105,3 +105,15 @@
     proto: udp
     src: "{{ cidr }}"
   become: true
+
+- name: Allow AdGuard Home HTTP (TCP) via ufw from allowed CIDRs
+  when: agh_ufw_allow_cidrs | length > 0
+  loop: "{{ agh_ufw_allow_cidrs }}"
+  loop_control:
+    loop_var: cidr
+  community.general.ufw:
+    rule: allow
+    port: "{{ agh_http_port | string }}"
+    proto: tcp
+    src: "{{ cidr }}"
+  become: true
