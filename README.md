@@ -112,7 +112,7 @@ network:
   cidr_suffix: 24
   gateway_v4: "192.168.1.1"
   homelab_dns:
-    - "192.168.1.103"
+    - "192.168.1.102"
   upstream_dns:
     - "192.168.1.1"
     - "1.1.1.1"
@@ -122,19 +122,19 @@ login_user: "youruser"
 
 vms:
   bastion-01:
-    vmid: 100
+    vmid: 101
     role: "bastion"
     cpu_cores: 2
     memory_mb: 2048
 
   dns-01:
-    vmid: 103
+    vmid: 102
     role: "dns"
     cpu_cores: 2
     memory_mb: 2048
 
-  internal-01:
-    vmid: 101
+  sample-node-01:
+    vmid: 103
     role: "internal"
     cpu_cores: 2
     memory_mb: 2048
@@ -144,13 +144,13 @@ dns_services:
     target_vm: "bastion-01"
   dns:
     target_vm: "dns-01"
-  internal:
-    target_vm: "internal-01"
+  sample-node:
+    target_vm: "sample-node-01"
 ```
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
-Example: VMID 100 → 192.168.1.100/24
+Example: VMID 102 → 192.168.1.102/24
 
 ## Deployment Workflow
 
