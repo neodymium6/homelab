@@ -18,6 +18,45 @@
     mode: "0755"
   become: true
 
+- name: Ensure Grafana provisioning directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ grafana_config_dir }}/provisioning"
+    - "{{ grafana_config_dir }}/provisioning/datasources"
+    - "{{ grafana_config_dir }}/provisioning/dashboards"
+    - "{{ grafana_config_dir }}/dashboards"
+  become: true
+
+- name: Deploy Grafana datasource provisioning
+  ansible.builtin.template:
+    src: provisioning/datasources/prometheus.yml.j2
+    dest: "{{ grafana_config_dir }}/provisioning/datasources/prometheus.yml"
+    mode: "0644"
+  notify: Restart grafana
+  become: true
+
+- name: Deploy Grafana dashboards provider provisioning
+  ansible.builtin.template:
+    src: provisioning/dashboards/dashboards.yml.j2
+    dest: "{{ grafana_config_dir }}/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+  notify: Restart grafana
+  become: true
+
+- name: Deploy Grafana dashboard JSON files
+  ansible.builtin.copy:
+    src: "dashboards/{{ item }}"
+    dest: "{{ grafana_config_dir }}/dashboards/{{ item }}"
+    mode: "0644"
+  loop:
+    - node-exporter-full.json
+    - proxmox-nodes.json
+  notify: Restart grafana
+  become: true
+
 - name: Deploy Grafana docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2

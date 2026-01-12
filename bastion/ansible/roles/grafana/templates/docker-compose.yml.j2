@@ -6,6 +6,8 @@ services:
       - "{{ grafana_port }}:3000"
     volumes:
       - "{{ grafana_data_dir }}:/var/lib/grafana"
+      - "{{ grafana_config_dir }}/provisioning:/etc/grafana/provisioning:ro"
+      - "{{ grafana_config_dir }}/dashboards:/var/lib/grafana/dashboards:ro"
     environment:
       - GF_SECURITY_ADMIN_USER={{ secrets.monitoring.grafana_admin_user }}
       - GF_SECURITY_ADMIN_PASSWORD={{ secrets.monitoring.grafana_admin_password }}
