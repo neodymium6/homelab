@@ -11,6 +11,7 @@ Terraform and Ansible configurations executed on the bastion VM to create and co
    - Configures SSH client on bastion
    - Installs Traefik reverse proxy on proxy role VMs
    - Installs DNS services (Unbound + AdGuard Home) on dns role VMs
+   - Installs monitoring stack (Node Exporter, Prometheus, Grafana)
    - Configures systemd-resolved on all VMs
 3. **Ansible**: Installs Nix and Home Manager on all VMs
    - Installs Nix (multi-user daemon)
@@ -26,7 +27,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, docker, homepage, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -38,6 +39,9 @@ bastion/
 - `roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
+- `roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export.
+- `roles/prometheus`: Deploys Prometheus (v2.49.0) via Docker Compose on VMs with `role: app`.
+- `roles/grafana`: Deploys Grafana (v10.3.0) via Docker Compose on VMs with `role: app`.
 - `roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
 - `roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.
 - `roles/resolved_dns`: Configures systemd-resolved to use homelab DNS servers.
@@ -87,6 +91,9 @@ This file should be copied by the local deployment, but you can create it manual
    - Install and configure Traefik on proxy role VMs
    - Install and configure Unbound on dns role VMs
    - Install and configure AdGuard Home on dns role VMs
+   - Install Node Exporter on all VMs
+   - Install Prometheus on app role VMs
+   - Install Grafana on app role VMs
    - Configure systemd-resolved on all VMs
 
 4. homemanager
