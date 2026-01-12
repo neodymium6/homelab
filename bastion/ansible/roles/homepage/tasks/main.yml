@@ -7,6 +7,7 @@
   loop:
     - "{{ homepage_dir }}"
     - "{{ homepage_config_dir }}"
+    - "{{ homepage_config_dir }}/logs"
   become: true
 
 - name: Deploy Homepage docker-compose.yml

@@ -5,5 +5,7 @@ services:
     ports:
       - "{{ homepage_port }}:3000"
     volumes:
-      - "{{ homepage_config_dir }}:/app/config:ro"
+      - "{{ homepage_config_dir }}:/app/config"
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=homepage-proxy.{{ network.domain }}
     restart: unless-stopped
