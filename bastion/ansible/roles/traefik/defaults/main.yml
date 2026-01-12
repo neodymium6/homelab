@@ -1,0 +1,13 @@
+---
+traefik_image: "traefik:v2.11"
+traefik_dir: "/etc/traefik"
+traefik_dynamic_dir: "/etc/traefik/dynamic"
+traefik_acme_path: "/etc/traefik/acme.json"
+traefik_static_path: "/etc/traefik/traefik.yml"
+traefik_dynamic_path: "/etc/traefik/dynamic/dynamic.yml"
+traefik_env_path: "/etc/traefik/traefik.env"
+traefik_compose_path: "/etc/traefik/docker-compose.yml"
+traefik_cf_env_var: "CF_DNS_API_TOKEN"
+traefik_docker_packages:
+  - docker.io
+  - docker-compose-plugin

@@ -1,0 +1,20 @@
+http:
+  routers:
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+    {{ s.name }}:
+      rule: "Host(`{{ s.name }}-proxy.{{ network.domain }}`)"
+      entryPoints: ["websecure"]
+      service: {{ s.name }}-svc
+{%   endif %}
+{% endfor %}
+
+  services:
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+    {{ s.name }}-svc:
+      loadBalancer:
+        servers:
+          - url: "{{ s.proxy.scheme | default('http') }}://{{ s.name }}.{{ network.domain }}:{{ s.proxy.port }}"
+{%   endif %}
+{% endfor %}

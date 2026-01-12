@@ -49,6 +49,17 @@
         proto: tcp
         src: "{{ proxy_allow_cidr }}"
 
+- name: Configure Traefik on proxy hosts
+  hosts: proxy
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: traefik
+
 - name: Install and configure Unbound on DNS hosts
   hosts: dns
   become: true

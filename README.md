@@ -160,6 +160,10 @@ services:
       enable: true
       scheme: "http"
       port: 3000
+
+proxy:
+  acme_email: "you@example.net"
+  cloudflare_dns_api_token: "CF_TOKEN_HERE"
 ```
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
