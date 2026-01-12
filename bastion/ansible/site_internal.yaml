@@ -18,6 +18,37 @@
         ssh_allow_from_ip: "{{ bastion_ip }}"
         install_fail2ban: false
 
+- name: Harden SSH on proxy hosts and allow web traffic
+  hosts: proxy
+  become: true
+  gather_facts: true
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    bastion_ip: "{{ network.base_prefix }}.{{ vms['bastion-01'].vmid }}"
+    proxy_allow_cidr: "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
+
+  roles:
+    - role: ssh_hardening
+      vars:
+        ssh_allow_from_ip: "{{ bastion_ip }}"
+        install_fail2ban: true
+
+  tasks:
+    - name: Allow HTTP/HTTPS to proxy via ufw
+      loop:
+        - "80"
+        - "443"
+      loop_control:
+        loop_var: proxy_port
+      community.general.ufw:
+        rule: allow
+        port: "{{ proxy_port }}"
+        proto: tcp
+        src: "{{ proxy_allow_cidr }}"
+
 - name: Install and configure Unbound on DNS hosts
   hosts: dns
   become: true
