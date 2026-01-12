@@ -9,6 +9,8 @@ Terraform and Ansible configurations executed on the bastion VM to create and co
    - Generates SSH key for internal access
    - Applies SSH hardening (bastion + internal)
    - Configures SSH client on bastion
+   - Installs DNS services (Unbound + AdGuard Home) on dns role VMs
+   - Configures systemd-resolved on all VMs
 3. **Ansible**: Installs Nix and Home Manager on all VMs
    - Installs Nix (multi-user daemon)
    - Clones and applies Home Manager config via flakes
@@ -23,7 +25,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -32,6 +34,9 @@ bastion/
 - `roles/ssh_keypair`: Generates `~/.ssh/id_ed25519_internal` for internal VM access.
 - `roles/ssh_hardening`: Applies UFW (open or bastion-restricted), optional fail2ban, and enforces key-only SSH.
 - `roles/ssh_client_config`: Renders SSH `config` entries for all internal hosts using the internal key.
+- `roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
+- `roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.
+- `roles/resolved_dns`: Configures systemd-resolved to use homelab DNS servers.
 - `roles/nix_installer`: Installs Nix (multi-user daemon) and writes `~/.config/nix/nix.conf`.
 - `roles/home_manager`: Clones the Home Manager repo and runs `nix run home-manager/master -- switch`.
 ```
@@ -58,7 +63,7 @@ This file should be copied by the local deployment, but you can create it manual
 | `make tf-init` | Initialize Terraform |
 | `make tf-apply` | Create internal VMs |
 | `make bastion-setup` | Configure bastion (ssh_keypair, ssh_hardening, ssh_client_config) |
-| `make internal-setup` | Configure internal VMs (ssh_hardening, bastion-only access) |
+| `make internal-setup` | Configure internal VMs (ssh_hardening, DNS services, resolved_dns) |
 | `make homemanager` | Install Nix + Home Manager on all VMs (nix_installer, home_manager) |
 | `make clean` | Destroy internal VMs |
 
@@ -75,6 +80,9 @@ This file should be copied by the local deployment, but you can create it manual
 
 3. internal-setup
    - Configure SSH hardening on internal VMs (allow only from bastion)
+   - Install and configure Unbound on dns role VMs
+   - Install and configure AdGuard Home on dns role VMs
+   - Configure systemd-resolved on all VMs
 
 4. homemanager
    - Install Nix on all VMs (bastion + internal)
