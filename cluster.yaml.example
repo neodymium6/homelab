@@ -13,7 +13,7 @@ network:
   upstream_dns:
     - "192.168.1.1"
     - "1.1.1.1"
-  domain: "home.arpa"
+  domain: "internal.example.com"
 
 login_user: "your_username"
 
@@ -30,8 +30,14 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
-  sample-node-01:
+  proxy-01:
     vmid: 103
+    role: "proxy"
+    cpu_cores: 2
+    memory_mb: 2048
+
+  sample-node-01:
+    vmid: 201
     role: "internal"
     cpu_cores: 2
     memory_mb: 2048
@@ -43,3 +49,8 @@ dns_services:
     target_vm: "dns-01"
   sample-node:
     target_vm: "sample-node-01"
+  proxy:
+    target_vm: "proxy-01"
+
+proxy_entries:
+  - "agh-proxy"

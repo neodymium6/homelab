@@ -38,6 +38,8 @@
     unbound_zone_base_prefix: "{{ network.base_prefix }}"
     unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
     unbound_zone_services: "{{ dns_services | default({}) }}"
+    unbound_proxy_entries: "{{ proxy_entries | default([]) }}"
+    unbound_proxy_service_name: "proxy"
 
   roles:
     - role: unbound
@@ -92,4 +94,3 @@
 
   roles:
     - role: resolved_dns
-

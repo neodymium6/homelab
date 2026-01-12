@@ -31,6 +31,11 @@ server:
   {%   endif %}
   {% endfor %}
 
+  {# CNAME: <proxy entry>.domain -> proxy.domain #}
+  {% for entry in unbound_proxy_entries %}
+  local-data: "{{ entry }}.{{ unbound_zone_name }}. IN CNAME {{ unbound_proxy_service_name }}.{{ unbound_zone_name }}."
+  {% endfor %}
+
   {# PTR: base_prefix.vmid → <vm name>.domain #}
   {% for name, vm in unbound_zone_vms.items() %}
   local-data-ptr: "{{ unbound_zone_base_prefix }}.{{ vm.vmid }} {{ name }}.{{ unbound_zone_name }}."
@@ -42,4 +47,3 @@ forward-zone:
   {% for dns in unbound_upstream_dns %}
   forward-addr: {{ dns }}
   {% endfor %}
-

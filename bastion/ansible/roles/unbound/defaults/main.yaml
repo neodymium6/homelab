@@ -13,3 +13,5 @@ unbound_zone_vms: {}
 unbound_zone_base_prefix: ""
 unbound_zone_cidr_suffix: 24
 unbound_zone_services: {}
+unbound_proxy_entries: []
+unbound_proxy_service_name: "proxy"
