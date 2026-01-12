@@ -1,0 +1,23 @@
+services:
+  grafana:
+    image: "{{ grafana_image }}"
+    container_name: "grafana"
+    ports:
+      - "{{ grafana_port }}:3000"
+    volumes:
+      - "{{ grafana_data_dir }}:/var/lib/grafana"
+      - "{{ grafana_config_dir }}/provisioning:/etc/grafana/provisioning:ro"
+      - "{{ grafana_config_dir }}/dashboards:/var/lib/grafana/dashboards:ro"
+    environment:
+      - GF_SECURITY_ADMIN_USER={{ secrets.monitoring.grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ secrets.monitoring.grafana_admin_password }}
+      - GF_SERVER_ROOT_URL=https://grafana-proxy.{{ network.domain }}
+    user: "472"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+networks:
+  monitoring:
+    external: true
+    name: monitoring

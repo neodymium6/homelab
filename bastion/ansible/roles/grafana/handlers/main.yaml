@@ -1,0 +1,10 @@
+---
+- name: Restart grafana
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ grafana_compose_path }}"
+      - restart
+  become: true

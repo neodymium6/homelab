@@ -1,0 +1,64 @@
+---
+- name: Ensure Prometheus directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ prometheus_dir }}"
+    - "{{ prometheus_config_dir }}"
+  become: true
+
+- name: Ensure Prometheus data directory exists with correct ownership
+  ansible.builtin.file:
+    path: "{{ prometheus_data_dir }}"
+    state: directory
+    owner: "65534"
+    group: "65534"
+    mode: "0755"
+  become: true
+
+- name: Ensure docker monitoring network exists
+  community.docker.docker_network:
+    name: monitoring
+    ipam_config:
+      - subnet: "{{ docker.networks.monitoring.subnet }}"
+  become: true
+
+- name: Deploy Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ prometheus_config_path }}"
+    mode: "0644"
+  notify: Restart prometheus
+  become: true
+
+- name: Deploy Prometheus docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ prometheus_compose_path }}"
+    mode: "0644"
+  notify: Restart prometheus
+  become: true
+
+- name: Start Prometheus via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ prometheus_compose_path }}"
+      - up
+      - -d
+  become: true
+
+- name: Allow proxy-01 to reach Prometheus backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ prometheus_proxy_ip }}"
+    port: "{{ prometheus_port | string }}"
+  when:
+    - prometheus_enable_ufw | bool
+    - prometheus_allow_from_proxy_only | bool
+  become: true

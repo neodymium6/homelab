@@ -88,6 +88,62 @@
   roles:
     - role: homepage
 
+- name: Install node_exporter on all VMs
+  hosts: cluster
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    node_exporter_allow_from_ip: "{{ network.base_prefix }}.{{ vms['app-01'].vmid }}"
+
+  roles:
+    - role: node_exporter
+
+- name: Allow Prometheus container to scrape node_exporter on app hosts (ufw minimal)
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: node_exporter
+      vars:
+        node_exporter_ufw_allow_from_docker_subnets:
+          - "{{ docker.networks.monitoring.subnet }}"
+
+- name: Deploy Prometheus on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    prometheus_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  roles:
+    - role: prometheus
+
+- name: Deploy Grafana on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    grafana_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  roles:
+    - role: grafana
+
 - name: Install and configure Unbound on DNS hosts
   hosts: dns
   become: true
