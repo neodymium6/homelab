@@ -40,8 +40,16 @@ http:
 {%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
     {{ s.name }}-svc:
       loadBalancer:
+{%     if s.proxy.insecure_skip_verify | default(false) %}
+        serversTransport: "insecureSkipVerify"
+{%     endif %}
         servers:
-          - url: "{{ s.proxy.scheme | default('http') }}://{{ s.name }}.{{ network.domain }}:{{ s.proxy.port }}"
+{%       if s.proxy.backend_url is defined %}
+          - url: "{{ s.proxy.backend_url }}"
+{%       else %}
+{%         set backend_host = (s.proxy.backend_host | default(s.name ~ '.' ~ network.domain)) %}
+          - url: "{{ s.proxy.scheme | default('http') }}://{{ backend_host }}:{{ s.proxy.port }}"
+{%       endif %}
 {%   endif %}
 {% endfor %}
 {% endif %}
@@ -76,4 +84,18 @@ http:
 {%     endif %}
 {%   endif %}
 {% endfor %}
+{% endif %}
+
+{% set ns = namespace(any_transport=false) %}
+{% for s in services | default([]) %}
+{%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
+{%     if s.proxy.insecure_skip_verify | default(false) %}
+{%       set ns.any_transport = true %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
+{% if ns.any_transport %}
+serversTransports:
+  insecureSkipVerify:
+    insecureSkipVerify: true
 {% endif %}

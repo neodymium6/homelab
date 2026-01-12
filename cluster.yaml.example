@@ -67,6 +67,21 @@ services:
           - "admin:$apr1$CHANGE_ME"
       allow_cidrs:
         - "192.168.1.0/24"
+  # Proxmox Web UI reverse proxy example
+  # Accessible at: https://proxmox-proxy.internal.example.com/
+  - name: "proxmox"
+    target_vm: "pve"  # Not used for backend (kept for compatibility)
+    proxy:
+      enable: true
+      scheme: "https"
+      port: 8006
+      # Backend host: IP or FQDN of your Proxmox server
+      backend_host: "192.168.1.100"
+      # Required for self-signed TLS certificates on Proxmox
+      insecure_skip_verify: true
+      # Restrict access to local network only (recommended)
+      allow_cidrs:
+        - "192.168.1.0/24"
 
 proxy:
   acme_email: "you@example.net"

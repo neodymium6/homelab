@@ -103,6 +103,9 @@ Auto-generated from `templates/dynamic.yml.j2` based on services in `cluster.yam
 | `scheme` | string | No | `http` | Backend protocol (http/https) |
 | `port` | int | Yes* | - | Backend port (*unless `service` set) |
 | `service` | string | No | - | Use Traefik internal service (e.g., `api@internal`) |
+| `backend_host` | string | No | `<name>.<domain>` | Backend hostname or IP address |
+| `backend_url` | string | No | - | Full backend URL (overrides scheme/host/port) |
+| `insecure_skip_verify` | bool | No | `false` | Skip TLS verification (for self-signed certs) |
 | `auth.users` | list | No | - | Basic auth users (htpasswd format) |
 | `allow_cidrs` | list | No | - | IP whitelist (CIDR notation) |
 
@@ -186,6 +189,29 @@ services:
 ```
 
 Result: `https://traefik-proxy.internal.example.com/dashboard/`
+
+### Proxmox Web UI (External Backend)
+
+```yaml
+services:
+  - name: "proxmox"
+    target_vm: "pve"  # Not used for backend routing
+    proxy:
+      enable: true
+      scheme: "https"
+      port: 8006
+      backend_host: "192.168.1.100"  # Direct IP or FQDN of Proxmox host
+      insecure_skip_verify: true      # Required for self-signed certificates
+      allow_cidrs:
+        - "192.168.1.0/24"
+```
+
+Result: `https://proxmox-proxy.internal.example.com` → `https://192.168.1.100:8006`
+
+**Note**: This configuration:
+- Routes directly to a Proxmox host IP instead of using DNS resolution
+- Skips TLS verification for Proxmox's self-signed certificate
+- Restricts access to LAN only (no authentication required, Proxmox handles auth)
 
 ## Handlers
 
