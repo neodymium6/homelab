@@ -60,5 +60,10 @@
 
 - name: Start Traefik via Docker Compose
   ansible.builtin.command:
-    cmd: "docker compose -f {{ traefik_compose_path }} up -d"
+    argv:
+      - docker-compose
+      - -f
+      - "{{ traefik_compose_path }}"
+      - up
+      - -d
   become: true
