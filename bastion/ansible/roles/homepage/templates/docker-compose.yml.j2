@@ -7,5 +7,5 @@ services:
     volumes:
       - "{{ homepage_config_dir }}:/app/config"
     environment:
-      - HOMEPAGE_ALLOWED_HOSTS=homepage-proxy.{{ network.domain }}
+      - HOMEPAGE_ALLOWED_HOSTS={{ homepage_service_name }}-proxy.{{ network.domain }}
     restart: unless-stopped
