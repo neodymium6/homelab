@@ -36,6 +36,7 @@ bastion/
 - `roles/ssh_hardening`: Applies UFW (open or bastion-restricted), optional fail2ban, and enforces key-only SSH.
 - `roles/ssh_client_config`: Renders SSH `config` entries for all internal hosts using the internal key.
 - `roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
+- `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
 - `roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.
 - `roles/resolved_dns`: Configures systemd-resolved to use homelab DNS servers.

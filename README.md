@@ -277,6 +277,16 @@ DNS resolution flow:
 VM → systemd-resolved → AdGuard Home (port 53) → Unbound (port 5353) → Upstream DNS
 ```
 
+## Docker Application Host
+
+VMs with `role: app` are configured as Docker hosts for running containerized applications:
+
+- **Docker Engine**: Docker runtime for running containers
+- **Docker Compose**: Tool for defining and running multi-container applications
+- **User Access**: Login user added to docker group for non-root Docker access
+
+The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
+
 ## Reverse Proxy with Traefik
 
 VMs with `role: proxy` are configured with Traefik as a reverse proxy for exposing internal services via HTTPS.
@@ -430,6 +440,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/ssh_hardening`: Applies UFW rules (open or bastion-restricted), disables password SSH, enables pubkey auth, optional fail2ban.
 - `bastion/ansible/roles/ssh_client_config`: Renders SSH `config` entries for all internal VMs using the internal key.
 - `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
+- `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `bastion/ansible/roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
 - `bastion/ansible/roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.
 - `bastion/ansible/roles/resolved_dns`: Configures systemd-resolved to use homelab DNS servers.
