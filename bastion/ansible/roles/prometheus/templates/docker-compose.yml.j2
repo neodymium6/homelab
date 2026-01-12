@@ -14,4 +14,13 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring
     restart: unless-stopped
+
+networks:
+  monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "{{ docker.networks.monitoring.subnet }}"

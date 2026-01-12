@@ -132,6 +132,12 @@ proxy:
   acme_email: "you@example.net"
   cloudflare_dns_api_token: "CF_TOKEN_HERE"
 
+docker:
+  reserved_cidr: "172.30.0.0/16"
+  networks:
+    monitoring:
+      subnet: "172.30.10.0/28"
+
 secrets:
   monitoring:
     grafana_admin_user: "admin"

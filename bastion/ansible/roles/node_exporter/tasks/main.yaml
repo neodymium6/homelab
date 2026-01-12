@@ -76,3 +76,15 @@
     - node_exporter_enable_ufw | bool
     - node_exporter_allow_from_ip is defined
   become: true
+
+- name: Allow node_exporter (TCP 9100) from docker subnets via ufw
+  when: node_exporter_ufw_allow_from_docker_subnets | length > 0
+  loop: "{{ node_exporter_ufw_allow_from_docker_subnets }}"
+  loop_control:
+    loop_var: cidr
+  community.general.ufw:
+    rule: allow
+    port: "9100"
+    proto: tcp
+    src: "{{ cidr }}"
+  become: true

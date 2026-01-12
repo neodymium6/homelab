@@ -7,3 +7,4 @@ node_exporter_install_dir: "/opt/node_exporter"
 node_exporter_bin_path: "{{ node_exporter_install_dir }}/node_exporter"
 node_exporter_listen_address: "0.0.0.0:9100"
 node_exporter_enable_ufw: true
+node_exporter_ufw_allow_from_docker_subnets: []

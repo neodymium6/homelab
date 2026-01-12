@@ -13,4 +13,13 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD={{ secrets.monitoring.grafana_admin_password }}
       - GF_SERVER_ROOT_URL=https://grafana-proxy.{{ network.domain }}
     user: "472"
+    networks:
+      - monitoring
     restart: unless-stopped
+
+networks:
+  monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "{{ docker.networks.monitoring.subnet }}"

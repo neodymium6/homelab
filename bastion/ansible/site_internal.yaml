@@ -102,6 +102,20 @@
   roles:
     - role: node_exporter
 
+- name: Allow Prometheus container to scrape node_exporter on app hosts (ufw minimal)
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: node_exporter
+      vars:
+        node_exporter_ufw_allow_from_docker_subnets:
+          - "{{ docker.networks.monitoring.subnet }}"
+
 - name: Deploy Prometheus on app hosts
   hosts: app
   become: true
