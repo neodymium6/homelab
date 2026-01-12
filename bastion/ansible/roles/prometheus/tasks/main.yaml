@@ -18,6 +18,13 @@
     mode: "0755"
   become: true
 
+- name: Ensure docker monitoring network exists
+  community.docker.docker_network:
+    name: monitoring
+    ipam_config:
+      - subnet: "{{ docker.networks.monitoring.subnet }}"
+  become: true
+
 - name: Deploy Prometheus configuration
   ansible.builtin.template:
     src: prometheus.yml.j2
