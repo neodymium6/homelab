@@ -57,6 +57,9 @@ services:
       enable: true
       scheme: "http"
       port: 3000
+    homepage:
+      display_name: "AdGuard Home"
+      category: "Infrastructure"
   - name: "homepage"
     target_vm: "app-01"
     proxy:
@@ -75,6 +78,10 @@ services:
           - "admin:$apr1$CHANGE_ME"
       allow_cidrs:
         - "192.168.1.0/24"
+    homepage:
+      display_name: "Traefik"
+      category: "Infrastructure"
+      path: "/dashboard/"
   # Proxmox Web UI reverse proxy example
   # Accessible at: https://proxmox-proxy.internal.example.com/
   - name: "proxmox"
@@ -90,6 +97,9 @@ services:
       # Restrict access to local network only (recommended)
       allow_cidrs:
         - "192.168.1.0/24"
+    homepage:
+      display_name: "Proxmox VE"
+      category: "Infrastructure"
 
 proxy:
   acme_email: "you@example.net"
