@@ -37,9 +37,29 @@
     unbound_zone_vms: "{{ vms }}"
     unbound_zone_base_prefix: "{{ network.base_prefix }}"
     unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
-    unbound_zone_services: "{{ dns_services | default({}) }}"
-    unbound_proxy_entries: "{{ proxy_entries | default([]) }}"
     unbound_proxy_service_name: "proxy"
+
+  pre_tasks:
+    - name: Initialize Unbound service maps from services
+      ansible.builtin.set_fact:
+        unbound_zone_services: {}
+        unbound_proxy_entries: []
+
+    - name: Build Unbound zone services from services
+      ansible.builtin.set_fact:
+        unbound_zone_services: "{{ unbound_zone_services | combine({ item.name: {'target_vm': item.target_vm} }) }}"
+      loop: "{{ services | default([]) }}"
+      when:
+        - item.name is defined
+        - item.target_vm is defined
+
+    - name: Build Unbound proxy entries from services
+      ansible.builtin.set_fact:
+        unbound_proxy_entries: "{{ unbound_proxy_entries + [item.name ~ '-proxy'] }}"
+      loop: "{{ services | default([]) }}"
+      when:
+        - item.proxy is defined
+        - item.proxy.enable | default(false) | bool
 
   roles:
     - role: unbound

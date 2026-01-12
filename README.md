@@ -116,7 +116,7 @@ network:
   upstream_dns:
     - "192.168.1.1"
     - "1.1.1.1"
-  domain: "home.arpa"
+  domain: "internal.example.com"
 
 login_user: "youruser"
 
@@ -133,19 +133,33 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
-  sample-node-01:
+  proxy-01:
     vmid: 103
+    role: "proxy"
+    cpu_cores: 2
+    memory_mb: 2048
+
+  sample-node-01:
+    vmid: 201
     role: "internal"
     cpu_cores: 2
     memory_mb: 2048
 
-dns_services:
-  bastion:
+services:
+  - name: "bastion"
     target_vm: "bastion-01"
-  dns:
+  - name: "dns"
     target_vm: "dns-01"
-  sample-node:
+  - name: "proxy"
+    target_vm: "proxy-01"
+  - name: "sample-node"
     target_vm: "sample-node-01"
+  - name: "agh"
+    target_vm: "dns-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3000
 ```
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`

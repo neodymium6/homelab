@@ -42,15 +42,18 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
-dns_services:
-  bastion:
+services:
+  - name: "bastion"
     target_vm: "bastion-01"
-  dns:
+  - name: "dns"
     target_vm: "dns-01"
-  sample-node:
-    target_vm: "sample-node-01"
-  proxy:
+  - name: "proxy"
     target_vm: "proxy-01"
-
-proxy_entries:
-  - "agh-proxy"
+  - name: "sample-node"
+    target_vm: "sample-node-01"
+  - name: "agh"
+    target_vm: "dns-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3000
