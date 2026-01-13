@@ -7,7 +7,15 @@
   loop:
     - "{{ prometheus_dir }}"
     - "{{ prometheus_config_dir }}"
-    - "{{ prometheus_data_dir }}"
+  become: true
+
+- name: Ensure Prometheus data directory exists with correct ownership
+  ansible.builtin.file:
+    path: "{{ prometheus_data_dir }}"
+    state: directory
+    owner: "65534"
+    group: "65534"
+    mode: "0755"
   become: true
 
 - name: Deploy Prometheus configuration
