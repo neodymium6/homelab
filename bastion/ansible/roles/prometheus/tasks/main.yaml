@@ -1,0 +1,49 @@
+---
+- name: Ensure Prometheus directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ prometheus_dir }}"
+    - "{{ prometheus_config_dir }}"
+    - "{{ prometheus_data_dir }}"
+  become: true
+
+- name: Deploy Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ prometheus_config_path }}"
+    mode: "0644"
+  notify: Restart prometheus
+  become: true
+
+- name: Deploy Prometheus docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ prometheus_compose_path }}"
+    mode: "0644"
+  notify: Restart prometheus
+  become: true
+
+- name: Start Prometheus via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ prometheus_compose_path }}"
+      - up
+      - -d
+  become: true
+
+- name: Allow proxy-01 to reach Prometheus backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ prometheus_proxy_ip }}"
+    port: "{{ prometheus_port | string }}"
+  when:
+    - prometheus_enable_ufw | bool
+    - prometheus_allow_from_proxy_only | bool
+  become: true

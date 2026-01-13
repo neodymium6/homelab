@@ -1,0 +1,10 @@
+---
+- name: Restart prometheus
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ prometheus_compose_path }}"
+      - restart
+  become: true
