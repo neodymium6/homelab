@@ -1,0 +1,9 @@
+---
+node_exporter_version: "1.10.2"
+node_exporter_checksum: "sha256:c46e5b6f53948477ff3a19d97c58307394a29fe64a01905646f026ddc32cb65b"
+node_exporter_user: "node_exporter"
+node_exporter_group: "node_exporter"
+node_exporter_install_dir: "/opt/node_exporter"
+node_exporter_bin_path: "{{ node_exporter_install_dir }}/node_exporter"
+node_exporter_listen_address: "0.0.0.0:9100"
+node_exporter_enable_ufw: true
