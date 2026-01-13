@@ -10,7 +10,11 @@ scrape_configs:
   - job_name: 'node'
     static_configs:
 {% for vm_name, vm_config in vms.items() %}
+{%   if vm_config.role == 'app' %}
+      - targets: ['host.docker.internal:9100']
+{%   else %}
       - targets: ['{{ network.base_prefix }}.{{ vm_config.vmid }}:9100']
+{%   endif %}
         labels:
           instance: '{{ vm_name }}'
           role: '{{ vm_config.role }}'
