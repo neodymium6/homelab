@@ -1,0 +1,49 @@
+---
+- name: Ensure Grafana directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ grafana_dir }}"
+    - "{{ grafana_config_dir }}"
+  become: true
+
+- name: Ensure Grafana data directory exists with correct ownership
+  ansible.builtin.file:
+    path: "{{ grafana_data_dir }}"
+    state: directory
+    owner: "472"
+    group: "472"
+    mode: "0755"
+  become: true
+
+- name: Deploy Grafana docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ grafana_compose_path }}"
+    mode: "0644"
+  notify: Restart grafana
+  become: true
+
+- name: Start Grafana via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ grafana_compose_path }}"
+      - up
+      - -d
+  become: true
+
+- name: Allow proxy-01 to reach Grafana backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ grafana_proxy_ip }}"
+    port: "{{ grafana_port | string }}"
+  when:
+    - grafana_enable_ufw | bool
+    - grafana_allow_from_proxy_only | bool
+  become: true

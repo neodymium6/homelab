@@ -1,0 +1,14 @@
+services:
+  grafana:
+    image: "{{ grafana_image }}"
+    container_name: "grafana"
+    ports:
+      - "{{ grafana_port }}:3000"
+    volumes:
+      - "{{ grafana_data_dir }}:/var/lib/grafana"
+    environment:
+      - GF_SECURITY_ADMIN_USER={{ monitoring.grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ monitoring.grafana_admin_password }}
+      - GF_SERVER_ROOT_URL=https://grafana-proxy.{{ network.domain }}
+    user: "472"
+    restart: unless-stopped
