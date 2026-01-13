@@ -103,7 +103,36 @@ services:
       display_name: "Proxmox VE"
       category: "Infrastructure"
       icon: "si-proxmox"
+  - name: "prometheus"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 9090
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Prometheus"
+      category: "Monitoring"
+      icon: "si-prometheus"
+  - name: "grafana"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3001
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Grafana"
+      category: "Monitoring"
+      icon: "si-grafana"
 
 proxy:
   acme_email: "you@example.net"
   cloudflare_dns_api_token: "CF_TOKEN_HERE"
+
+secrets:
+  monitoring:
+    grafana_admin_user: "admin"
+    grafana_admin_password: "changeme"
