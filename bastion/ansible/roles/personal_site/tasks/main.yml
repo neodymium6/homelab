@@ -1,0 +1,49 @@
+---
+- name: Ensure personal-site directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ personal_site_dir }}"
+    - "{{ personal_site_html_dir }}"
+  become: true
+
+- name: Deploy personal-site index.html
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ personal_site_html_dir }}/index.html"
+    mode: "0644"
+  notify: Restart personal_site
+  become: true
+
+- name: Deploy personal-site docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ personal_site_compose_path }}"
+    mode: "0644"
+  notify: Restart personal_site
+  become: true
+
+- name: Start personal-site via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ personal_site_compose_path }}"
+      - up
+      - -d
+  become: true
+
+- name: Allow proxy-01 to reach personal-site backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ personal_site_proxy_ip }}"
+    port: "{{ personal_site_port | string }}"
+  when:
+    - personal_site_enable_ufw | bool
+    - personal_site_allow_from_proxy_only | bool
+    - personal_site_proxy_ip is defined
+  become: true

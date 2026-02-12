@@ -69,15 +69,20 @@ services:
       port: 3000
       allow_cidrs:
         - "192.168.1.0/24"
-  # Public site example
-  # - name: "personal-site"
-  #   target_vm: "app-01"
-  #   proxy:
-  #     enable: true
-  #     scheme: "http"
-  #     port: 8080
-  #     public_hostnames:
-  #       - "www.example.com"
+  - name: "personal-site"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8080
+      public_hostnames:
+        - "www.example.com"
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Personal Site"
+      category: "Web"
+      icon: "mdi-web"
   - name: "traefik"
     target_vm: "proxy-01"
     proxy:
