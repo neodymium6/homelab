@@ -460,6 +460,7 @@ https://<service-name>-proxy.internal.example.com
 ```
 
 Optional public hostnames can be added per service with `proxy.public_hostnames`.
+If you expose a service publicly via Cloudflare Tunnel, do not set restrictive `allow_cidrs` unless you explicitly include Cloudflare egress ranges.
 
 Examples:
 - AdGuard Home UI: `https://agh-proxy.internal.example.com`

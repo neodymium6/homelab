@@ -291,6 +291,7 @@ https://<service-name>-proxy.{{ network.domain }}
 ```
 
 Additional public endpoints can be defined with `proxy.public_hostnames`.
+If a service uses `public_hostnames`, avoid restrictive `allow_cidrs` unless Cloudflare egress CIDRs are also allowed.
 
 ## Certificates
 
