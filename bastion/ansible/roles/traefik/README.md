@@ -68,6 +68,7 @@ Generated from `templates/traefik.yml.j2`:
 - **Entrypoints**:
   - `web` (port 80): Redirects to HTTPS
   - `websecure` (port 443): HTTPS with TLS
+  - `tunnel` (port 8080): Cloudflare Tunnel entrypoint
 
 - **Certificate Resolver**:
   - Name: `cf`
@@ -85,7 +86,7 @@ Auto-generated from `templates/dynamic.yml.j2` based on services in `cluster.yam
 
 **For each service with `proxy.enable: true`:**
 
-1. **Router**: Routes `<service-name>-proxy.{{ domain }}` to service
+1. **Router**: Routes `<service-name>-proxy.{{ domain }}` and optional `public_hostnames` to service
 2. **Service**: Load balancer pointing to `<service-name>.{{ domain }}:<port>`
 3. **Middlewares** (optional):
    - IP whitelist (`allow_cidrs`)
@@ -103,6 +104,7 @@ Auto-generated from `templates/dynamic.yml.j2` based on services in `cluster.yam
 | `scheme` | string | No | `http` | Backend protocol (http/https) |
 | `port` | int | Yes* | - | Backend port (*unless `service` set) |
 | `service` | string | No | - | Use Traefik internal service (e.g., `api@internal`) |
+| `public_hostnames` | list | No | - | Additional public hostnames; `-proxy` hostname remains active |
 | `backend_host` | string | No | `<name>.<domain>` | Backend hostname or IP address |
 | `backend_url` | string | No | - | Full backend URL (overrides scheme/host/port) |
 | `insecure_skip_verify` | bool | No | `false` | Skip TLS verification (for self-signed certs) |
@@ -136,6 +138,24 @@ services:
 ```
 
 Result: `https://agh-proxy.internal.example.com` → `http://agh.internal.example.com:3000`
+
+### Public Site Hostname
+
+```yaml
+services:
+  - name: "personal-site"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8080
+      public_hostnames:
+        - "www.example.com"
+```
+
+Result:
+- `https://personal-site-proxy.internal.example.com`
+- `https://www.example.com`
 
 ### Service with Authentication
 
@@ -269,6 +289,8 @@ All proxied services follow the pattern:
 ```
 https://<service-name>-proxy.{{ network.domain }}
 ```
+
+Additional public endpoints can be defined with `proxy.public_hostnames`.
 
 ## Certificates
 

@@ -2,14 +2,25 @@ http:
   routers:
 {% for s in services | default([]) %}
 {%   if s.proxy is defined and s.proxy.enable | default(false) %}
+{%     set host_rules = [] %}
+{%     set _ = host_rules.append("Host(`" ~ s.name ~ "-proxy." ~ network.domain ~ "`)") %}
+{%     if s.proxy.public_hostnames is defined and s.proxy.public_hostnames | length > 0 %}
+{%       for hostname in s.proxy.public_hostnames %}
+{%         set _ = host_rules.append("Host(`" ~ hostname ~ "`)") %}
+{%       endfor %}
+{%     elif s.proxy.hostnames is defined and s.proxy.hostnames | length > 0 %}
+{%       for hostname in s.proxy.hostnames %}
+{%         set _ = host_rules.append("Host(`" ~ hostname ~ "`)") %}
+{%       endfor %}
+{%     endif %}
     {{ s.name }}:
 {%     if s.proxy.service is defined and s.proxy.service == 'api@internal' %}
-      rule: "Host(`{{ s.name }}-proxy.{{ network.domain }}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
-      entryPoints: ["websecure"]
+      rule: "({{ host_rules | join(' || ') }}) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      entryPoints: ["websecure", "tunnel"]
       service: "api@internal"
 {%     else %}
-      rule: "Host(`{{ s.name }}-proxy.{{ network.domain }}`)"
-      entryPoints: ["websecure"]
+      rule: "{{ host_rules | join(' || ') }}"
+      entryPoints: ["websecure", "tunnel"]
       service: {{ s.name }}-svc
 {%     endif %}
 {%     set mw = [] %}

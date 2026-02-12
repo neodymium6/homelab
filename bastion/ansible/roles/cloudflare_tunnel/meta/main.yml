@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Deploy Cloudflare Tunnel (cloudflared) for selective public exposure
+  min_ansible_version: "2.15"
+
+dependencies: []

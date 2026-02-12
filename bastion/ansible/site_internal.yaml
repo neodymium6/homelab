@@ -60,6 +60,17 @@
   roles:
     - role: traefik
 
+- name: Run Cloudflare Tunnel on proxy hosts
+  hosts: proxy
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: cloudflare_tunnel
+
 - name: Install Docker on app hosts
   hosts: app
   become: true

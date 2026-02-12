@@ -10,6 +10,7 @@ Terraform and Ansible configurations executed on the bastion VM to create and co
    - Applies SSH hardening (bastion + internal)
    - Configures SSH client on bastion
    - Installs Traefik reverse proxy on proxy role VMs
+   - Runs Cloudflare Tunnel on proxy role VMs
    - Installs DNS services (Unbound + AdGuard Home) on dns role VMs
    - Installs monitoring stack (Node Exporter, Prometheus, Grafana)
    - Configures systemd-resolved on all VMs
@@ -27,7 +28,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, docker, homepage, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, cloudflare_tunnel, docker, homepage, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -37,6 +38,7 @@ bastion/
 - `roles/ssh_hardening`: Applies UFW (open or bastion-restricted), optional fail2ban, and enforces key-only SSH.
 - `roles/ssh_client_config`: Renders SSH `config` entries for all internal hosts using the internal key.
 - `roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
+- `roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy`, forwarding Cloudflare Tunnel traffic to Traefik tunnel entrypoint.
 - `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
 - `roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export.
