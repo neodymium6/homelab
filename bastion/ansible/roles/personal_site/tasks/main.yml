@@ -17,6 +17,14 @@
   notify: Restart personal_site
   become: true
 
+- name: Deploy personal-site style.css
+  ansible.builtin.template:
+    src: style.css.j2
+    dest: "{{ personal_site_html_dir }}/style.css"
+    mode: "0644"
+  notify: Restart personal_site
+  become: true
+
 - name: Deploy personal-site docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
