@@ -94,7 +94,7 @@ This file should be copied by the local deployment, but you can create it manual
    - Install and configure Traefik on proxy role VMs
    - Run Cloudflare Tunnel on proxy role VMs
    - Deploy Homepage on app role VMs
-   - Deploy personal-site on app role VMs
+   - Deploy personal-site on app role VMs (image-based, timer refresh, optional image cleanup)
    - Install and configure Unbound on dns role VMs
    - Install and configure AdGuard Home on dns role VMs
    - Install Node Exporter on all VMs
