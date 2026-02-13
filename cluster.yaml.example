@@ -71,6 +71,7 @@ services:
         - "192.168.1.0/24"
   - name: "personal-site"
     target_vm: "app-01"
+    image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
     proxy:
       enable: true
       scheme: "http"
