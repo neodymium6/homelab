@@ -41,7 +41,7 @@ bastion/
 - `roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy`, forwarding Cloudflare Tunnel traffic to Traefik tunnel entrypoint.
 - `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
-- `roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.
+- `roles/personal_site`: Deploys a personal-site container image via Docker Compose on app VMs, with optional proxy-only UFW access and a systemd timer for periodic refresh.
 - `roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export.
 - `roles/prometheus`: Deploys Prometheus (v2.49.0) via Docker Compose on VMs with `role: app`.
 - `roles/grafana`: Deploys Grafana (v10.3.0) via Docker Compose on VMs with `role: app`.
