@@ -166,6 +166,12 @@ services:
       port: 3000
   - name: "personal-site"
     target_vm: "app-01"
+    image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
+    update_enable: true
+    update_on_boot_sec: "2m"
+    update_unit_active_sec: "15m"
+    update_cleanup_enable: true
+    update_cleanup_until: "168h"
     proxy:
       enable: true
       scheme: "http"
@@ -234,7 +240,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Install and configure Unbound (dns role)      │
 │    - Install and configure AdGuard Home (dns role) │
 │    - Deploy Homepage dashboard (app role)          │
-│    - Deploy personal-site Nginx (app role)         │
+│    - Deploy personal-site container (app role)     │
 │    - Install Node Exporter (all VMs)               │
 │    - Install Prometheus (app role)                 │
 │    - Install Grafana (app role)                    │
@@ -314,7 +320,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **Docker Engine**: Docker runtime for running containers
 - **Docker Compose**: Tool for defining and running multi-container applications
 - **User Access**: Login user added to docker group for non-root Docker access
-- **Web Apps**: Homepage dashboard and personal-site Nginx stack
+- **Web Apps**: Homepage dashboard and personal-site container stack
 - **Monitoring**: Prometheus and Grafana deployed for infrastructure observability
 
 The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
@@ -367,6 +373,12 @@ services:
 
   - name: "personal-site"
     target_vm: "app-01"
+    image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
+    update_enable: true
+    update_on_boot_sec: "2m"
+    update_unit_active_sec: "15m"
+    update_cleanup_enable: true
+    update_cleanup_until: "168h"
     proxy:
       enable: true
       scheme: "http"

@@ -6,23 +6,6 @@
     mode: "0755"
   loop:
     - "{{ personal_site_dir }}"
-    - "{{ personal_site_html_dir }}"
-  become: true
-
-- name: Deploy personal-site index.html
-  ansible.builtin.template:
-    src: index.html.j2
-    dest: "{{ personal_site_html_dir }}/index.html"
-    mode: "0644"
-  notify: Restart personal_site
-  become: true
-
-- name: Deploy personal-site style.css
-  ansible.builtin.template:
-    src: style.css.j2
-    dest: "{{ personal_site_html_dir }}/style.css"
-    mode: "0644"
-  notify: Restart personal_site
   become: true
 
 - name: Deploy personal-site docker-compose.yml
@@ -42,6 +25,77 @@
       - "{{ personal_site_compose_path }}"
       - up
       - -d
+  become: true
+
+- name: Deploy systemd unit for personal-site updates
+  ansible.builtin.template:
+    src: personal-site-update.service.j2
+    dest: /etc/systemd/system/personal-site-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: personal_site_update_enable | bool
+  become: true
+
+- name: Deploy systemd timer for personal-site updates
+  ansible.builtin.template:
+    src: personal-site-update.timer.j2
+    dest: /etc/systemd/system/personal-site-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+  when: personal_site_update_enable | bool
+  become: true
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: personal_site_update_enable | bool
+  become: true
+
+- name: Enable and start personal-site update timer
+  ansible.builtin.systemd:
+    name: personal-site-update.timer
+    enabled: true
+    state: started
+  when: personal_site_update_enable | bool
+  become: true
+
+- name: Check whether personal-site update timer unit exists
+  ansible.builtin.stat:
+    path: /etc/systemd/system/personal-site-update.timer
+  register: personal_site_update_timer_unit
+  when: not (personal_site_update_enable | bool)
+  become: true
+
+- name: Stop and disable personal-site update timer
+  ansible.builtin.systemd:
+    name: personal-site-update.timer
+    enabled: false
+    state: stopped
+  when:
+    - not (personal_site_update_enable | bool)
+    - personal_site_update_timer_unit.stat.exists
+  become: true
+
+- name: Remove personal-site update timer unit file
+  ansible.builtin.file:
+    path: /etc/systemd/system/personal-site-update.timer
+    state: absent
+  when: not (personal_site_update_enable | bool)
+  become: true
+
+- name: Remove personal-site update service unit file
+  ansible.builtin.file:
+    path: /etc/systemd/system/personal-site-update.service
+    state: absent
+  when: not (personal_site_update_enable | bool)
+  become: true
+
+- name: Reload systemd after removing personal-site update units
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: not (personal_site_update_enable | bool)
   become: true
 
 - name: Allow proxy-01 to reach personal-site backend port
