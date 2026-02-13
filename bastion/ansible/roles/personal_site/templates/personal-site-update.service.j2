@@ -1,0 +1,9 @@
+[Unit]
+Description=Update and (re)start personal-site container
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker compose -f {{ personal_site_compose_path }} pull
+ExecStart=/usr/bin/docker compose -f {{ personal_site_compose_path }} up -d --remove-orphans

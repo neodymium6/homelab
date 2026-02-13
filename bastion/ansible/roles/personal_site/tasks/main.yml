@@ -27,6 +27,40 @@
       - -d
   become: true
 
+- name: Deploy systemd unit for personal-site updates
+  ansible.builtin.template:
+    src: personal-site-update.service.j2
+    dest: /etc/systemd/system/personal-site-update.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: personal_site_update_enable | bool
+  become: true
+
+- name: Deploy systemd timer for personal-site updates
+  ansible.builtin.template:
+    src: personal-site-update.timer.j2
+    dest: /etc/systemd/system/personal-site-update.timer
+    owner: root
+    group: root
+    mode: "0644"
+  when: personal_site_update_enable | bool
+  become: true
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: personal_site_update_enable | bool
+  become: true
+
+- name: Enable and start personal-site update timer
+  ansible.builtin.systemd:
+    name: personal-site-update.timer
+    enabled: true
+    state: started
+  when: personal_site_update_enable | bool
+  become: true
+
 - name: Allow proxy-01 to reach personal-site backend port
   community.general.ufw:
     rule: allow

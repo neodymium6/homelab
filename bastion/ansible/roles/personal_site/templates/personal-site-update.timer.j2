@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic update for personal-site container
+
+[Timer]
+OnBootSec={{ personal_site_update_on_boot_sec }}
+OnUnitActiveSec={{ personal_site_update_unit_active_sec }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

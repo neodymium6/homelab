@@ -8,3 +8,8 @@ personal_site_port: 8080
 
 personal_site_enable_ufw: true
 personal_site_allow_from_proxy_only: true
+
+# systemd timer: pull and restart periodically
+personal_site_update_enable: true
+personal_site_update_on_boot_sec: "2m"
+personal_site_update_unit_active_sec: "1h"
