@@ -1,0 +1,10 @@
+---
+- name: Restart personal_site
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ personal_site_compose_path }}"
+      - restart
+  become: true

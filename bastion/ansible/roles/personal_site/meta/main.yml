@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Deploy a personal-site nginx container via docker compose
+  min_ansible_version: "2.15"
+
+dependencies: []

@@ -30,6 +30,27 @@
     mode: "0600"
   become: true
 
+- name: Validate public hostname and CIDR settings do not conflict
+  ansible.builtin.assert:
+    that:
+      - not (
+          item.proxy.public_hostnames is defined and
+          item.proxy.public_hostnames | length > 0 and
+          item.proxy.allow_cidrs is defined and
+          item.proxy.allow_cidrs | length > 0 and
+          not (item.proxy.allow_public_with_cidrs | default(false) | bool)
+        )
+    fail_msg: >-
+      Service '{{ item.name }}' sets both proxy.public_hostnames and proxy.allow_cidrs.
+      This usually blocks Cloudflare Tunnel traffic. Remove proxy.allow_cidrs or
+      set proxy.allow_public_with_cidrs=true only when CIDRs are intentionally configured.
+  loop: "{{ services | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default('unknown-service') }}"
+  when:
+    - item.proxy is defined
+    - item.proxy.enable | default(false) | bool
+
 - name: Deploy Traefik static configuration
   ansible.builtin.template:
     src: traefik.yml.j2

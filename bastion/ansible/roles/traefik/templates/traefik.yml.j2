@@ -17,6 +17,9 @@ entryPoints:
             sans:
               - "*.{{ network.domain }}"
 
+  tunnel:
+    address: ":8080"
+
 providers:
   file:
     directory: "/etc/traefik/dynamic"

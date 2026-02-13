@@ -164,6 +164,14 @@ services:
       enable: true
       scheme: "http"
       port: 3000
+  - name: "personal-site"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8080
+      public_hostnames:
+        - "www.example.com"
   - name: "traefik"
     target_vm: "proxy-01"
     proxy:
@@ -178,6 +186,7 @@ services:
 proxy:
   acme_email: "you@example.net"
   cloudflare_dns_api_token: "CF_TOKEN_HERE"
+  cloudflare_tunnel_token: "CF_TUNNEL_TOKEN_HERE"
 
 docker:
   reserved_cidr: "172.30.0.0/16"
@@ -221,8 +230,11 @@ Example: VMID 102 → 192.168.1.102/24
 │ 3. ansible: Configure internal VMs                 │
 │    - SSH hardening (allow only from bastion)       │
 │    - Install and configure Traefik (proxy role)    │
+│    - Run Cloudflare Tunnel (proxy role)            │
 │    - Install and configure Unbound (dns role)      │
 │    - Install and configure AdGuard Home (dns role) │
+│    - Deploy Homepage dashboard (app role)          │
+│    - Deploy personal-site Nginx (app role)         │
 │    - Install Node Exporter (all VMs)               │
 │    - Install Prometheus (app role)                 │
 │    - Install Grafana (app role)                    │
@@ -302,6 +314,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **Docker Engine**: Docker runtime for running containers
 - **Docker Compose**: Tool for defining and running multi-container applications
 - **User Access**: Login user added to docker group for non-root Docker access
+- **Web Apps**: Homepage dashboard and personal-site Nginx stack
 - **Monitoring**: Prometheus and Grafana deployed for infrastructure observability
 
 The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
@@ -335,7 +348,7 @@ Traefik is configured in two parts: static configuration (entrypoints, ACME reso
 
 #### Static Configuration (traefik.yml)
 
-- **Entrypoints**: HTTP (port 80) and HTTPS (port 443)
+- **Entrypoints**: HTTP (port 80), HTTPS (port 443), tunnel (port 8080 on localhost)
 - **ACME Resolver**: Cloudflare DNS challenge with wildcard certificate
 - **File Provider**: Watches `/etc/traefik/dynamic` for dynamic config
 
@@ -352,6 +365,15 @@ services:
       scheme: "http"          # Backend protocol (default: http)
       port: 3000              # Backend port
 
+  - name: "personal-site"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8080
+      public_hostnames:
+        - "www.example.com"
+
   - name: "traefik"
     target_vm: "proxy-01"
     proxy:
@@ -366,6 +388,7 @@ services:
 
 This creates:
 - **Router**: `agh-proxy.internal.example.com` → `http://agh.internal.example.com:3000`
+- **Router**: `personal-site-proxy.internal.example.com` and `www.example.com` → `http://personal-site.internal.example.com:8080`
 - **Router**: `traefik-proxy.internal.example.com` → Traefik dashboard (with auth + IP filter)
 
 #### Proxy Configuration Block
@@ -376,6 +399,7 @@ The `proxy` section in `cluster.yaml` defines global Traefik settings:
 proxy:
   acme_email: "you@example.net"              # Let's Encrypt email
   cloudflare_dns_api_token: "CF_TOKEN_HERE"  # Cloudflare API token for DNS challenge
+  cloudflare_tunnel_token: "CF_TUNNEL_TOKEN_HERE"  # Cloudflare tunnel token
 ```
 
 ### Service Proxy Options
@@ -388,8 +412,10 @@ Per-service proxy configuration options:
 | `scheme` | Backend protocol (http/https) | No | `http` |
 | `port` | Backend service port | Yes (unless `service` set) | - |
 | `service` | Use Traefik internal service (e.g., `api@internal`) | No | - |
+| `public_hostnames` | Additional public hostnames. Internal `-proxy` host remains available. | No | - |
 | `auth.users` | Basic auth users (htpasswd format) | No | - |
 | `allow_cidrs` | IP whitelist (CIDR notation) | No | - |
+| `allow_public_with_cidrs` | Allow `public_hostnames` + `allow_cidrs` combination without validation error | No | `false` |
 
 ### DNS Integration
 
@@ -410,6 +436,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "127.0.0.1:8080:8080"
     volumes:
       - /etc/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - /etc/traefik/dynamic:/etc/traefik/dynamic:ro
@@ -433,8 +460,14 @@ After deployment, proxied services are accessible via:
 https://<service-name>-proxy.internal.example.com
 ```
 
+Optional public hostnames can be added per service with `proxy.public_hostnames`.
+If you expose a service publicly via Cloudflare Tunnel, do not set restrictive `allow_cidrs` unless you explicitly include Cloudflare egress ranges.
+Validation in the Traefik role will fail when both are set, unless `proxy.allow_public_with_cidrs: true` is explicitly added.
+
 Examples:
 - AdGuard Home UI: `https://agh-proxy.internal.example.com`
+- Personal Site (internal): `https://personal-site-proxy.internal.example.com`
+- Personal Site (public): `https://www.example.com` (if configured in Cloudflare Tunnel)
 - Traefik Dashboard: `https://traefik-proxy.internal.example.com`
 
 ### Security
@@ -636,8 +669,10 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/ssh_hardening`: Applies UFW rules (open or bastion-restricted), disables password SSH, enables pubkey auth, optional fail2ban.
 - `bastion/ansible/roles/ssh_client_config`: Renders SSH `config` entries for all internal VMs using the internal key.
 - `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
+- `bastion/ansible/roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy` and connects Cloudflare Tunnel to Traefik tunnel entrypoint (`127.0.0.1:8080`).
 - `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `bastion/ansible/roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
+- `bastion/ansible/roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.
 - `bastion/ansible/roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export, with UFW rules allowing access from app VM and monitoring Docker network.
 - `bastion/ansible/roles/prometheus`: Deploys Prometheus (v2.49.0) via Docker Compose on VMs with `role: app`, with auto-generated scrape configuration from `cluster.yaml` and dedicated monitoring network.
 - `bastion/ansible/roles/grafana`: Deploys Grafana (v10.3.0) via Docker Compose on VMs with `role: app`, with pre-provisioned Prometheus datasource and dashboards (Node Exporter Full, Proxmox Nodes).

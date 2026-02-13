@@ -10,6 +10,7 @@ Terraform and Ansible configurations executed on the bastion VM to create and co
    - Applies SSH hardening (bastion + internal)
    - Configures SSH client on bastion
    - Installs Traefik reverse proxy on proxy role VMs
+   - Runs Cloudflare Tunnel on proxy role VMs
    - Installs DNS services (Unbound + AdGuard Home) on dns role VMs
    - Installs monitoring stack (Node Exporter, Prometheus, Grafana)
    - Configures systemd-resolved on all VMs
@@ -27,7 +28,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, docker, homepage, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, cloudflare_tunnel, docker, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -37,8 +38,10 @@ bastion/
 - `roles/ssh_hardening`: Applies UFW (open or bastion-restricted), optional fail2ban, and enforces key-only SSH.
 - `roles/ssh_client_config`: Renders SSH `config` entries for all internal hosts using the internal key.
 - `roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
+- `roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy`, forwarding Cloudflare Tunnel traffic to Traefik tunnel entrypoint.
 - `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
+- `roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.
 - `roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export.
 - `roles/prometheus`: Deploys Prometheus (v2.49.0) via Docker Compose on VMs with `role: app`.
 - `roles/grafana`: Deploys Grafana (v10.3.0) via Docker Compose on VMs with `role: app`.
@@ -71,7 +74,7 @@ This file should be copied by the local deployment, but you can create it manual
 | `make tf-init` | Initialize Terraform |
 | `make tf-apply` | Create internal VMs |
 | `make bastion-setup` | Configure bastion (ssh_keypair, ssh_hardening, ssh_client_config) |
-| `make internal-setup` | Configure internal VMs (ssh_hardening, DNS services, resolved_dns) |
+| `make internal-setup` | Configure internal VMs (ssh_hardening, traefik, cloudflare_tunnel, docker, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
 | `make homemanager` | Install Nix + Home Manager on all VMs (nix_installer, home_manager) |
 | `make clean` | Destroy internal VMs |
 
@@ -89,6 +92,9 @@ This file should be copied by the local deployment, but you can create it manual
 3. internal-setup
    - Configure SSH hardening on internal VMs (allow only from bastion)
    - Install and configure Traefik on proxy role VMs
+   - Run Cloudflare Tunnel on proxy role VMs
+   - Deploy Homepage on app role VMs
+   - Deploy personal-site on app role VMs
    - Install and configure Unbound on dns role VMs
    - Install and configure AdGuard Home on dns role VMs
    - Install Node Exporter on all VMs

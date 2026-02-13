@@ -60,6 +60,17 @@
   roles:
     - role: traefik
 
+- name: Run Cloudflare Tunnel on proxy hosts
+  hosts: proxy
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: cloudflare_tunnel
+
 - name: Install Docker on app hosts
   hosts: app
   become: true
@@ -87,6 +98,27 @@
 
   roles:
     - role: homepage
+
+- name: Deploy personal-site on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    personal_site_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'personal-site') | list | first) | default({}) }}"
+    personal_site_enabled: "{{ personal_site_service != {} and (personal_site_service.proxy is defined and (personal_site_service.proxy.enable | default(false) | bool)) }}"
+    personal_site_target_vm: "{{ personal_site_service.target_vm | default('') }}"
+    personal_site_port: "{{ (personal_site_service.proxy.port | int) if (personal_site_service.proxy is defined and personal_site_service.proxy.port is defined) else 8080 }}"
+    personal_site_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  roles:
+    - role: personal_site
+      when:
+        - personal_site_enabled | bool
+        - inventory_hostname == personal_site_target_vm
 
 - name: Install node_exporter on all VMs
   hosts: cluster

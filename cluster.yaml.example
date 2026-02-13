@@ -69,6 +69,18 @@ services:
       port: 3000
       allow_cidrs:
         - "192.168.1.0/24"
+  - name: "personal-site"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8080
+      public_hostnames:
+        - "www.example.com"
+    homepage:
+      display_name: "Personal Site"
+      category: "Web"
+      icon: "mdi-web"
   - name: "traefik"
     target_vm: "proxy-01"
     proxy:
@@ -131,6 +143,7 @@ services:
 proxy:
   acme_email: "you@example.net"
   cloudflare_dns_api_token: "CF_TOKEN_HERE"
+  cloudflare_tunnel_token: "CF_TUNNEL_TOKEN_HERE"
 
 docker:
   reserved_cidr: "172.30.0.0/16"

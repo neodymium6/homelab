@@ -1,0 +1,34 @@
+---
+- name: Validate Cloudflare tunnel token is configured
+  ansible.builtin.assert:
+    that:
+      - proxy is defined
+      - proxy.cloudflare_tunnel_token is defined
+      - proxy.cloudflare_tunnel_token | string | length > 0
+    fail_msg: "Set proxy.cloudflare_tunnel_token in cluster.yaml to deploy cloudflared."
+
+- name: Ensure Cloudflare tunnel directory exists
+  ansible.builtin.file:
+    path: "{{ cloudflare_tunnel_dir }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Deploy Cloudflare tunnel docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ cloudflare_tunnel_compose_path }}"
+    mode: "0644"
+  notify: Restart cloudflare_tunnel
+  become: true
+
+- name: Start Cloudflare tunnel via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ cloudflare_tunnel_compose_path }}"
+      - up
+      - -d
+  become: true

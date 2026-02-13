@@ -1,0 +1,10 @@
+---
+- name: Restart cloudflare_tunnel
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ cloudflare_tunnel_compose_path }}"
+      - restart
+  become: true

@@ -1,0 +1,4 @@
+---
+cloudflare_tunnel_image: "cloudflare/cloudflared:latest"
+cloudflare_tunnel_dir: "/opt/stacks/cloudflare-tunnel"
+cloudflare_tunnel_compose_path: "{{ cloudflare_tunnel_dir }}/docker-compose.yml"
