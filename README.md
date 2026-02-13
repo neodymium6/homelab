@@ -415,6 +415,7 @@ Per-service proxy configuration options:
 | `public_hostnames` | Additional public hostnames. Internal `-proxy` host remains available. | No | - |
 | `auth.users` | Basic auth users (htpasswd format) | No | - |
 | `allow_cidrs` | IP whitelist (CIDR notation) | No | - |
+| `allow_public_with_cidrs` | Allow `public_hostnames` + `allow_cidrs` combination without validation error | No | `false` |
 
 ### DNS Integration
 
@@ -461,6 +462,7 @@ https://<service-name>-proxy.internal.example.com
 
 Optional public hostnames can be added per service with `proxy.public_hostnames`.
 If you expose a service publicly via Cloudflare Tunnel, do not set restrictive `allow_cidrs` unless you explicitly include Cloudflare egress ranges.
+Validation in the Traefik role will fail when both are set, unless `proxy.allow_public_with_cidrs: true` is explicitly added.
 
 Examples:
 - AdGuard Home UI: `https://agh-proxy.internal.example.com`
