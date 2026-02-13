@@ -18,6 +18,8 @@ Deploys a personal-site container image and keeps it updated with a systemd time
 - `personal_site_update_enable`: `true`
 - `personal_site_update_on_boot_sec`: `2m`
 - `personal_site_update_unit_active_sec`: `1h`
+- `personal_site_update_cleanup_enable`: `false`
+- `personal_site_update_cleanup_until`: `168h`
 
 ## Firewall Behavior
 

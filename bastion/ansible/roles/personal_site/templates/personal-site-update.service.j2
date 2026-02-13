@@ -7,3 +7,6 @@ Requires=docker.service
 Type=oneshot
 ExecStart=/usr/bin/docker compose -f {{ personal_site_compose_path }} pull
 ExecStart=/usr/bin/docker compose -f {{ personal_site_compose_path }} up -d --remove-orphans
+{% if personal_site_update_cleanup_enable | bool %}
+ExecStart=/usr/bin/docker image prune -f --filter until={{ personal_site_update_cleanup_until }}
+{% endif %}

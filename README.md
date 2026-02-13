@@ -170,6 +170,8 @@ services:
     update_enable: true
     update_on_boot_sec: "2m"
     update_unit_active_sec: "1h"
+    update_cleanup_enable: false
+    update_cleanup_until: "168h"
     proxy:
       enable: true
       scheme: "http"
@@ -375,6 +377,8 @@ services:
     update_enable: true
     update_on_boot_sec: "2m"
     update_unit_active_sec: "1h"
+    update_cleanup_enable: false
+    update_cleanup_until: "168h"
     proxy:
       enable: true
       scheme: "http"

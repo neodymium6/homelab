@@ -116,6 +116,8 @@
     personal_site_update_enable: "{{ personal_site_service.update_enable | default(true) }}"
     personal_site_update_on_boot_sec: "{{ personal_site_service.update_on_boot_sec | default('2m') }}"
     personal_site_update_unit_active_sec: "{{ personal_site_service.update_unit_active_sec | default('1h') }}"
+    personal_site_update_cleanup_enable: "{{ personal_site_service.update_cleanup_enable | default(false) }}"
+    personal_site_update_cleanup_until: "{{ personal_site_service.update_cleanup_until | default('168h') }}"
     personal_site_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
 
   roles:
