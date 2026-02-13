@@ -6,23 +6,6 @@
     mode: "0755"
   loop:
     - "{{ personal_site_dir }}"
-    - "{{ personal_site_html_dir }}"
-  become: true
-
-- name: Deploy personal-site index.html
-  ansible.builtin.template:
-    src: index.html.j2
-    dest: "{{ personal_site_html_dir }}/index.html"
-    mode: "0644"
-  notify: Restart personal_site
-  become: true
-
-- name: Deploy personal-site style.css
-  ansible.builtin.template:
-    src: style.css.j2
-    dest: "{{ personal_site_html_dir }}/style.css"
-    mode: "0644"
-  notify: Restart personal_site
   become: true
 
 - name: Deploy personal-site docker-compose.yml

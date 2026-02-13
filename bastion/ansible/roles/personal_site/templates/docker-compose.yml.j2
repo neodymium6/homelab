@@ -4,6 +4,4 @@ services:
     container_name: "personal-site"
     ports:
       - "{{ personal_site_port }}:80"
-    volumes:
-      - "{{ personal_site_html_dir }}:/usr/share/nginx/html:ro"
     restart: unless-stopped
