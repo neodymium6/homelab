@@ -72,6 +72,8 @@ services:
   - name: "personal-site"
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
+    update_enable: true
+    update_on_boot_sec: "2m"
     update_unit_active_sec: "1h"
     proxy:
       enable: true
