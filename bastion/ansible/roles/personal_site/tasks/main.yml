@@ -61,6 +61,43 @@
   when: personal_site_update_enable | bool
   become: true
 
+- name: Check whether personal-site update timer unit exists
+  ansible.builtin.stat:
+    path: /etc/systemd/system/personal-site-update.timer
+  register: personal_site_update_timer_unit
+  when: not (personal_site_update_enable | bool)
+  become: true
+
+- name: Stop and disable personal-site update timer
+  ansible.builtin.systemd:
+    name: personal-site-update.timer
+    enabled: false
+    state: stopped
+  when:
+    - not (personal_site_update_enable | bool)
+    - personal_site_update_timer_unit.stat.exists
+  become: true
+
+- name: Remove personal-site update timer unit file
+  ansible.builtin.file:
+    path: /etc/systemd/system/personal-site-update.timer
+    state: absent
+  when: not (personal_site_update_enable | bool)
+  become: true
+
+- name: Remove personal-site update service unit file
+  ansible.builtin.file:
+    path: /etc/systemd/system/personal-site-update.service
+    state: absent
+  when: not (personal_site_update_enable | bool)
+  become: true
+
+- name: Reload systemd after removing personal-site update units
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: not (personal_site_update_enable | bool)
+  become: true
+
 - name: Allow proxy-01 to reach personal-site backend port
   community.general.ufw:
     rule: allow
