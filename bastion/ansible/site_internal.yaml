@@ -113,6 +113,7 @@
     personal_site_target_vm: "{{ personal_site_service.target_vm | default('') }}"
     personal_site_port: "{{ (personal_site_service.proxy.port | int) if (personal_site_service.proxy is defined and personal_site_service.proxy.port is defined) else 8080 }}"
     personal_site_image: "{{ personal_site_service.image | default('ghcr.io/neodymium6/profile.neodymium6.net:latest') }}"
+    personal_site_update_unit_active_sec: "{{ personal_site_service.update_unit_active_sec | default('1h') }}"
     personal_site_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
 
   roles:
