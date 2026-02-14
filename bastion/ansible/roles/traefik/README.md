@@ -33,7 +33,7 @@ This role:
 | `traefik_env_path` | `/etc/traefik/traefik.env` | Environment file (Cloudflare token) |
 | `traefik_compose_path` | `/etc/traefik/docker-compose.yml` | Docker Compose file |
 | `traefik_cf_env_var` | `CF_DNS_API_TOKEN` | Cloudflare environment variable name |
-| `traefik_docker_packages` | `[docker.io, docker-compose-plugin]` | Docker packages to install |
+| `traefik_docker_packages` | `[docker.io, docker-compose]` | Docker packages to install |
 
 ### Required Variables (from cluster.yaml)
 
@@ -278,7 +278,7 @@ Restarts Traefik container via Docker Compose.
 
 The role performs these tasks:
 
-1. Install Docker packages (`docker.io`, `docker-compose-plugin`)
+1. Install Docker packages (`docker.io`, `docker-compose`)
 2. Enable Docker service
 3. Create Traefik directories
 4. Create ACME storage file (`acme.json` with 0600 permissions)

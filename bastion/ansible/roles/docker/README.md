@@ -19,7 +19,7 @@ This role:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `docker_packages` | `[docker.io, docker-compose-plugin, python3-docker]` | Docker packages to install |
+| `docker_packages` | `[docker.io, docker-compose, python3-docker]` | Docker packages to install |
 | `docker_users` | `[]` | List of users to add to docker group |
 
 ### Example Configuration
