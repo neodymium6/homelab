@@ -44,6 +44,15 @@ groups:
           summary: "Memory pressure ({{ '{{ $labels.instance }}' }})"
           description: "MemAvailable < 10% for 10m."
 
+      - alert: HostMemoryPressure
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory pressure ({{ '{{ $labels.instance }}' }})"
+          description: "MemAvailable < 5% for 5m."
+
       - alert: HostSwapUsageHigh
         expr: (node_memory_SwapTotal_bytes > 0) and ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes > 0.20) and (rate(node_vmstat_pswpin[5m]) > 0)
         for: 15m
@@ -62,6 +71,15 @@ groups:
           summary: "High CPU ({{ '{{ $labels.instance }}' }})"
           description: "CPU >90% for 15m."
 
+      - alert: HostCPUHigh
+        expr: (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 0.95
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage ({{ '{{ $labels.instance }}' }})"
+          description: "CPU >95% for 10m."
+
       - alert: HostLoadHigh
         expr: (node_load15 / count by(instance) (node_cpu_seconds_total{mode="idle"})) > 1.5
         for: 15m
@@ -70,6 +88,15 @@ groups:
         annotations:
           summary: "High load ({{ '{{ $labels.instance }}' }})"
           description: "load15 > 1.5 * cores for 15m."
+
+      - alert: HostLoadHigh
+        expr: (node_load15 / count by(instance) (node_cpu_seconds_total{mode="idle"})) > 2.5
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical load ({{ '{{ $labels.instance }}' }})"
+          description: "load15 > 2.5 * cores for 10m."
 
       - alert: HostDiskSpaceLow
         expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) < 0.10
@@ -80,6 +107,15 @@ groups:
           summary: "Low disk space ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
           description: "Free <10% for 15m."
 
+      - alert: HostDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) < 0.05
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
+          description: "Free <5% for 10m."
+
       - alert: HostDiskInodeLow
         expr: (node_filesystem_files_free{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_files{fstype!~"tmpfs|overlay|squashfs"}) < 0.10
         for: 15m
@@ -88,6 +124,15 @@ groups:
         annotations:
           summary: "Low inodes ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
           description: "Free inodes <10% for 15m."
+
+      - alert: HostDiskInodeLow
+        expr: (node_filesystem_files_free{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_files{fstype!~"tmpfs|overlay|squashfs"}) < 0.05
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical inodes ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
+          description: "Free inodes <5% for 10m."
 
       - alert: HostDiskWillFillSoon
         expr: predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}[6h], 24*3600) < 0
