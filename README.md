@@ -11,7 +11,7 @@ This project automates the deployment and configuration of VMs on Proxmox VE usi
 - **Internal VMs**: Managed exclusively from the bastion host
 
 All VMs are configured with Nix and Home Manager for declarative system configuration.
-All required Ansible roles are vendored in this repository—no external role dependencies. Standard collections (`community.general`, `community.crypto`) are installed via `ansible-galaxy`.
+All required Ansible roles are vendored in this repository—no external role dependencies. Standard collections (`community.general`, `community.crypto`, `community.docker`) are installed via `ansible-galaxy`.
 
 ## Architecture
 

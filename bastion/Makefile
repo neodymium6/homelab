@@ -19,7 +19,7 @@ tf-apply:
 
 ansible-deps:
 	cd $(ANSIBLE_DIR) && \
-	  $(ANSIBLE_GALAXY) collection install community.general community.crypto
+	  $(ANSIBLE_GALAXY) collection install community.general community.crypto community.docker
 
 bastion-setup: ansible-deps
 	cd $(ANSIBLE_DIR) && \
@@ -39,4 +39,3 @@ clean:
 	cd $(TF_DIR) && $(TERRAFORM) destroy -auto-approve || true
 	rm -rf $(TF_DIR)/.terraform $(TF_DIR)/terraform.tfstate*
 	rm -f $(HOME)/.ssh/id_ed25519_internal $(HOME)/.ssh/id_ed25519_internal.pub
-

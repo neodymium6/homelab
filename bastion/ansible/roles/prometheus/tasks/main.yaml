@@ -18,6 +18,13 @@
     mode: "0755"
   become: true
 
+- name: Ensure Python Docker SDK is installed
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+    update_cache: yes
+  become: true
+
 - name: Ensure docker monitoring network exists
   community.docker.docker_network:
     name: monitoring
