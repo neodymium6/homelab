@@ -181,8 +181,8 @@ services:
       enable: true
       scheme: "http"
       port: 8079
-      allow_cidrs:
-        - "192.168.1.0/24"
+      public_hostnames:
+        - "ntfy.example.com"
   - name: "ntfy-pub"
     target_vm: "app-01"
     proxy:
@@ -192,6 +192,8 @@ services:
       methods:
         - "POST"
         - "PUT"
+      public_hostnames:
+        - "ntfy-pub.example.com"
   - name: "personal-site"
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"

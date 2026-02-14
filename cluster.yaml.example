@@ -84,9 +84,8 @@ services:
       enable: true
       scheme: "http"
       port: 8079
-      # Local-only example. For tunnel/public access, use public_hostnames instead.
-      allow_cidrs:
-        - "192.168.1.0/24"
+      public_hostnames:
+        - "ntfy.example.com"
     homepage:
       display_name: "ntfy"
       category: "Infrastructure"
@@ -100,10 +99,8 @@ services:
       methods:
         - "POST"
         - "PUT"
-      # For Cloudflare Tunnel publication, define public_hostnames and
-      # protect this host with Cloudflare Access service tokens.
-      # public_hostnames:
-      #   - "ntfy-pub.example.com"
+      public_hostnames:
+        - "ntfy-pub.example.com"
   - name: "personal-site"
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
