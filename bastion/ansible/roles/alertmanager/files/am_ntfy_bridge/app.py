@@ -19,8 +19,8 @@ MAX_BODY_BYTES = int(os.getenv("NTFY_MAX_BODY_BYTES", "3500"))
 
 SEV = {
     "critical": {"priority": "5", "tag": "critical"},
-    "warning": {"priority": "3", "tag": "warning"},
-    "info": {"priority": "2", "tag": "info"},
+    "warning": {"priority": "4", "tag": "warning"},
+    "info": {"priority": "3", "tag": "info"},
 }
 STATUS = {
     "firing": {"tag": "firing"},
