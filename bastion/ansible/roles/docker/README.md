@@ -15,7 +15,7 @@ This role:
 
 ## Role Variables
 
-### Defaults (defaults/main.yml)
+### Defaults (defaults/main.yaml)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
