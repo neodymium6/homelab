@@ -1,8 +1,14 @@
 CLUSTER_YAML := cluster.yaml
 
-BASTION_USER       := $(shell yq -r '.login_user' $(CLUSTER_YAML))
-BASTION_IP_PREFIX  := $(shell yq -r '.network.base_prefix' $(CLUSTER_YAML))
-BASTION_VMID       := $(shell yq -r '.vms["bastion-01"].vmid' $(CLUSTER_YAML))
+YQ := $(shell command -v yq 2>/dev/null)
+
+ifeq ($(strip $(YQ)),)
+$(error yq is required but was not found in PATH. Install yq to use the root Makefile.)
+endif
+
+BASTION_USER       := $(shell $(YQ) -r '.login_user' $(CLUSTER_YAML))
+BASTION_IP_PREFIX  := $(shell $(YQ) -r '.network.base_prefix' $(CLUSTER_YAML))
+BASTION_VMID       := $(shell $(YQ) -r '.vms["bastion-01"].vmid' $(CLUSTER_YAML))
 BASTION_HOST       := $(BASTION_IP_PREFIX).$(BASTION_VMID)
 BASTION_HOMELAB_DIR ?= /home/$(BASTION_USER)/homelab
 
