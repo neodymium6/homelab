@@ -181,6 +181,10 @@ services:
       enable: true
       scheme: "http"
       port: 8079
+      methods:
+        - "GET"
+        - "HEAD"
+        - "OPTIONS"
       public_hostnames:
         - "ntfy.example.com"
   - name: "ntfy-pub"
@@ -192,6 +196,7 @@ services:
       methods:
         - "POST"
         - "PUT"
+        - "OPTIONS"
       public_hostnames:
         - "ntfy-pub.example.com"
   - name: "personal-site"
