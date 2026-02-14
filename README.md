@@ -183,6 +183,15 @@ services:
       port: 8079
       allow_cidrs:
         - "192.168.1.0/24"
+  - name: "ntfy-pub"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8079
+      methods:
+        - "POST"
+        - "PUT"
   - name: "personal-site"
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
@@ -237,8 +246,8 @@ secrets:
       - "iphone:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
       - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
     auth_access:
-      - "iphone:alerts:read"
-      - "publisher:alerts:write"
+      - "iphone:*:read"
+      - "publisher:*:write"
 ```
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
@@ -474,6 +483,7 @@ Per-service proxy configuration options:
 | `enable` | Enable proxying for this service | Yes | `false` |
 | `scheme` | Backend protocol (http/https) | No | `http` |
 | `port` | Single backend service port | Yes (unless `service`, `backend_url`, or `backends` set) | - |
+| `methods` | Allowed HTTP methods at router level (e.g., `["POST", "PUT"]`) | No | - |
 | `backends` | Multiple backend targets (`[{port, host?}]`) | No | - |
 | `service` | Use Traefik internal service (e.g., `api@internal`) | No | - |
 | `backend_url` | Full backend URL (overrides `scheme/host/port`) | No | - |

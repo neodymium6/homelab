@@ -91,6 +91,19 @@ services:
       display_name: "ntfy"
       category: "Infrastructure"
       icon: "mdi-bell-badge-outline"
+  - name: "ntfy-pub"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8079
+      methods:
+        - "POST"
+        - "PUT"
+      # For Cloudflare Tunnel publication, define public_hostnames and
+      # protect this host with Cloudflare Access service tokens.
+      # public_hostnames:
+      #   - "ntfy-pub.example.com"
   - name: "personal-site"
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
@@ -197,5 +210,5 @@ secrets:
       - "iphone:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
       - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
     auth_access:
-      - "iphone:alerts:read"
-      - "publisher:alerts:write"
+      - "iphone:*:read"
+      - "publisher:*:write"

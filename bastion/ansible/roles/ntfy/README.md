@@ -40,8 +40,8 @@ secrets:
       - "iphone:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
       - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
     auth_access:
-      - "iphone:alerts:read"
-      - "publisher:alerts:write"
+      - "iphone:*:read"
+      - "publisher:*:write"
 ```
 
 Generate a bcrypt hash with:
