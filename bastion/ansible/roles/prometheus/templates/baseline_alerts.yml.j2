@@ -1,0 +1,201 @@
+groups:
+  - name: targets
+    interval: 1m
+    rules:
+{% if prometheus_enable_always_notify_test_alert | bool %}
+      - alert: AlwaysNotifyTest
+        expr: vector(1)
+        for: 0m
+        labels:
+          severity: info
+          test_alert: "true"
+        annotations:
+          summary: "Always-on test alert"
+          description: "This alert is intentionally always firing to verify notification delivery."
+{% endif %}
+
+      - alert: InstanceDown
+        expr: up{job=~"node|node_exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance down ({{ '{{ $labels.instance }}' }})"
+          description: "Prometheus cannot scrape {{ '{{ $labels.job }}' }} on {{ '{{ $labels.instance }}' }} for 5m."
+
+      - alert: ScrapeErrors
+        expr: up == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scrape failing ({{ '{{ $labels.job }} {{ $labels.instance }}' }})"
+          description: "Target has been failing scrapes for 10m (up==0)."
+
+  - name: host
+    interval: 1m
+    rules:
+      - alert: HostMemoryPressure
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory pressure ({{ '{{ $labels.instance }}' }})"
+          description: "MemAvailable < 10% for 10m."
+
+      - alert: HostMemoryPressure
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory pressure ({{ '{{ $labels.instance }}' }})"
+          description: "MemAvailable < 5% for 5m."
+
+      - alert: HostSwapUsageHigh
+        expr: (node_memory_SwapTotal_bytes > 0) and ((node_memory_SwapTotal_bytes - node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes > 0.20) and (rate(node_vmstat_pswpin[5m]) > 0)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Swap in active use ({{ '{{ $labels.instance }}' }})"
+          description: "Swap usage >20% and swapping in for 15m."
+
+      - alert: HostCPUHigh
+        expr: (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 0.90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU ({{ '{{ $labels.instance }}' }})"
+          description: "CPU >90% for 15m."
+
+      - alert: HostCPUHigh
+        expr: (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 0.95
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage ({{ '{{ $labels.instance }}' }})"
+          description: "CPU >95% for 10m."
+
+      - alert: HostLoadHigh
+        expr: (node_load15 / count by(instance) (node_cpu_seconds_total{mode="idle"})) > 1.5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High load ({{ '{{ $labels.instance }}' }})"
+          description: "load15 > 1.5 * cores for 15m."
+
+      - alert: HostLoadHigh
+        expr: (node_load15 / count by(instance) (node_cpu_seconds_total{mode="idle"})) > 2.5
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical load ({{ '{{ $labels.instance }}' }})"
+          description: "load15 > 2.5 * cores for 10m."
+
+      - alert: HostDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) < 0.10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
+          description: "Free <10% for 15m."
+
+      - alert: HostDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) < 0.05
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
+          description: "Free <5% for 10m."
+
+      - alert: HostDiskInodeLow
+        expr: (node_filesystem_files_free{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_files{fstype!~"tmpfs|overlay|squashfs"}) < 0.10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low inodes ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
+          description: "Free inodes <10% for 15m."
+
+      - alert: HostDiskInodeLow
+        expr: (node_filesystem_files_free{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_files{fstype!~"tmpfs|overlay|squashfs"}) < 0.05
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical inodes ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
+          description: "Free inodes <5% for 10m."
+
+      - alert: HostDiskWillFillSoon
+        expr: predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}[6h], 24*3600) < 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk predicted to fill within 24h ({{ '{{ $labels.instance }} {{ $labels.mountpoint }}' }})"
+          description: "predict_linear(avail_bytes[6h], 24h) < 0 for 30m."
+
+      - alert: HostOOMKillDetected
+        expr: increase(node_vmstat_oom_kill[10m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OOM kill detected ({{ '{{ $labels.instance }}' }})"
+          description: "Kernel OOM kills occurred in last 10m."
+
+      - alert: HostClockSkew
+        expr: (abs(node_timex_offset_seconds) > 0.05) or (node_timex_sync_status == 0)
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Clock skew / unsynced time ({{ '{{ $labels.instance }}' }})"
+          description: "Time offset >50ms or NTP unsynced for 10m."
+
+      - alert: NodeExporterMissingMetrics
+        expr: up{job=~"node|node_exporter"} == 1 unless on(instance) node_time_seconds
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node exporter missing key metrics ({{ '{{ $labels.instance }}' }})"
+          description: "Target is up but node_time_seconds is absent for 10m."
+
+  - name: prometheus
+    interval: 1m
+    rules:
+      - alert: PrometheusTargetFlapping
+        expr: changes(up[15m]) > 6
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Target flapping ({{ '{{ $labels.job }} {{ $labels.instance }}' }})"
+          description: "up changed >6 times in 15m."
+
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus config reload failed"
+          description: "prometheus_config_last_reload_successful == 0 for 5m."
+
+      - alert: PrometheusRuleEvalFailures
+        expr: increase(prometheus_rule_evaluation_failures_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus rule evaluation failures"
+          description: "Rule evaluation failures increased in last 5m."

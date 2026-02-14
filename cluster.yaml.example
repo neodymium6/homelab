@@ -180,6 +180,22 @@ services:
       display_name: "Prometheus"
       category: "Monitoring"
       icon: "si-prometheus"
+  - name: "alertmanager"
+    target_vm: "app-01"
+    notifications:
+      ntfy_topic: "alerts"
+      ntfy_base_url: "https://ntfy-pub-proxy.internal.example.com"
+      enable_test_alert: false
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 9093
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Alertmanager"
+      category: "Monitoring"
+      icon: "si-prometheus"
   - name: "grafana"
     target_vm: "app-01"
     proxy:
@@ -215,3 +231,7 @@ secrets:
     auth_access:
       - "subscriber:*:read"
       - "publisher:*:write"
+  alertmanager:
+    ntfy_user: "alerting"
+    ntfy_password: "change_me"
+    # ntfy_token: "tk_..."

@@ -35,7 +35,8 @@ All required Ansible roles are vendored in this repository—no external role de
             │ - Proxy (Traefik)            │
             │ - Apps (Docker)              │
             │ - Monitoring (Prometheus +   │
-            │   Grafana + Node Exporter)   │
+            │   Alertmanager + Grafana +   │
+            │   Node Exporter)             │
             │ - Home Manager               │
             └──────────────────────────────┘
 ```
@@ -306,6 +307,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Deploy personal-site container (app role)     │
 │    - Install Node Exporter (all VMs)               │
 │    - Install Prometheus (app role)                 │
+│    - Install Alertmanager (app role)               │
 │    - Install Grafana (app role)                    │
 │    - Configure systemd-resolved (all VMs)          │
 │ 4. ansible: Install Home Manager on all VMs        │
@@ -388,7 +390,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **User Access**: Login user added to docker group for non-root Docker access
 - **Web Apps**: Homepage dashboard and personal-site container stack
 - **Notifications**: ntfy server for self-hosted push notifications
-- **Monitoring**: Prometheus and Grafana deployed for infrastructure observability
+- **Monitoring**: Prometheus, Alertmanager, and Grafana deployed for infrastructure observability
 
 The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
 
@@ -623,6 +625,24 @@ scrape_configs:
 
 **Firewall**: UFW allows access only from proxy VM for web UI, and from monitoring Docker network for container-based scrapers
 
+#### Alertmanager
+
+**Alert Grouping, Routing, and Silencing**
+
+- **Version**: v0.27.0
+- **Port**: 9093
+- **Deployment**: Docker container via Docker Compose
+- **Storage**: Docker named volume (`alertmanager_data`)
+- **Notifications**: Alertmanager webhook payloads are transformed by `am_ntfy_bridge` and published to ntfy
+- **Recommended ntfy Route**: Use internal publish endpoint `https://ntfy-pub-proxy.<domain>` (POST-capable)
+- **Test Alert Toggle**: `services[].notifications.enable_test_alert` enables/disables `AlwaysNotifyTest`
+
+**Prometheus Integration**: Prometheus automatically discovers Alertmanager on the same app host via `alertmanager:9093`
+
+**Access**: Optional via Traefik at `https://alertmanager-proxy.internal.example.com` when `services[].proxy.enable` is configured
+
+**Firewall**: UFW allows proxy-only access when Alertmanager port exposure is enabled
+
 #### Grafana
 
 **Metrics Visualization and Dashboards**
@@ -705,6 +725,23 @@ services:
       category: "Monitoring"
       icon: "si-prometheus"
 
+  - name: "alertmanager"
+    target_vm: "app-01"
+    notifications:
+      ntfy_topic: "alerts"
+      ntfy_base_url: "https://ntfy-pub-proxy.internal.example.com"
+      enable_test_alert: false
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 9093
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Alertmanager"
+      category: "Monitoring"
+      icon: "si-prometheus"
+
   - name: "grafana"
     target_vm: "app-01"
     proxy:
@@ -728,15 +765,20 @@ secrets:
   monitoring:
     grafana_admin_user: "admin"
     grafana_admin_password: "changeme"
+  alertmanager:
+    ntfy_user: "alerting"
+    ntfy_password: "change_me"
+    # ntfy_token: "tk_..."
 ```
 
 ### Deployment Flow
 
 1. **Node Exporter** installed on all VMs via systemd service
 2. **Prometheus** deployed on app-01 with auto-generated scrape config
-3. **Grafana** deployed on app-01 with Prometheus datasource pre-configured
-4. **Dashboards** automatically provisioned on Grafana startup
-5. **UFW Rules** configured to allow monitoring traffic
+3. **Alertmanager** deployed on app-01 with ntfy webhook bridge
+4. **Grafana** deployed on app-01 with Prometheus datasource pre-configured
+5. **Dashboards** automatically provisioned on Grafana startup
+6. **UFW Rules** configured to allow monitoring traffic
 
 ### Accessing Monitoring
 
@@ -750,7 +792,10 @@ After deployment, access the monitoring stack via:
   - Query metrics directly
   - View scrape targets and configuration
 
-- **Homepage**: Links to both services in "Monitoring" category
+- **Alertmanager UI**: `https://alertmanager-proxy.internal.example.com` (optional if proxied)
+  - View active alerts, silences, and receiver status
+
+- **Homepage**: Links to monitoring services in "Monitoring" category
 
 ## Home Manager Integration
 
@@ -772,6 +817,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.
 - `bastion/ansible/roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export, with UFW rules allowing access from app VM and monitoring Docker network.
 - `bastion/ansible/roles/prometheus`: Deploys Prometheus (v2.49.0) via Docker Compose on VMs with `role: app`, with auto-generated scrape configuration from `cluster.yaml` and dedicated monitoring network.
+- `bastion/ansible/roles/alertmanager`: Deploys Alertmanager (v0.27.0) with an `am_ntfy_bridge` webhook adapter for ntfy notifications.
 - `bastion/ansible/roles/grafana`: Deploys Grafana (v10.3.0) via Docker Compose on VMs with `role: app`, with pre-provisioned Prometheus datasource and dashboards (Node Exporter Full, Proxmox Nodes).
 - `bastion/ansible/roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
 - `bastion/ansible/roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.

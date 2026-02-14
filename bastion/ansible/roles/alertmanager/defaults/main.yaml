@@ -1,0 +1,38 @@
+---
+alertmanager_image: "prom/alertmanager:v0.27.0"
+alertmanager_service_name: "alertmanager"
+alertmanager_dir: "/opt/stacks/alertmanager"
+alertmanager_config_path: "{{ alertmanager_dir }}/alertmanager.yml"
+alertmanager_compose_path: "{{ alertmanager_dir }}/docker-compose.yml"
+alertmanager_bridge_dir: "{{ alertmanager_dir }}/am-ntfy-bridge"
+alertmanager_data_volume_name: "alertmanager_data"
+
+alertmanager_port: 9093
+alertmanager_bind_address: "0.0.0.0"
+alertmanager_expose_port: false
+
+alertmanager_enable_ufw: true
+alertmanager_allow_from_proxy_only: true
+
+alertmanager_resolve_timeout: "5m"
+alertmanager_group_by:
+  - "alertname"
+  - "job"
+  - "instance"
+alertmanager_group_wait: "30s"
+alertmanager_group_interval: "5m"
+alertmanager_repeat_interval: "4h"
+alertmanager_repeat_interval_critical: "30m"
+alertmanager_repeat_interval_warning: "2h"
+alertmanager_repeat_interval_info: "6h"
+alertmanager_repeat_interval_test: "1m"
+alertmanager_send_resolved: true
+alertmanager_ntfy_bridge_url: "http://am_ntfy_bridge:8080/alertmanager"
+
+alertmanager_ntfy_base_url: "http://host.docker.internal:8079"
+alertmanager_ntfy_topic: "alerts"
+alertmanager_ntfy_user: ""
+alertmanager_ntfy_password: ""
+alertmanager_ntfy_token: ""
+
+alertmanager_enable_severity_inhibit: true

@@ -13,7 +13,7 @@ Terraform and Ansible configurations executed on the bastion VM to create and co
    - Runs Cloudflare Tunnel on proxy role VMs
    - Deploys ntfy notification server on app role VMs
    - Installs DNS services (Unbound + AdGuard Home) on dns role VMs
-   - Installs monitoring stack (Node Exporter, Prometheus, Grafana)
+   - Installs monitoring stack (Node Exporter, Prometheus, Alertmanager, Grafana)
    - Configures systemd-resolved on all VMs
 3. **Ansible**: Installs Nix and Home Manager on all VMs
    - Installs Nix (multi-user daemon)
@@ -29,7 +29,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, cloudflare_tunnel, docker, ntfy, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -46,6 +46,7 @@ bastion/
 - `roles/personal_site`: Deploys a personal-site container image via Docker Compose on app VMs, with optional proxy-only UFW access and a systemd timer for rolling zero-downtime style refresh.
 - `roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export.
 - `roles/prometheus`: Deploys Prometheus (v2.49.0) via Docker Compose on VMs with `role: app`.
+- `roles/alertmanager`: Deploys Alertmanager (v0.27.0) and routes notifications to ntfy through `am_ntfy_bridge`.
 - `roles/grafana`: Deploys Grafana (v10.3.0) via Docker Compose on VMs with `role: app`.
 - `roles/unbound`: Installs and configures Unbound recursive DNS resolver on VMs with `role: dns`.
 - `roles/adguard_home`: Installs and configures AdGuard Home DNS filtering on VMs with `role: dns`.
@@ -76,7 +77,7 @@ This file should be copied by the local deployment, but you can create it manual
 | `make tf-init` | Initialize Terraform |
 | `make tf-apply` | Create internal VMs |
 | `make bastion-setup` | Configure bastion (ssh_keypair, ssh_hardening, ssh_client_config) |
-| `make internal-setup` | Configure internal VMs (ssh_hardening, traefik, cloudflare_tunnel, docker, ntfy, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
+| `make internal-setup` | Configure internal VMs (ssh_hardening, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
 | `make homemanager` | Install Nix + Home Manager on all VMs (nix_installer, home_manager) |
 | `make clean` | Destroy internal VMs |
 
@@ -96,12 +97,14 @@ This file should be copied by the local deployment, but you can create it manual
    - Install and configure Traefik on proxy role VMs
    - Run Cloudflare Tunnel on proxy role VMs
    - Deploy ntfy on app role VMs
+   - Deploy Alertmanager on app role VMs
    - Deploy Homepage on app role VMs
    - Deploy personal-site on app role VMs (image-based, rolling zero-downtime style timer refresh, optional image cleanup)
    - Install and configure Unbound on dns role VMs
    - Install and configure AdGuard Home on dns role VMs
    - Install Node Exporter on all VMs
    - Install Prometheus on app role VMs
+   - Route Prometheus alerts to Alertmanager
    - Install Grafana on app role VMs
    - Configure systemd-resolved on all VMs
 
