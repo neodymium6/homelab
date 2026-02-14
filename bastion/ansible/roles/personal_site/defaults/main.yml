@@ -17,3 +17,7 @@ personal_site_update_on_boot_sec: "2m"
 personal_site_update_unit_active_sec: "1h"
 personal_site_update_cleanup_enable: false
 personal_site_update_cleanup_until: "168h"
+personal_site_update_timeout_start_sec: "10min"
+personal_site_ready_path: "/"
+personal_site_ready_retries: 300
+personal_site_ready_sleep_seconds: "0.2"
