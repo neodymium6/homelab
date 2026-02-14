@@ -1,0 +1,21 @@
+---
+ntfy_image: "binwiederhier/ntfy:v2.17.0"
+ntfy_service_name: "ntfy"
+ntfy_dir: "/opt/stacks/ntfy"
+ntfy_cache_dir: "{{ ntfy_dir }}/cache"
+ntfy_config_path: "{{ ntfy_dir }}/server.yaml"
+ntfy_compose_path: "{{ ntfy_dir }}/docker-compose.yaml"
+
+ntfy_port: 8079
+
+ntfy_base_url: "https://ntfy-proxy.{{ network.domain }}"
+ntfy_behind_proxy: true
+ntfy_upstream_base_url: "https://ntfy.sh"
+
+ntfy_enable_login: true
+ntfy_auth_file: "/var/cache/ntfy/user.db"
+ntfy_auth_default_access: "deny-all"
+ntfy_auth_users: []
+
+ntfy_enable_ufw: true
+ntfy_allow_from_proxy_only: true

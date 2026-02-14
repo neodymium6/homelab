@@ -1,0 +1,14 @@
+base-url: "{{ ntfy_base_url }}"
+listen-http: ":80"
+behind-proxy: {{ ntfy_behind_proxy | bool | ternary('true', 'false') }}
+upstream-base-url: "{{ ntfy_upstream_base_url }}"
+
+enable-login: {{ ntfy_enable_login | bool | ternary('true', 'false') }}
+auth-file: "{{ ntfy_auth_file }}"
+auth-default-access: "{{ ntfy_auth_default_access }}"
+{% if ntfy_auth_users | length > 0 %}
+auth-users:
+{% for user in ntfy_auth_users %}
+  - "{{ user }}"
+{% endfor %}
+{% endif %}
