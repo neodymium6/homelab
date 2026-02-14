@@ -21,6 +21,13 @@ Deploys a self-hosted `ntfy` server on app hosts via Docker Compose.
 - `ntfy_enable_login`: `true`
 - `ntfy_auth_default_access`: `deny-all`
 - `ntfy_auth_access`: `[]`
+- `ntfy_message_size_limit`: `4K`
+- `ntfy_message_delay_limit`: `1h`
+- `ntfy_visitor_request_limit_burst`: `30`
+- `ntfy_visitor_request_limit_replenish`: `10s`
+- `ntfy_visitor_message_daily_limit`: `200`
+- `ntfy_visitor_subscription_limit`: `20`
+- `ntfy_visitor_subscriber_rate_limiting`: `true`
 
 ## Required Secrets
 

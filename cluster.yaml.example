@@ -72,6 +72,14 @@ services:
   - name: "ntfy"
     target_vm: "app-01"
     upstream_base_url: "https://ntfy.sh"
+    security:
+      message_size_limit: "4K"
+      message_delay_limit: "1h"
+      visitor_request_limit_burst: 30
+      visitor_request_limit_replenish: "10s"
+      visitor_message_daily_limit: 200
+      visitor_subscription_limit: 20
+      visitor_subscriber_rate_limiting: true
     proxy:
       enable: true
       scheme: "http"
