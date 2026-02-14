@@ -51,6 +51,112 @@
     - item.proxy is defined
     - item.proxy.enable | default(false) | bool
 
+- name: Validate proxy backend selector settings
+  ansible.builtin.assert:
+    that:
+      - not (
+          item.proxy.backend_url is defined and
+          item.proxy.backends is defined and
+          item.proxy.backends | length > 0
+        )
+      - not (
+          item.proxy.service is defined and
+          (
+            item.proxy.backend_url is defined or
+            (item.proxy.backends is defined and item.proxy.backends | length > 0) or
+            item.proxy.port is defined
+          )
+        )
+      - (
+          item.proxy.service is defined
+        ) or (
+          item.proxy.backend_url is defined
+        ) or (
+          item.proxy.backends is defined and item.proxy.backends | length > 0
+        ) or (
+          item.proxy.port is defined
+        )
+      - item.proxy.port is not defined or (
+          (item.proxy.port | string | regex_search('^[0-9]+$')) and
+          (item.proxy.port | int >= 1) and
+          (item.proxy.port | int <= 65535)
+        )
+    fail_msg: >-
+      Service '{{ item.name }}' has invalid proxy backend settings.
+      Choose exactly one of proxy.service, proxy.backend_url, proxy.backends, or proxy.port.
+      If proxy.port is used, it must be an integer between 1 and 65535.
+  loop: "{{ services | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default('unknown-service') }}"
+  when:
+    - item.proxy is defined
+    - item.proxy.enable | default(false) | bool
+
+- name: Validate proxy.backends format
+  ansible.builtin.assert:
+    that:
+      - item.proxy.backends is not defined or (
+          item.proxy.backends is sequence and
+          item.proxy.backends is not string and
+          item.proxy.backends | length > 0
+        )
+      - item.proxy.backends is not defined or (
+          item.proxy.backends | map('type_debug') | unique == ['dict']
+        )
+      - item.proxy.backends is not defined or (
+          item.proxy.backends | rejectattr('port', 'defined') | list | length == 0
+        )
+      - item.proxy.backends is not defined or (
+          item.proxy.backends |
+          map(attribute='port') |
+          map('string') |
+          map('regex_search', '^[0-9]+$') |
+          select('equalto', None) |
+          list |
+          length == 0
+        )
+      - item.proxy.backends is not defined or (
+          (item.proxy.backends | map(attribute='port') | map('int') | min) >= 1 and
+          (item.proxy.backends | map(attribute='port') | map('int') | max) <= 65535
+        )
+      - item.proxy.backends is not defined or (
+          item.proxy.backends | selectattr('host', 'defined') | list | length == 0 or
+          (item.proxy.backends | selectattr('host', 'defined') | map(attribute='host') | map('string') | map('length') | min) > 0
+        )
+    fail_msg: >-
+      Service '{{ item.name }}' has invalid proxy.backends format.
+      proxy.backends must be a non-empty list of objects with required 'port' (1-65535)
+      and optional non-empty 'host'.
+  loop: "{{ services | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default('unknown-service') }}"
+  when:
+    - item.proxy is defined
+    - item.proxy.enable | default(false) | bool
+
+- name: Validate proxy healthcheck and retry format
+  ansible.builtin.assert:
+    that:
+      - item.proxy.healthcheck is not defined or item.proxy.healthcheck is mapping
+      - item.proxy.healthcheck is not defined or item.proxy.healthcheck.path is not defined or item.proxy.healthcheck.path | string | length > 0
+      - item.proxy.healthcheck is not defined or item.proxy.healthcheck.interval is not defined or item.proxy.healthcheck.interval | string | length > 0
+      - item.proxy.healthcheck is not defined or item.proxy.healthcheck.timeout is not defined or item.proxy.healthcheck.timeout | string | length > 0
+      - item.proxy.retry is not defined or item.proxy.retry is mapping
+      - item.proxy.retry is not defined or item.proxy.retry.attempts is not defined or (
+          (item.proxy.retry.attempts | string | regex_search('^[0-9]+$')) and
+          (item.proxy.retry.attempts | int >= 1)
+        )
+      - item.proxy.retry is not defined or item.proxy.retry.initial_interval is not defined or item.proxy.retry.initial_interval | string | length > 0
+    fail_msg: >-
+      Service '{{ item.name }}' has invalid proxy.healthcheck or proxy.retry format.
+      healthcheck/retry must be objects with valid non-empty values.
+  loop: "{{ services | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default('unknown-service') }}"
+  when:
+    - item.proxy is defined
+    - item.proxy.enable | default(false) | bool
+
 - name: Deploy Traefik static configuration
   ansible.builtin.template:
     src: traefik.yml.j2
