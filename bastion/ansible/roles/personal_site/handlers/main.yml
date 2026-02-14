@@ -6,5 +6,7 @@
       - compose
       - -f
       - "{{ personal_site_compose_path }}"
-      - restart
+      - up
+      - -d
+      - --remove-orphans
   become: true

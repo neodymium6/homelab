@@ -32,6 +32,7 @@
       - "{{ personal_site_compose_path }}"
       - up
       - -d
+      - --remove-orphans
   become: true
 
 - name: Deploy systemd unit for personal-site updates
