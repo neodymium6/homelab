@@ -1,4 +1,19 @@
 ---
+- name: Ensure systemd-resolved package is installed
+  ansible.builtin.apt:
+    name: "{{ resolved_package_name }}"
+    state: present
+    update_cache: yes
+  when: resolved_install_package | bool
+  become: true
+
+- name: Ensure systemd-resolved service is enabled and running
+  ansible.builtin.service:
+    name: "{{ resolved_service_name }}"
+    state: started
+    enabled: true
+  become: true
+
 - name: Ensure systemd-resolved drop-in directory exists
   ansible.builtin.file:
     path: "{{ resolved_dropin_path | dirname }}"
