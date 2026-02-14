@@ -175,7 +175,16 @@ services:
     proxy:
       enable: true
       scheme: "http"
-      port: 8080
+      backends:
+        - port: 8080
+        - port: 8081
+      healthcheck:
+        path: "/"
+        interval: "1s"
+        timeout: "500ms"
+      retry:
+        attempts: 2
+        initial_interval: "100ms"
       public_hostnames:
         - "www.example.com"
   - name: "traefik"
@@ -325,6 +334,8 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 
 The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
 
+Personal-site uses dual backends (`:8080`, `:8081`) with rolling updates and Traefik health checks/retry, enabling zero-downtime style deployments for normal web traffic.
+
 ### Homepage Dashboard
 
 The Homepage dashboard is deployed on app-01 as the primary service discovery and monitoring interface:
@@ -382,7 +393,16 @@ services:
     proxy:
       enable: true
       scheme: "http"
-      port: 8080
+      backends:
+        - port: 8080
+        - port: 8081
+      healthcheck:
+        path: "/"
+        interval: "1s"
+        timeout: "500ms"
+      retry:
+        attempts: 2
+        initial_interval: "100ms"
       public_hostnames:
         - "www.example.com"
 
@@ -400,7 +420,7 @@ services:
 
 This creates:
 - **Router**: `agh-proxy.internal.example.com` → `http://agh.internal.example.com:3000`
-- **Router**: `personal-site-proxy.internal.example.com` and `www.example.com` → `http://personal-site.internal.example.com:8080`
+- **Router**: `personal-site-proxy.internal.example.com` and `www.example.com` → load-balanced backends (`:8080`, `:8081`)
 - **Router**: `traefik-proxy.internal.example.com` → Traefik dashboard (with auth + IP filter)
 
 #### Proxy Configuration Block
@@ -422,8 +442,13 @@ Per-service proxy configuration options:
 |--------|-------------|----------|---------|
 | `enable` | Enable proxying for this service | Yes | `false` |
 | `scheme` | Backend protocol (http/https) | No | `http` |
-| `port` | Backend service port | Yes (unless `service` set) | - |
+| `port` | Single backend service port | Yes (unless `service`, `backend_url`, or `backends` set) | - |
+| `backends` | Multiple backend targets (`[{port, host?}]`) | No | - |
 | `service` | Use Traefik internal service (e.g., `api@internal`) | No | - |
+| `backend_url` | Full backend URL (overrides `scheme/host/port`) | No | - |
+| `backend_host` | Default backend host for `port` or `backends[].host` fallback | No | `<name>.<domain>` |
+| `healthcheck` | Traefik health check block (`path`, `interval`, `timeout`) | No | - |
+| `retry` | Retry middleware block (`attempts`, `initial_interval`) | No | - |
 | `public_hostnames` | Additional public hostnames. Internal `-proxy` host remains available. | No | - |
 | `auth.users` | Basic auth users (htpasswd format) | No | - |
 | `allow_cidrs` | IP whitelist (CIDR notation) | No | - |

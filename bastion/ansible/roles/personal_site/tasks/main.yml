@@ -8,6 +8,13 @@
     - "{{ personal_site_dir }}"
   become: true
 
+- name: Ensure curl is installed for personal-site readiness checks
+  ansible.builtin.apt:
+    name: curl
+    state: present
+    update_cache: yes
+  become: true
+
 - name: Deploy personal-site docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
@@ -25,6 +32,7 @@
       - "{{ personal_site_compose_path }}"
       - up
       - -d
+      - --remove-orphans
   become: true
 
 - name: Deploy systemd unit for personal-site updates
@@ -98,12 +106,15 @@
   when: not (personal_site_update_enable | bool)
   become: true
 
-- name: Allow proxy-01 to reach personal-site backend port
+- name: Allow proxy-01 to reach personal-site backend ports
+  loop: "{{ personal_site_backend_ports }}"
+  loop_control:
+    loop_var: personal_site_backend_port
   community.general.ufw:
     rule: allow
     proto: tcp
     src: "{{ personal_site_proxy_ip }}"
-    port: "{{ personal_site_port | string }}"
+    port: "{{ personal_site_backend_port | string }}"
   when:
     - personal_site_enable_ufw | bool
     - personal_site_allow_from_proxy_only | bool

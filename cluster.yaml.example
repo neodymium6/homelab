@@ -80,7 +80,16 @@ services:
     proxy:
       enable: true
       scheme: "http"
-      port: 8080
+      backends:
+        - port: 8080
+        - port: 8081
+      healthcheck:
+        path: "/"
+        interval: "1s"
+        timeout: "500ms"
+      retry:
+        attempts: 2
+        initial_interval: "100ms"
       public_hostnames:
         - "www.example.com"
     homepage:

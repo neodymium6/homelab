@@ -30,6 +30,9 @@ http:
 {%     if s.proxy.auth is defined and s.proxy.auth.users is defined and s.proxy.auth.users | length > 0 %}
 {%       set _ = mw.append(s.name ~ '-auth') %}
 {%     endif %}
+{%     if s.proxy.retry is defined %}
+{%       set _ = mw.append(s.name ~ '-retry') %}
+{%     endif %}
 {%     if mw | length > 0 %}
       middlewares:
 {%       for m in mw %}
@@ -49,17 +52,32 @@ http:
   services:
 {% for s in services | default([]) %}
 {%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
+{%     set service_backend_host = (s.proxy.backend_host | default(s.name ~ '.' ~ network.domain)) %}
     {{ s.name }}-svc:
       loadBalancer:
 {%     if s.proxy.insecure_skip_verify | default(false) %}
         serversTransport: "insecureSkipVerify"
 {%     endif %}
+{%     if s.proxy.healthcheck is defined %}
+        healthCheck:
+          path: "{{ s.proxy.healthcheck.path | default('/') }}"
+{%       if s.proxy.healthcheck.interval is defined %}
+          interval: "{{ s.proxy.healthcheck.interval }}"
+{%       endif %}
+{%       if s.proxy.healthcheck.timeout is defined %}
+          timeout: "{{ s.proxy.healthcheck.timeout }}"
+{%       endif %}
+{%     endif %}
         servers:
-{%       if s.proxy.backend_url is defined %}
+{%       if s.proxy.backends is defined and s.proxy.backends | length > 0 %}
+{%         for backend in s.proxy.backends %}
+{%           set backend_host = (backend.host | default(service_backend_host)) %}
+          - url: "{{ s.proxy.scheme | default('http') }}://{{ backend_host }}:{{ backend.port }}"
+{%         endfor %}
+{%       elif s.proxy.backend_url is defined %}
           - url: "{{ s.proxy.backend_url }}"
 {%       else %}
-{%         set backend_host = (s.proxy.backend_host | default(s.name ~ '.' ~ network.domain)) %}
-          - url: "{{ s.proxy.scheme | default('http') }}://{{ backend_host }}:{{ s.proxy.port }}"
+          - url: "{{ s.proxy.scheme | default('http') }}://{{ service_backend_host }}:{{ s.proxy.port }}"
 {%       endif %}
 {%   endif %}
 {% endfor %}
@@ -68,7 +86,7 @@ http:
 {% set ns = namespace(any_mw=false) %}
 {% for s in services | default([]) %}
 {%   if s.proxy is defined and s.proxy.enable | default(false) %}
-{%     if (s.proxy.allow_cidrs is defined and s.proxy.allow_cidrs | length > 0) or (s.proxy.auth is defined and s.proxy.auth.users is defined and s.proxy.auth.users | length > 0) %}
+{%     if (s.proxy.allow_cidrs is defined and s.proxy.allow_cidrs | length > 0) or (s.proxy.auth is defined and s.proxy.auth.users is defined and s.proxy.auth.users | length > 0) or (s.proxy.retry is defined) %}
 {%       set ns.any_mw = true %}
 {%     endif %}
 {%   endif %}
@@ -92,6 +110,14 @@ http:
 {%       for user in s.proxy.auth.users %}
           - "{{ user }}"
 {%       endfor %}
+{%     endif %}
+{%     if s.proxy.retry is defined %}
+    {{ s.name }}-retry:
+      retry:
+        attempts: {{ s.proxy.retry.attempts | default(2) }}
+{%       if s.proxy.retry.initial_interval is defined %}
+        initialInterval: "{{ s.proxy.retry.initial_interval }}"
+{%       endif %}
 {%     endif %}
 {%   endif %}
 {% endfor %}

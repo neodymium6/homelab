@@ -1,12 +1,16 @@
 [Unit]
-Description=Update and (re)start personal-site container
+Description=Update and (rolling) restart personal-site containers
 After=docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
+TimeoutStartSec={{ personal_site_update_timeout_start_sec }}
 ExecStart=/usr/bin/docker compose -f {{ personal_site_compose_path }} pull
-ExecStart=/usr/bin/docker compose -f {{ personal_site_compose_path }} up -d --remove-orphans
+{% for backend_port in personal_site_backend_ports %}
+ExecStart=/usr/bin/docker compose -f {{ personal_site_compose_path }} up -d --remove-orphans personal-site-{{ loop.index }}
+ExecStart=/bin/bash -lc 'for i in $(seq 1 {{ personal_site_ready_retries }}); do curl -fsS http://127.0.0.1:{{ backend_port }}{{ personal_site_ready_path }} >/dev/null && exit 0; sleep {{ personal_site_ready_sleep_seconds }}; done; exit 1'
+{% endfor %}
 {% if personal_site_update_cleanup_enable | bool %}
 ExecStart=/usr/bin/docker image prune -f --filter until={{ personal_site_update_cleanup_until }}
 {% endif %}

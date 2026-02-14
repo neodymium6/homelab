@@ -87,10 +87,11 @@ Auto-generated from `templates/dynamic.yml.j2` based on services in `cluster.yam
 **For each service with `proxy.enable: true`:**
 
 1. **Router**: Routes `<service-name>-proxy.{{ domain }}` and optional `public_hostnames` to service
-2. **Service**: Load balancer pointing to `<service-name>.{{ domain }}:<port>`
+2. **Service**: Load balancer pointing to a single backend (`port`) or multiple backends (`backends`)
 3. **Middlewares** (optional):
    - IP whitelist (`allow_cidrs`)
    - Basic authentication (`auth.users`)
+   - Retry (`retry`)
 
 **Special handling for Traefik dashboard:**
 - Services with `proxy.service: "api@internal"` route to Traefik API
@@ -102,15 +103,24 @@ Auto-generated from `templates/dynamic.yml.j2` based on services in `cluster.yam
 |--------|------|----------|---------|-------------|
 | `enable` | bool | Yes | `false` | Enable proxying |
 | `scheme` | string | No | `http` | Backend protocol (http/https) |
-| `port` | int | Yes* | - | Backend port (*unless `service` set) |
+| `port` | int | Yes* | - | Single backend port (*unless `service`, `backend_url`, or `backends` set) |
+| `backends` | list | No | - | Multiple backend targets (`[{port, host?}]`) |
 | `service` | string | No | - | Use Traefik internal service (e.g., `api@internal`) |
 | `public_hostnames` | list | No | - | Additional public hostnames; `-proxy` hostname remains active |
 | `backend_host` | string | No | `<name>.<domain>` | Backend hostname or IP address |
 | `backend_url` | string | No | - | Full backend URL (overrides scheme/host/port) |
+| `healthcheck` | map | No | - | Traefik health check block (`path`, `interval`, `timeout`) |
+| `retry` | map | No | - | Retry middleware block (`attempts`, `initial_interval`) |
 | `insecure_skip_verify` | bool | No | `false` | Skip TLS verification (for self-signed certs) |
 | `auth.users` | list | No | - | Basic auth users (htpasswd format) |
 | `allow_cidrs` | list | No | - | IP whitelist (CIDR notation) |
 | `allow_public_with_cidrs` | bool | No | `false` | Allow `public_hostnames` with `allow_cidrs` (skips validation error) |
+
+The role validates proxy settings and fails fast for invalid combinations, such as:
+- Mixing `service` with backend selectors (`port`, `backend_url`, `backends`)
+- Setting both `backend_url` and `backends`
+- Invalid `backends` entries (missing/invalid port, empty host)
+- Invalid `healthcheck` or `retry` structures
 
 ## Example Playbook
 
@@ -149,7 +159,16 @@ services:
     proxy:
       enable: true
       scheme: "http"
-      port: 8080
+      backends:
+        - port: 8080
+        - port: 8081
+      healthcheck:
+        path: "/"
+        interval: "1s"
+        timeout: "500ms"
+      retry:
+        attempts: 2
+        initial_interval: "100ms"
       public_hostnames:
         - "www.example.com"
 ```
