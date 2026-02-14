@@ -14,6 +14,17 @@
       ntfy_enable_login=true requires at least one auth user entry.
       Add bcrypt users under secrets.ntfy.auth_users in cluster.yaml.
 
+- name: Validate ntfy auth users format
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item.split(':') | length == 3
+    fail_msg: >-
+      Invalid ntfy auth user '{{ item }}'.
+      Expected format: name:bcrypt-hash:role (example: admin:$2a$10$...:admin).
+  loop: "{{ ntfy_auth_users }}"
+  when: ntfy_enable_login | bool
+
 - name: Ensure ntfy directories exist
   ansible.builtin.file:
     path: "{{ item }}"

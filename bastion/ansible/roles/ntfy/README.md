@@ -29,7 +29,7 @@ Configure at least one bcrypt user in `cluster.yaml`:
 secrets:
   ntfy:
     auth_users:
-      - "admin:$2a$10$REPLACE_WITH_BCRYPT_HASH"
+      - "admin:$2a$10$REPLACE_WITH_BCRYPT_HASH:admin"
 ```
 
 Generate a bcrypt hash with:
