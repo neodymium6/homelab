@@ -257,6 +257,12 @@ secrets:
       - "publisher:*:write"
 ```
 
+For `ntfy`, use two public hosts with different HTTP method policies on the same backend:
+- `ntfy.<domain>` for subscribe/read paths (`GET`, `HEAD`, `OPTIONS`)
+- `ntfy-pub.<domain>` for publish paths (`POST`, `PUT`, `OPTIONS`)
+
+This keeps read clients and publish clients separated by both router method matching and ntfy ACLs.
+
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
 Example: VMID 102 → 192.168.1.102/24
