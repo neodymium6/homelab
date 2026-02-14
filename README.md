@@ -66,6 +66,8 @@ homelab/
 - **Proxmox VE**: Running server with Debian cloud-init template
 - **Git**: For repository management
 
+`yq` is required by the root `Makefile` to read values from `cluster.yaml` (for example, bastion host/user resolution).
+
 For detailed prerequisites, see [local/README.md](local/README.md).
 
 ### Setup
@@ -264,6 +266,8 @@ Example: VMID 102 → 192.168.1.102/24
 ## Makefile Targets
 
 ### Root Makefile
+
+Requirement: `yq` must be installed on the local machine because the root `Makefile` parses `cluster.yaml`.
 
 | Target | Description |
 |--------|-------------|
