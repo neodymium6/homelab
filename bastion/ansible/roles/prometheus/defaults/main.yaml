@@ -14,3 +14,4 @@ prometheus_service_name: "prometheus"
 prometheus_enable_ufw: true
 prometheus_allow_from_proxy_only: true
 prometheus_alertmanager_targets: []
+prometheus_enable_always_notify_test_alert: false

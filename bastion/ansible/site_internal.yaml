@@ -308,6 +308,7 @@
           else []
         )
       }}
+    prometheus_enable_always_notify_test_alert: "{{ ((alertmanager_service.notifications | default({})).enable_test_alert | default(false)) | bool }}"
 
   roles:
     - role: prometheus

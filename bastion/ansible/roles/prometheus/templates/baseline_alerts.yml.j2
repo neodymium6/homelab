@@ -2,6 +2,7 @@ groups:
   - name: targets
     interval: 1m
     rules:
+{% if prometheus_enable_always_notify_test_alert | bool %}
       - alert: AlwaysNotifyTest
         expr: vector(1)
         for: 0m
@@ -11,6 +12,7 @@ groups:
         annotations:
           summary: "Always-on test alert"
           description: "This alert is intentionally always firing to verify notification delivery."
+{% endif %}
 
       - alert: InstanceDown
         expr: up{job=~"node|node_exporter"} == 0
