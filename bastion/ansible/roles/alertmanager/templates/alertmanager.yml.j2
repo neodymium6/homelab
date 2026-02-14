@@ -10,6 +10,23 @@ route:
   group_wait: {{ alertmanager_group_wait }}
   group_interval: {{ alertmanager_group_interval }}
   repeat_interval: {{ alertmanager_repeat_interval }}
+  routes:
+    - matchers:
+        - 'alertname="AlwaysNotifyTest"'
+      receiver: ntfy
+      repeat_interval: {{ alertmanager_repeat_interval_test }}
+    - matchers:
+        - 'severity="critical"'
+      receiver: ntfy
+      repeat_interval: {{ alertmanager_repeat_interval_critical }}
+    - matchers:
+        - 'severity="warning"'
+      receiver: ntfy
+      repeat_interval: {{ alertmanager_repeat_interval_warning }}
+    - matchers:
+        - 'severity="info"'
+      receiver: ntfy
+      repeat_interval: {{ alertmanager_repeat_interval_info }}
 
 receivers:
   - name: ntfy

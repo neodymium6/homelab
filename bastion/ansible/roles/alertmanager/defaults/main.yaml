@@ -22,6 +22,10 @@ alertmanager_group_by:
 alertmanager_group_wait: "30s"
 alertmanager_group_interval: "5m"
 alertmanager_repeat_interval: "4h"
+alertmanager_repeat_interval_critical: "30m"
+alertmanager_repeat_interval_warning: "2h"
+alertmanager_repeat_interval_info: "6h"
+alertmanager_repeat_interval_test: "1m"
 alertmanager_send_resolved: true
 alertmanager_ntfy_bridge_url: "http://am_ntfy_bridge:8080/alertmanager"
 
