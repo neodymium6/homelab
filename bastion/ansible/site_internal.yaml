@@ -270,7 +270,7 @@
   roles:
     - adguard_home
 
-- name: Point DNS hosts systemd-resolved to local Unbound
+- name: Point DNS hosts systemd-resolved to local AdGuard Home
   hosts: dns
   become: true
   gather_facts: false
