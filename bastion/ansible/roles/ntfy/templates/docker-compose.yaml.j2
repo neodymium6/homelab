@@ -4,6 +4,8 @@ services:
     container_name: "{{ ntfy_service_name }}"
     command:
       - serve
+      - --config
+      - /etc/ntfy/server.yaml
     restart: unless-stopped
     ports:
       - "{{ ntfy_port }}:80"
