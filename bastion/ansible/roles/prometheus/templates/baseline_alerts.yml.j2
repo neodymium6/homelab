@@ -2,6 +2,16 @@ groups:
   - name: targets
     interval: 1m
     rules:
+      - alert: AlwaysNotifyTest
+        expr: vector(1)
+        for: 0m
+        labels:
+          severity: info
+          test_alert: "true"
+        annotations:
+          summary: "Always-on test alert"
+          description: "This alert is intentionally always firing to verify notification delivery."
+
       - alert: InstanceDown
         expr: up{job=~"node|node_exporter"} == 0
         for: 5m
