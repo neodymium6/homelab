@@ -135,6 +135,52 @@
         - ntfy_enabled | bool
         - inventory_hostname == ntfy_target_vm
 
+- name: Deploy Alertmanager on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    alertmanager_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'alertmanager') | list | first) | default({}) }}"
+    alertmanager_enabled: "{{ alertmanager_service != {} and alertmanager_service.target_vm is defined }}"
+    alertmanager_target_vm: "{{ alertmanager_service.target_vm | default('') }}"
+    alertmanager_proxy_enabled: "{{ (alertmanager_service.proxy is defined) and (alertmanager_service.proxy.enable | default(false) | bool) }}"
+    alertmanager_port: >-
+      {{
+        (alertmanager_service.proxy.port | int)
+        if (
+          alertmanager_service.proxy is defined and
+          alertmanager_service.proxy.port is defined
+        )
+        else 9093
+      }}
+    alertmanager_expose_port: "{{ alertmanager_service.expose_port | default(alertmanager_proxy_enabled) }}"
+    alertmanager_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+    ntfy_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'ntfy') | list | first) | default({}) }}"
+    alertmanager_ntfy_port: >-
+      {{
+        (ntfy_service.proxy.port | int)
+        if (
+          ntfy_service.proxy is defined and
+          ntfy_service.proxy.port is defined
+        )
+        else 8079
+      }}
+    alertmanager_ntfy_topic: "{{ (alertmanager_service.notifications | default({})).ntfy_topic | default('alerts') }}"
+    alertmanager_ntfy_base_url: "{{ (alertmanager_service.notifications | default({})).ntfy_base_url | default('http://host.docker.internal:' ~ (alertmanager_ntfy_port | string)) }}"
+    alertmanager_ntfy_user: "{{ ((secrets | default({})).alertmanager | default({})).ntfy_user | default('') }}"
+    alertmanager_ntfy_password: "{{ ((secrets | default({})).alertmanager | default({})).ntfy_password | default('') }}"
+    alertmanager_ntfy_token: "{{ ((secrets | default({})).alertmanager | default({})).ntfy_token | default('') }}"
+
+  roles:
+    - role: alertmanager
+      when:
+        - alertmanager_enabled | bool
+        - inventory_hostname == alertmanager_target_vm
+
 - name: Deploy Homepage on app hosts
   hosts: app
   become: true
@@ -231,6 +277,37 @@
 
   vars:
     prometheus_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+    alertmanager_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'alertmanager') | list | first) | default({}) }}"
+    prometheus_alertmanager_enabled: "{{ alertmanager_service != {} and alertmanager_service.target_vm is defined }}"
+    prometheus_alertmanager_target_vm: "{{ alertmanager_service.target_vm | default('') }}"
+    prometheus_alertmanager_remote_port: >-
+      {{
+        (alertmanager_service.proxy.port | int)
+        if (
+          alertmanager_service.proxy is defined and
+          alertmanager_service.proxy.port is defined
+        )
+        else 9093
+      }}
+    prometheus_alertmanager_targets: >-
+      {{
+        ['alertmanager:9093']
+        if (
+          prometheus_alertmanager_enabled | bool and
+          inventory_hostname == prometheus_alertmanager_target_vm
+        )
+        else (
+          [
+            network.base_prefix ~ '.' ~ (vms[prometheus_alertmanager_target_vm].vmid | string) ~ ':' ~ (prometheus_alertmanager_remote_port | string)
+          ]
+          if (
+            prometheus_alertmanager_enabled | bool and
+            prometheus_alertmanager_target_vm in vms and
+            ((alertmanager_service.proxy | default({})).enable | default(false) | bool)
+          )
+          else []
+        )
+      }}
 
   roles:
     - role: prometheus

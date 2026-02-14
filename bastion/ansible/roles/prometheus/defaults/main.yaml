@@ -9,3 +9,4 @@ prometheus_port: 9090
 prometheus_service_name: "prometheus"
 prometheus_enable_ufw: true
 prometheus_allow_from_proxy_only: true
+prometheus_alertmanager_targets: []

@@ -2,6 +2,16 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+{% if prometheus_alertmanager_targets | length > 0 %}
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+{%   for target in prometheus_alertmanager_targets %}
+            - "{{ target }}"
+{%   endfor %}
+
+{% endif %}
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
