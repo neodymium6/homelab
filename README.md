@@ -634,6 +634,7 @@ scrape_configs:
 - **Deployment**: Docker container via Docker Compose
 - **Storage**: `/opt/stacks/alertmanager/data`
 - **Notifications**: Alertmanager webhook payloads are transformed by `am_ntfy_bridge` and published to ntfy
+- **Recommended ntfy Route**: Use internal publish endpoint `https://ntfy-pub-proxy.<domain>` (POST-capable)
 
 **Prometheus Integration**: Prometheus automatically discovers Alertmanager on the same app host via `alertmanager:9093`
 
@@ -727,6 +728,7 @@ services:
     target_vm: "app-01"
     notifications:
       ntfy_topic: "alerts"
+      ntfy_base_url: "https://ntfy-pub-proxy.internal.example.com"
     proxy:
       enable: true
       scheme: "http"

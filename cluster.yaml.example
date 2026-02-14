@@ -184,6 +184,7 @@ services:
     target_vm: "app-01"
     notifications:
       ntfy_topic: "alerts"
+      ntfy_base_url: "https://ntfy-pub-proxy.internal.example.com"
     proxy:
       enable: true
       scheme: "http"
