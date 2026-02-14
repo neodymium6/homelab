@@ -111,8 +111,24 @@
     personal_site_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'personal-site') | list | first) | default({}) }}"
     personal_site_enabled: "{{ personal_site_service != {} and (personal_site_service.proxy is defined and (personal_site_service.proxy.enable | default(false) | bool)) }}"
     personal_site_target_vm: "{{ personal_site_service.target_vm | default('') }}"
-    personal_site_port: "{{ (personal_site_service.proxy.port | int) if (personal_site_service.proxy is defined and personal_site_service.proxy.port is defined) else 8080 }}"
     personal_site_image: "{{ personal_site_service.image | default('ghcr.io/neodymium6/profile.neodymium6.net:latest') }}"
+    personal_site_backend_ports: >-
+      {{
+        (personal_site_service.proxy.backends | map(attribute='port') | map('int') | list)
+        if (
+          personal_site_service.proxy is defined and
+          personal_site_service.proxy.backends is defined and
+          (personal_site_service.proxy.backends | length > 0)
+        )
+        else (
+          [personal_site_service.proxy.port | int]
+          if (
+            personal_site_service.proxy is defined and
+            personal_site_service.proxy.port is defined
+          )
+          else [8080, 8081]
+        )
+      }}
     personal_site_update_enable: "{{ personal_site_service.update_enable | default(true) }}"
     personal_site_update_on_boot_sec: "{{ personal_site_service.update_on_boot_sec | default('2m') }}"
     personal_site_update_unit_active_sec: "{{ personal_site_service.update_unit_active_sec | default('1h') }}"

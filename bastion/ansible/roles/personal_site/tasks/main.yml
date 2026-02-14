@@ -98,12 +98,15 @@
   when: not (personal_site_update_enable | bool)
   become: true
 
-- name: Allow proxy-01 to reach personal-site backend port
+- name: Allow proxy-01 to reach personal-site backend ports
+  loop: "{{ personal_site_backend_ports }}"
+  loop_control:
+    loop_var: personal_site_backend_port
   community.general.ufw:
     rule: allow
     proto: tcp
     src: "{{ personal_site_proxy_ip }}"
-    port: "{{ personal_site_port | string }}"
+    port: "{{ personal_site_backend_port | string }}"
   when:
     - personal_site_enable_ufw | bool
     - personal_site_allow_from_proxy_only | bool

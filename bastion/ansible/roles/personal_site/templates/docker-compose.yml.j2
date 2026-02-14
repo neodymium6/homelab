@@ -1,7 +1,9 @@
 services:
-  personal-site:
+{% for backend_port in personal_site_backend_ports %}
+  personal-site-{{ loop.index }}:
     image: "{{ personal_site_image }}"
-    container_name: "personal-site"
+    container_name: "personal-site-{{ loop.index }}"
     ports:
-      - "{{ personal_site_port }}:80"
+      - "{{ backend_port }}:80"
     restart: unless-stopped
+{% endfor %}
