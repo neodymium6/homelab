@@ -12,6 +12,9 @@ alerting:
 {%   endfor %}
 
 {% endif %}
+rule_files:
+  - "{{ prometheus_baseline_alert_rules_container_path }}"
+
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
