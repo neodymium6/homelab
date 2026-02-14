@@ -120,6 +120,13 @@
     ntfy_upstream_base_url: "{{ ntfy_service.upstream_base_url | default('https://ntfy.sh') }}"
     ntfy_auth_users: "{{ ((secrets | default({})).ntfy | default({})).auth_users | default([]) }}"
     ntfy_auth_access: "{{ ((secrets | default({})).ntfy | default({})).auth_access | default([]) }}"
+    ntfy_message_size_limit: "{{ (ntfy_service.security | default({})).message_size_limit | default('4K') }}"
+    ntfy_message_delay_limit: "{{ (ntfy_service.security | default({})).message_delay_limit | default('1h') }}"
+    ntfy_visitor_request_limit_burst: "{{ (ntfy_service.security | default({})).visitor_request_limit_burst | default(30) }}"
+    ntfy_visitor_request_limit_replenish: "{{ (ntfy_service.security | default({})).visitor_request_limit_replenish | default('10s') }}"
+    ntfy_visitor_message_daily_limit: "{{ (ntfy_service.security | default({})).visitor_message_daily_limit | default(200) }}"
+    ntfy_visitor_subscription_limit: "{{ (ntfy_service.security | default({})).visitor_subscription_limit | default(20) }}"
+    ntfy_visitor_subscriber_rate_limiting: "{{ (ntfy_service.security | default({})).visitor_subscriber_rate_limiting | default(true) }}"
     ntfy_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
 
   roles:

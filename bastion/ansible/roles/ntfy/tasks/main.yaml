@@ -25,6 +25,17 @@
   loop: "{{ ntfy_auth_users }}"
   when: ntfy_enable_login | bool
 
+- name: Validate ntfy rate limit values
+  ansible.builtin.assert:
+    that:
+      - ntfy_visitor_request_limit_burst | int >= 1
+      - ntfy_visitor_message_daily_limit | int >= 0
+      - ntfy_visitor_subscription_limit | int >= 1
+    fail_msg: >-
+      Invalid ntfy security limits.
+      visitor_request_limit_burst must be >=1, visitor_message_daily_limit must be >=0,
+      and visitor_subscription_limit must be >=1.
+
 - name: Validate ntfy auth access format
   ansible.builtin.assert:
     that:

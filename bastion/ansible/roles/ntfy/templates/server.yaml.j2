@@ -6,6 +6,13 @@ upstream-base-url: "{{ ntfy_upstream_base_url }}"
 enable-login: {{ ntfy_enable_login | bool | ternary('true', 'false') }}
 auth-file: "{{ ntfy_auth_file }}"
 auth-default-access: "{{ ntfy_auth_default_access }}"
+message-size-limit: "{{ ntfy_message_size_limit }}"
+message-delay-limit: "{{ ntfy_message_delay_limit }}"
+visitor-request-limit-burst: {{ ntfy_visitor_request_limit_burst }}
+visitor-request-limit-replenish: "{{ ntfy_visitor_request_limit_replenish }}"
+visitor-message-daily-limit: {{ ntfy_visitor_message_daily_limit }}
+visitor-subscription-limit: {{ ntfy_visitor_subscription_limit }}
+visitor-subscriber-rate-limiting: {{ ntfy_visitor_subscriber_rate_limiting | bool | ternary('true', 'false') }}
 {% if ntfy_auth_users | length > 0 %}
 auth-users:
 {% for user in ntfy_auth_users %}
