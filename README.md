@@ -310,7 +310,8 @@ ssh -i ~/.ssh/id_ed25519_internal <login_user>@<internal_vm_ip>
 VMs with `role: dns` are configured with DNS services for the homelab:
 
 - **Unbound**: Local recursive DNS resolver listening on port 5353
-  - Serves DNS records for homelab domain (home.arpa)
+  - Serves DNS records for homelab domain (`network.domain`, e.g. `internal.example.com`)
+  - Falls back to `home.arpa` only when `network.domain` is not set
   - Forwards upstream queries to external DNS (1.1.1.1, gateway)
   - Configured with A, CNAME, and PTR records from `cluster.yaml`
 
