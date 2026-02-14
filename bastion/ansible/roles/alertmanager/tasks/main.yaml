@@ -14,7 +14,6 @@
     mode: "{{ item.mode }}"
   loop:
     - { path: "{{ alertmanager_dir }}", mode: "0755" }
-    - { path: "{{ alertmanager_data_dir }}", mode: "0755" }
     - { path: "{{ alertmanager_bridge_dir }}", mode: "0755" }
   become: true
 

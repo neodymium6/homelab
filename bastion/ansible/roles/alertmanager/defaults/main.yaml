@@ -3,9 +3,9 @@ alertmanager_image: "prom/alertmanager:v0.27.0"
 alertmanager_service_name: "alertmanager"
 alertmanager_dir: "/opt/stacks/alertmanager"
 alertmanager_config_path: "{{ alertmanager_dir }}/alertmanager.yml"
-alertmanager_data_dir: "{{ alertmanager_dir }}/data"
 alertmanager_compose_path: "{{ alertmanager_dir }}/docker-compose.yml"
 alertmanager_bridge_dir: "{{ alertmanager_dir }}/am-ntfy-bridge"
+alertmanager_data_volume_name: "alertmanager_data"
 
 alertmanager_port: 9093
 alertmanager_bind_address: "0.0.0.0"

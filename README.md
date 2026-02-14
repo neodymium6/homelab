@@ -632,7 +632,7 @@ scrape_configs:
 - **Version**: v0.27.0
 - **Port**: 9093
 - **Deployment**: Docker container via Docker Compose
-- **Storage**: `/opt/stacks/alertmanager/data`
+- **Storage**: Docker named volume (`alertmanager_data`)
 - **Notifications**: Alertmanager webhook payloads are transformed by `am_ntfy_bridge` and published to ntfy
 - **Recommended ntfy Route**: Use internal publish endpoint `https://ntfy-pub-proxy.<domain>` (POST-capable)
 

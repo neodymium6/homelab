@@ -11,7 +11,7 @@ services:
 {% endif %}
     volumes:
       - "{{ alertmanager_config_path }}:/etc/alertmanager/alertmanager.yml:ro"
-      - "{{ alertmanager_data_dir }}:/alertmanager"
+      - "{{ alertmanager_data_volume_name }}:/alertmanager"
     networks:
       - monitoring
     restart: unless-stopped
@@ -43,3 +43,6 @@ networks:
   monitoring:
     external: true
     name: monitoring
+
+volumes:
+  {{ alertmanager_data_volume_name }}:
