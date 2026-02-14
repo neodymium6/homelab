@@ -5,7 +5,7 @@ Ansible role for installing and configuring Traefik reverse proxy on VMs with `r
 ## Overview
 
 This role:
-- Installs Docker and Docker Compose
+- Installs Docker and Docker Compose v2 plugin
 - Deploys Traefik v2.11 as a Docker container
 - Generates static and dynamic configuration from `cluster.yaml`
 - Configures automatic HTTPS via Let's Encrypt (Cloudflare DNS challenge)
@@ -33,7 +33,7 @@ This role:
 | `traefik_env_path` | `/etc/traefik/traefik.env` | Environment file (Cloudflare token) |
 | `traefik_compose_path` | `/etc/traefik/docker-compose.yml` | Docker Compose file |
 | `traefik_cf_env_var` | `CF_DNS_API_TOKEN` | Cloudflare environment variable name |
-| `traefik_docker_packages` | `[docker.io, docker-compose]` | Docker packages to install |
+| `traefik_docker_packages` | `[docker.io, docker-compose-plugin]` | Docker packages to install |
 
 ### Required Variables (from cluster.yaml)
 
@@ -278,7 +278,7 @@ Restarts Traefik container via Docker Compose.
 
 The role performs these tasks:
 
-1. Install Docker packages (`docker.io`, `docker-compose`)
+1. Install Docker packages (`docker.io`, `docker-compose-plugin`)
 2. Enable Docker service
 3. Create Traefik directories
 4. Create ACME storage file (`acme.json` with 0600 permissions)
@@ -328,7 +328,7 @@ Let's Encrypt certificates are:
 
 1. Check Cloudflare API token permissions (Zone:DNS:Edit)
 2. Verify `proxy.cloudflare_dns_api_token` in `cluster.yaml`
-3. Check Traefik logs: `docker-compose -f /etc/traefik/docker-compose.yml logs`
+3. Check Traefik logs: `docker compose -f /etc/traefik/docker-compose.yml logs`
 
 ### Service not accessible
 
@@ -346,8 +346,8 @@ Let's Encrypt certificates are:
 ### Configuration changes not applied
 
 1. Check handler was triggered (role output)
-2. Manually restart: `docker-compose -f /etc/traefik/docker-compose.yml restart`
-3. Check for syntax errors: `docker-compose -f /etc/traefik/docker-compose.yml config`
+2. Manually restart: `docker compose -f /etc/traefik/docker-compose.yml restart`
+3. Check for syntax errors: `docker compose -f /etc/traefik/docker-compose.yml config`
 
 ## Security Considerations
 
