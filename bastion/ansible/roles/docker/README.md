@@ -1,11 +1,11 @@
 # Docker Role
 
-Ansible role for installing Docker and Docker Compose on Debian-based systems.
+Ansible role for installing Docker and Docker Compose v2 plugin on Debian-based systems.
 
 ## Overview
 
 This role:
-- Installs Docker and Docker Compose from Debian packages
+- Installs Docker, Docker Compose v2 plugin, and Python Docker SDK from Debian packages
 - Enables and starts the Docker service
 - Optionally adds users to the docker group for non-root Docker access
 
@@ -15,11 +15,11 @@ This role:
 
 ## Role Variables
 
-### Defaults (defaults/main.yml)
+### Defaults (defaults/main.yaml)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `docker_packages` | `[docker.io, docker-compose]` | Docker packages to install |
+| `docker_packages` | `[docker.io, docker-compose, python3-docker]` | Docker packages to install |
 | `docker_users` | `[]` | List of users to add to docker group |
 
 ### Example Configuration

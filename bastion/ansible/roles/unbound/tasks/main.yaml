@@ -28,26 +28,26 @@
     enabled: true
   become: true
 
-- name: Allow DNS (TCP 53) via ufw from allowed CIDRs
+- name: Allow DNS (TCP) via ufw from allowed CIDRs
   when: unbound_ufw_allow_cidrs | length > 0
   loop: "{{ unbound_ufw_allow_cidrs }}"
   loop_control:
     loop_var: cidr
   community.general.ufw:
     rule: allow
-    port: "53"
+    port: "{{ unbound_listen_port | string }}"
     proto: tcp
     src: "{{ cidr }}"
   become: true
 
-- name: Allow DNS (UDP 53) via ufw from allowed CIDRs
+- name: Allow DNS (UDP) via ufw from allowed CIDRs
   when: unbound_ufw_allow_cidrs | length > 0
   loop: "{{ unbound_ufw_allow_cidrs }}"
   loop_control:
     loop_var: cidr
   community.general.ufw:
     rule: allow
-    port: "53"
+    port: "{{ unbound_listen_port | string }}"
     proto: udp
     src: "{{ cidr }}"
   become: true

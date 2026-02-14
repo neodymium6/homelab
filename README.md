@@ -11,7 +11,7 @@ This project automates the deployment and configuration of VMs on Proxmox VE usi
 - **Internal VMs**: Managed exclusively from the bastion host
 
 All VMs are configured with Nix and Home Manager for declarative system configuration.
-All required Ansible roles are vendored in this repository—no external role dependencies. Standard collections (`community.general`, `community.crypto`) are installed via `ansible-galaxy`.
+All required Ansible roles are vendored in this repository—no external role dependencies. Standard collections (`community.general`, `community.crypto`, `community.docker`) are installed via `ansible-galaxy`.
 
 ## Architecture
 
@@ -65,6 +65,8 @@ homelab/
 - **Local machine**: Terraform, Ansible, yq, SSH access to Proxmox
 - **Proxmox VE**: Running server with Debian cloud-init template
 - **Git**: For repository management
+
+`yq` is required by the root `Makefile` to read values from `cluster.yaml` (for example, bastion host/user resolution).
 
 For detailed prerequisites, see [local/README.md](local/README.md).
 
@@ -265,6 +267,8 @@ Example: VMID 102 → 192.168.1.102/24
 
 ### Root Makefile
 
+Requirement: `yq` must be installed on the local machine because the root `Makefile` parses `cluster.yaml`.
+
 | Target | Description |
 |--------|-------------|
 | `make all` | Deploy local, then bastion (full deployment) |
@@ -306,7 +310,8 @@ ssh -i ~/.ssh/id_ed25519_internal <login_user>@<internal_vm_ip>
 VMs with `role: dns` are configured with DNS services for the homelab:
 
 - **Unbound**: Local recursive DNS resolver listening on port 5353
-  - Serves DNS records for homelab domain (home.arpa)
+  - Serves DNS records for homelab domain (`network.domain`, e.g. `internal.example.com`)
+  - Falls back to `home.arpa` only when `network.domain` is not set
   - Forwards upstream queries to external DNS (1.1.1.1, gateway)
   - Configured with A, CNAME, and PTR records from `cluster.yaml`
 

@@ -2,7 +2,8 @@
 - name: Restart traefik
   ansible.builtin.command:
     argv:
-      - docker-compose
+      - docker
+      - compose
       - -f
       - "{{ traefik_compose_path }}"
       - restart

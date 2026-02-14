@@ -13,7 +13,7 @@ bastion-tf-apply:
 
 ansible-deps:
 	cd $(ANSIBLE_DIR) && \
-	  ansible-galaxy collection install community.general community.crypto
+	  ansible-galaxy collection install community.general community.crypto community.docker
 
 bastion-bootstrap: ansible-deps
 	cd $(ANSIBLE_DIR) && \
@@ -35,4 +35,3 @@ clean:
 	@echo "==> Destroying bastion-01 from local..."
 	cd $(TF_DIR) && terraform destroy -auto-approve || true
 	rm -rf $(TF_DIR)/.terraform $(TF_DIR)/terraform.tfstate*
-

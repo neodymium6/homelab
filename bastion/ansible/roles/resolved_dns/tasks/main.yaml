@@ -1,4 +1,19 @@
 ---
+- name: Ensure systemd-resolved package is installed
+  ansible.builtin.apt:
+    name: "{{ resolved_package_name }}"
+    state: present
+    update_cache: yes
+  when: resolved_install_package | bool
+  become: true
+
+- name: Ensure systemd-resolved service is enabled and running
+  ansible.builtin.service:
+    name: "{{ resolved_service_name }}"
+    state: started
+    enabled: true
+  become: true
+
 - name: Ensure systemd-resolved drop-in directory exists
   ansible.builtin.file:
     path: "{{ resolved_dropin_path | dirname }}"
@@ -14,3 +29,20 @@
   notify: Restart systemd-resolved
   become: true
 
+- name: Check /etc/resolv.conf link status
+  ansible.builtin.stat:
+    path: "{{ resolved_resolv_conf_path }}"
+    follow: false
+  register: resolved_resolv_conf_stat
+  become: true
+
+- name: Ensure /etc/resolv.conf points to systemd-resolved
+  ansible.builtin.file:
+    src: "{{ resolved_resolv_conf_target }}"
+    dest: "{{ resolved_resolv_conf_path }}"
+    state: link
+    force: true
+  when: >
+    (not resolved_resolv_conf_stat.stat.islnk | default(false)) or
+    (resolved_resolv_conf_stat.stat.lnk_source | default('') != resolved_resolv_conf_target)
+  become: true
