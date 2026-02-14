@@ -85,6 +85,48 @@
         docker_users:
           - "{{ login_user }}"
 
+- name: Deploy ntfy on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    ntfy_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'ntfy') | list | first) | default({}) }}"
+    ntfy_enabled: "{{ ntfy_service != {} and ntfy_service.target_vm is defined }}"
+    ntfy_target_vm: "{{ ntfy_service.target_vm | default('') }}"
+    ntfy_port: >-
+      {{
+        (ntfy_service.proxy.port | int)
+        if (
+          ntfy_service.proxy is defined and
+          ntfy_service.proxy.port is defined
+        )
+        else 8079
+      }}
+    ntfy_base_hostname: >-
+      {{
+        (ntfy_service.proxy.public_hostnames | first)
+        if (
+          ntfy_service.proxy is defined and
+          ntfy_service.proxy.public_hostnames is defined and
+          (ntfy_service.proxy.public_hostnames | length > 0)
+        )
+        else (ntfy_service.name | default('ntfy')) ~ '-proxy.' ~ network.domain
+      }}
+    ntfy_base_url: "{{ ntfy_service.base_url | default('https://' ~ ntfy_base_hostname) }}"
+    ntfy_upstream_base_url: "{{ ntfy_service.upstream_base_url | default('https://ntfy.sh') }}"
+    ntfy_auth_users: "{{ ((secrets | default({})).ntfy | default({})).auth_users | default([]) }}"
+    ntfy_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  roles:
+    - role: ntfy
+      when:
+        - ntfy_enabled | bool
+        - inventory_hostname == ntfy_target_vm
+
 - name: Deploy Homepage on app hosts
   hosts: app
   become: true
