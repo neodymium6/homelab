@@ -37,10 +37,10 @@ Configure at least one bcrypt user in `cluster.yaml`:
 secrets:
   ntfy:
     auth_users:
-      - "iphone:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+      - "subscriber:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
       - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
     auth_access:
-      - "iphone:*:read"
+      - "subscriber:*:read"
       - "publisher:*:write"
 ```
 

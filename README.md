@@ -245,10 +245,10 @@ secrets:
     grafana_admin_password: "changeme"
   ntfy:
     auth_users:
-      - "iphone:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+      - "subscriber:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
       - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
     auth_access:
-      - "iphone:*:read"
+      - "subscriber:*:read"
       - "publisher:*:write"
 ```
 
