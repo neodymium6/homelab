@@ -71,16 +71,26 @@ notify:
 	fi
 	@status="$(STATUS)"; \
 	target="$(TARGET)"; \
+	host="$${HOSTNAME:-}"; \
+	if [ -z "$$host" ]; then \
+	  if command -v uname >/dev/null 2>&1; then \
+	    host="$$(uname -n 2>/dev/null)"; \
+	  elif [ -r /etc/hostname ]; then \
+	    host="$$(cat /etc/hostname 2>/dev/null)"; \
+	  else \
+	    host="unknown-host"; \
+	  fi; \
+	fi; \
 	if [ "$$status" -eq 0 ]; then \
 	  title="homelab $$target SUCCESS"; \
 	  priority="3"; \
 	  tags="white_check_mark,hammer_and_wrench"; \
-	  body="make $$target succeeded on $$(hostname)"; \
+	  body="make $$target succeeded on $$host"; \
 	else \
 	  title="homelab $$target FAILED"; \
 	  priority="5"; \
 	  tags="x,hammer_and_wrench"; \
-	  body="make $$target failed on $$(hostname) (exit=$$status)"; \
+	  body="make $$target failed on $$host (exit=$$status)"; \
 	fi; \
 	if [ -n "$(strip $(NTFY_NOTIFY_TOKEN))" ]; then \
 	  $(CURL) -fsS -X POST "$(NTFY_BASE_URL)/$(NTFY_TOPIC)" \
