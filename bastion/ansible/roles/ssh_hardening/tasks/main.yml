@@ -19,6 +19,18 @@
 - name: Configure ufw firewall rules
   when: ssh_allow_from_ip is none
   block:
+    - name: Set ufw default deny incoming
+      community.general.ufw:
+        direction: incoming
+        policy: deny
+      become: true
+
+    - name: Set ufw default allow outgoing
+      community.general.ufw:
+        direction: outgoing
+        policy: allow
+      become: true
+
     - name: Allow SSH in ufw (from anywhere)
       community.general.ufw:
         rule: allow
