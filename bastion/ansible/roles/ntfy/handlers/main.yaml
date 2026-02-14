@@ -6,6 +6,6 @@
       - compose
       - -f
       - "{{ ntfy_compose_path }}"
-      - up
-      - -d
+      - restart
+      - ntfy
   become: true
