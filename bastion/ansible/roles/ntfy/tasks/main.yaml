@@ -1,0 +1,99 @@
+---
+- name: Validate ntfy backend port range
+  ansible.builtin.assert:
+    that:
+      - ntfy_port | int >= 1
+      - ntfy_port | int <= 65535
+    fail_msg: "ntfy_port must be between 1 and 65535"
+
+- name: Validate ntfy auth users are configured when login is enabled
+  ansible.builtin.assert:
+    that:
+      - not (ntfy_enable_login | bool) or (ntfy_auth_users | length > 0)
+    fail_msg: >-
+      ntfy_enable_login=true requires at least one auth user entry.
+      Add bcrypt users under secrets.ntfy.auth_users in cluster.yaml.
+
+- name: Validate ntfy auth users format
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item.split(':') | length == 3
+    fail_msg: >-
+      Invalid ntfy auth user '{{ item }}'.
+      Expected format: name:bcrypt-hash:role (example: admin:$2a$10$...:admin).
+  loop: "{{ ntfy_auth_users }}"
+  when: ntfy_enable_login | bool
+
+- name: Validate ntfy rate limit values
+  ansible.builtin.assert:
+    that:
+      - ntfy_visitor_request_limit_burst | int >= 1
+      - ntfy_visitor_message_daily_limit | int >= 0
+      - ntfy_visitor_subscription_limit | int >= 1
+    fail_msg: >-
+      Invalid ntfy security limits.
+      visitor_request_limit_burst must be >=1, visitor_message_daily_limit must be >=0,
+      and visitor_subscription_limit must be >=1.
+
+- name: Validate ntfy auth access format
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item.split(':') | length == 3
+      - item.split(':')[2] in ['read-write', 'rw', 'read-only', 'read', 'ro', 'write-only', 'write', 'wo', 'deny', 'none']
+    fail_msg: >-
+      Invalid ntfy auth access '{{ item }}'.
+      Expected format: username:topic:permission
+      where permission is one of read-write|rw|read-only|read|ro|write-only|write|wo|deny|none.
+  loop: "{{ ntfy_auth_access }}"
+  when: ntfy_enable_login | bool
+
+- name: Ensure ntfy directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ ntfy_dir }}"
+    - "{{ ntfy_cache_dir }}"
+  become: true
+
+- name: Deploy ntfy server config
+  ansible.builtin.template:
+    src: server.yaml.j2
+    dest: "{{ ntfy_config_path }}"
+    mode: "0640"
+  notify: Restart ntfy
+  become: true
+
+- name: Deploy ntfy docker-compose file
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ ntfy_compose_path }}"
+    mode: "0644"
+  notify: Restart ntfy
+  become: true
+
+- name: Start ntfy via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ ntfy_compose_path }}"
+      - up
+      - -d
+  become: true
+
+- name: Allow proxy-01 to reach ntfy backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ ntfy_proxy_ip }}"
+    port: "{{ ntfy_port | string }}"
+  when:
+    - ntfy_enable_ufw | bool
+    - ntfy_allow_from_proxy_only | bool
+    - ntfy_proxy_ip is defined
+  become: true

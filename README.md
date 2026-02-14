@@ -166,6 +166,44 @@ services:
       enable: true
       scheme: "http"
       port: 3000
+  - name: "ntfy"
+    target_vm: "app-01"
+    upstream_base_url: "https://ntfy.sh"
+    security:
+      message_size_limit: "4K"
+      message_delay_limit: "1h"
+      visitor_request_limit_burst: 30
+      visitor_request_limit_replenish: "10s"
+      visitor_message_daily_limit: 200
+      visitor_subscription_limit: 20
+      visitor_subscriber_rate_limiting: true
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8079
+      methods:
+        - "GET"
+        - "HEAD"
+        - "OPTIONS"
+      public_hostnames:
+        - "ntfy.example.com"
+    homepage:
+      display_name: "ntfy"
+      category: "Infrastructure"
+      icon: "mdi-bell-badge-outline"
+      href: "https://ntfy.example.com"
+  - name: "ntfy-pub"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8079
+      methods:
+        - "POST"
+        - "PUT"
+        - "OPTIONS"
+      public_hostnames:
+        - "ntfy-pub.example.com"
   - name: "personal-site"
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
@@ -215,7 +253,20 @@ secrets:
   monitoring:
     grafana_admin_user: "admin"
     grafana_admin_password: "changeme"
+  ntfy:
+    auth_users:
+      - "subscriber:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+      - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+    auth_access:
+      - "subscriber:*:read"
+      - "publisher:*:write"
 ```
+
+For `ntfy`, use two public hosts with different HTTP method policies on the same backend:
+- `ntfy.<domain>` for subscribe/read paths (`GET`, `HEAD`, `OPTIONS`)
+- `ntfy-pub.<domain>` for publish paths (`POST`, `PUT`, `OPTIONS`)
+
+This keeps read clients and publish clients separated by both router method matching and ntfy ACLs.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
@@ -250,6 +301,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Run Cloudflare Tunnel (proxy role)            │
 │    - Install and configure Unbound (dns role)      │
 │    - Install and configure AdGuard Home (dns role) │
+│    - Deploy ntfy server (app role)                 │
 │    - Deploy Homepage dashboard (app role)          │
 │    - Deploy personal-site container (app role)     │
 │    - Install Node Exporter (all VMs)               │
@@ -335,6 +387,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **Docker Compose**: Tool for defining and running multi-container applications
 - **User Access**: Login user added to docker group for non-root Docker access
 - **Web Apps**: Homepage dashboard and personal-site container stack
+- **Notifications**: ntfy server for self-hosted push notifications
 - **Monitoring**: Prometheus and Grafana deployed for infrastructure observability
 
 The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
@@ -448,6 +501,7 @@ Per-service proxy configuration options:
 | `enable` | Enable proxying for this service | Yes | `false` |
 | `scheme` | Backend protocol (http/https) | No | `http` |
 | `port` | Single backend service port | Yes (unless `service`, `backend_url`, or `backends` set) | - |
+| `methods` | Allowed HTTP methods at router level (e.g., `["POST", "PUT"]`) | No | - |
 | `backends` | Multiple backend targets (`[{port, host?}]`) | No | - |
 | `service` | Use Traefik internal service (e.g., `api@internal`) | No | - |
 | `backend_url` | Full backend URL (overrides `scheme/host/port`) | No | - |
@@ -713,6 +767,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `bastion/ansible/roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy` and connects Cloudflare Tunnel to Traefik tunnel entrypoint (`127.0.0.1:8080`).
 - `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
+- `bastion/ansible/roles/ntfy`: Deploys ntfy server via Docker Compose on VMs with `role: app`, with login/auth and optional proxy-only UFW access.
 - `bastion/ansible/roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
 - `bastion/ansible/roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.
 - `bastion/ansible/roles/node_exporter`: Installs Node Exporter (v1.10.2) as a systemd service on all VMs for system metrics export, with UFW rules allowing access from app VM and monitoring Docker network.

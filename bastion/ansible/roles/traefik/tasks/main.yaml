@@ -157,6 +157,36 @@
     - item.proxy is defined
     - item.proxy.enable | default(false) | bool
 
+- name: Validate proxy methods format
+  ansible.builtin.assert:
+    that:
+      - item.proxy.methods is not defined or (
+          item.proxy.methods is sequence and
+          item.proxy.methods is not string and
+          item.proxy.methods | length > 0
+        )
+      - item.proxy.methods is not defined or (
+          item.proxy.methods | map('type_debug') | unique == ['str']
+        )
+      - item.proxy.methods is not defined or (
+          item.proxy.methods |
+          map('string') |
+          map('trim') |
+          map('regex_search', '^[A-Za-z]+$') |
+          select('equalto', None) |
+          list |
+          length == 0
+        )
+    fail_msg: >-
+      Service '{{ item.name }}' has invalid proxy.methods format.
+      proxy.methods must be a non-empty list of HTTP method strings, for example ['POST', 'PUT'].
+  loop: "{{ services | default([]) }}"
+  loop_control:
+    label: "{{ item.name | default('unknown-service') }}"
+  when:
+    - item.proxy is defined
+    - item.proxy.enable | default(false) | bool
+
 - name: Deploy Traefik static configuration
   ansible.builtin.template:
     src: traefik.yml.j2

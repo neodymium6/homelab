@@ -1,0 +1,14 @@
+services:
+  ntfy:
+    image: "{{ ntfy_image }}"
+    container_name: "{{ ntfy_service_name }}"
+    command:
+      - serve
+      - --config
+      - /etc/ntfy/server.yaml
+    restart: unless-stopped
+    ports:
+      - "{{ ntfy_port }}:80"
+    volumes:
+      - "{{ ntfy_cache_dir }}:/var/cache/ntfy"
+      - "{{ ntfy_config_path }}:/etc/ntfy/server.yaml:ro"

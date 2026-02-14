@@ -64,6 +64,11 @@ The role deploys the following configuration files:
 - **bookmarks.yaml**: Bookmarks (empty by default)
 - **widgets.yaml**: Resource monitoring widgets (CPU, memory, disk)
 
+Service link behavior:
+- Default `href`: `https://<service-name>-proxy.<network.domain>`
+- Optional override: set `services[].homepage.href` in `cluster.yaml` to use a public URL
+- Optional path suffix: set `services[].homepage.path` for internal proxy links
+
 ## Firewall Configuration
 
 When `homepage_enable_ufw` and `homepage_allow_from_proxy_only` are both true:

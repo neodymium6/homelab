@@ -1,0 +1,11 @@
+---
+- name: Restart ntfy
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ ntfy_compose_path }}"
+      - restart
+      - ntfy
+  become: true
