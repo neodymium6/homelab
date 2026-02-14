@@ -77,16 +77,6 @@ def _pick_severity(payload: dict[str, Any]) -> str:
 
     return "info"
 
-
-def _pick_click_url(payload: dict[str, Any]) -> str:
-    alerts = payload.get("alerts", []) or []
-    if alerts:
-        url = alerts[0].get("generatorURL") or ""
-        if url:
-            return str(url)
-    return ""
-
-
 def _tag(value: str) -> str:
     return value.strip().replace(" ", "-")
 
@@ -117,10 +107,7 @@ def _build_markdown(payload: dict[str, Any], severity: str) -> tuple[str, str, s
         tag_values.append(_tag(instance))
     tags = ",".join(filter(None, tag_values))
 
-    click_url = _pick_click_url(payload)
     actions: list[str] = []
-    if click_url:
-        actions.append(f"view, Open alert, {click_url}, clear=true")
     if runbook_url:
         actions.append(f"view, Runbook, {runbook_url}")
     actions_header = "; ".join(actions[:3])
@@ -147,8 +134,6 @@ def _build_markdown(payload: dict[str, Any], severity: str) -> tuple[str, str, s
         lines.append(f"- **Instance**: `{instance}`")
     lines.append(f"- **Alerts**: `{len(alerts)}`")
 
-    if click_url:
-        lines.extend(["", f"[Open generatorURL]({click_url})"])
     if runbook_url:
         lines.append(f"[Runbook]({runbook_url})")
 
@@ -220,9 +205,6 @@ async def alertmanager_webhook(req: Request) -> dict[str, bool]:
         **_auth_headers(),
     }
 
-    click_url = _pick_click_url(payload)
-    if click_url:
-        headers["Click"] = click_url
     if actions_header:
         headers["Actions"] = actions_header
     if NTFY_ICON_URL:
