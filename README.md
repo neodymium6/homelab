@@ -187,6 +187,11 @@ services:
         - "OPTIONS"
       public_hostnames:
         - "ntfy.example.com"
+    homepage:
+      display_name: "ntfy"
+      category: "Infrastructure"
+      icon: "mdi-bell-badge-outline"
+      href: "https://ntfy.example.com"
   - name: "ntfy-pub"
     target_vm: "app-01"
     proxy:
