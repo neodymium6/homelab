@@ -104,6 +104,7 @@ Auto-generated from `templates/dynamic.yml.j2` based on services in `cluster.yam
 | `enable` | bool | Yes | `false` | Enable proxying |
 | `scheme` | string | No | `http` | Backend protocol (http/https) |
 | `port` | int | Yes* | - | Single backend port (*unless `service`, `backend_url`, or `backends` set) |
+| `methods` | list | No | - | Allowed HTTP methods at router level (e.g. `["POST", "PUT"]`) |
 | `backends` | list | No | - | Multiple backend targets (`[{port, host?}]`) |
 | `service` | string | No | - | Use Traefik internal service (e.g., `api@internal`) |
 | `public_hostnames` | list | No | - | Additional public hostnames; `-proxy` hostname remains active |
@@ -195,6 +196,21 @@ services:
 Generate password hash:
 ```bash
 htpasswd -nb admin mypassword
+```
+
+### Service with Method Restriction
+
+```yaml
+services:
+  - name: "ntfy-pub"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8079
+      methods:
+        - "POST"
+        - "PUT"
 ```
 
 ### Service with IP Filtering

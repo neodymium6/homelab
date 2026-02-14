@@ -13,13 +13,21 @@ http:
 {%         set _ = host_rules.append("Host(`" ~ hostname ~ "`)") %}
 {%       endfor %}
 {%     endif %}
+{%     set router_rule = "(" ~ (host_rules | join(' || ')) ~ ")" %}
+{%     if s.proxy.methods is defined and s.proxy.methods | length > 0 %}
+{%       set method_rules = [] %}
+{%       for method in s.proxy.methods %}
+{%         set _ = method_rules.append("Method(`" ~ (method | upper) ~ "`)") %}
+{%       endfor %}
+{%       set router_rule = router_rule ~ " && (" ~ (method_rules | join(' || ')) ~ ")" %}
+{%     endif %}
     {{ s.name }}:
 {%     if s.proxy.service is defined and s.proxy.service == 'api@internal' %}
-      rule: "({{ host_rules | join(' || ') }}) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      rule: "{{ router_rule }} && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
       entryPoints: ["websecure", "tunnel"]
       service: "api@internal"
 {%     else %}
-      rule: "{{ host_rules | join(' || ') }}"
+      rule: "{{ router_rule }}"
       entryPoints: ["websecure", "tunnel"]
       service: {{ s.name }}-svc
 {%     endif %}
