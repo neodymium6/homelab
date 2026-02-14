@@ -5,10 +5,15 @@
 {%     if category not in categories %}
 {%       set _ = categories.update({category: []}) %}
 {%     endif %}
-{%     set service_path = s.homepage.path | default('') %}
+{%     if s.homepage.href is defined %}
+{%       set service_href = s.homepage.href %}
+{%     else %}
+{%       set service_path = s.homepage.path | default('') %}
+{%       set service_href = 'https://' ~ s.name ~ '-proxy.' ~ network.domain ~ service_path %}
+{%     endif %}
 {%     set service_dict = {
          'name': s.homepage.display_name | default(s.name),
-         'href': 'https://' ~ s.name ~ '-proxy.' ~ network.domain ~ service_path
+         'href': service_href
        } %}
 {%     if s.homepage.icon is defined %}
 {%       set _ = service_dict.update({'icon': s.homepage.icon}) %}
