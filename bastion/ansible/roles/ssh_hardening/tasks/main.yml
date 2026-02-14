@@ -41,11 +41,10 @@
 - name: Configure ufw firewall rules (restricted)
   when: ssh_allow_from_ip is not none
   block:
-    - name: Enable ufw with default deny incoming
+    - name: Set ufw default deny incoming
       community.general.ufw:
-        state: enabled
-        policy: deny
         direction: incoming
+        policy: deny
       become: true
 
     - name: Allow SSH from specific IP only
