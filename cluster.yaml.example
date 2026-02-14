@@ -69,6 +69,20 @@ services:
       port: 3000
       allow_cidrs:
         - "192.168.1.0/24"
+  - name: "ntfy"
+    target_vm: "app-01"
+    upstream_base_url: "https://ntfy.sh"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8079
+      # Local-only example. For tunnel/public access, use public_hostnames instead.
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "ntfy"
+      category: "Infrastructure"
+      icon: "mdi-bell-badge-outline"
   - name: "personal-site"
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
@@ -170,3 +184,6 @@ secrets:
   monitoring:
     grafana_admin_user: "admin"
     grafana_admin_password: "changeme"
+  ntfy:
+    auth_users:
+      - "admin:$2a$10$REPLACE_WITH_BCRYPT_HASH"
