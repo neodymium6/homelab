@@ -1,0 +1,86 @@
+---
+- name: Validate Alertmanager ntfy settings
+  ansible.builtin.assert:
+    that:
+      - alertmanager_ntfy_base_url | string | length > 0
+      - alertmanager_ntfy_topic | string | length > 0
+    fail_msg: >-
+      alertmanager_ntfy_base_url and alertmanager_ntfy_topic must be configured.
+
+- name: Ensure Alertmanager directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ alertmanager_dir }}", mode: "0755" }
+    - { path: "{{ alertmanager_data_dir }}", mode: "0755" }
+    - { path: "{{ alertmanager_bridge_dir }}", mode: "0755" }
+  become: true
+
+- name: Ensure Python Docker SDK is installed
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Ensure docker monitoring network exists
+  community.docker.docker_network:
+    name: monitoring
+    ipam_config:
+      - subnet: "{{ docker.networks.monitoring.subnet }}"
+  become: true
+
+- name: Deploy Alertmanager configuration
+  ansible.builtin.template:
+    src: alertmanager.yml.j2
+    dest: "{{ alertmanager_config_path }}"
+    mode: "0644"
+  notify: Recreate alertmanager stack
+  become: true
+
+- name: Deploy Alertmanager docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ alertmanager_compose_path }}"
+    mode: "0644"
+  notify: Recreate alertmanager stack
+  become: true
+
+- name: Deploy am-ntfy-bridge files
+  ansible.builtin.copy:
+    src: "am_ntfy_bridge/{{ item.src }}"
+    dest: "{{ alertmanager_bridge_dir }}/{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: "Dockerfile", dest: "Dockerfile", mode: "0644" }
+    - { src: "requirements.txt", dest: "requirements.txt", mode: "0644" }
+    - { src: "app.py", dest: "app.py", mode: "0644" }
+  notify: Recreate alertmanager stack
+  become: true
+
+- name: Start Alertmanager stack
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ alertmanager_compose_path }}"
+      - up
+      - -d
+      - --build
+  become: true
+
+- name: Allow proxy-01 to reach Alertmanager backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ alertmanager_proxy_ip }}"
+    port: "{{ alertmanager_port | string }}"
+  when:
+    - alertmanager_enable_ufw | bool
+    - alertmanager_allow_from_proxy_only | bool
+    - alertmanager_expose_port | bool
+    - alertmanager_proxy_ip is defined
+  become: true

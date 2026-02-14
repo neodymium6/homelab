@@ -1,0 +1,12 @@
+---
+- name: Recreate alertmanager stack
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ alertmanager_compose_path }}"
+      - up
+      - -d
+      - --build
+  become: true

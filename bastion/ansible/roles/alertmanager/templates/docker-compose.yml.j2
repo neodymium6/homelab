@@ -1,0 +1,45 @@
+services:
+  alertmanager:
+    image: "{{ alertmanager_image }}"
+    container_name: "{{ alertmanager_service_name }}"
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+{% if alertmanager_expose_port | bool %}
+    ports:
+      - "{{ alertmanager_bind_address }}:{{ alertmanager_port }}:9093"
+{% endif %}
+    volumes:
+      - "{{ alertmanager_config_path }}:/etc/alertmanager/alertmanager.yml:ro"
+      - "{{ alertmanager_data_dir }}:/alertmanager"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  am_ntfy_bridge:
+    build:
+      context: "{{ alertmanager_bridge_dir }}"
+      dockerfile: Dockerfile
+    container_name: "am_ntfy_bridge"
+    environment:
+      NTFY_BASE_URL: "{{ alertmanager_ntfy_base_url }}"
+      NTFY_TOPIC: "{{ alertmanager_ntfy_topic }}"
+{% if alertmanager_ntfy_user | string | length > 0 %}
+      NTFY_USER: "{{ alertmanager_ntfy_user }}"
+{% endif %}
+{% if alertmanager_ntfy_password | string | length > 0 %}
+      NTFY_PASS: "{{ alertmanager_ntfy_password }}"
+{% endif %}
+{% if alertmanager_ntfy_token | string | length > 0 %}
+      NTFY_TOKEN: "{{ alertmanager_ntfy_token }}"
+{% endif %}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+networks:
+  monitoring:
+    external: true
+    name: monitoring

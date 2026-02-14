@@ -1,0 +1,25 @@
+global:
+  resolve_timeout: {{ alertmanager_resolve_timeout }}
+
+route:
+  receiver: ntfy
+  group_by:
+{% for key in alertmanager_group_by %}
+    - "{{ key }}"
+{% endfor %}
+  group_wait: {{ alertmanager_group_wait }}
+  group_interval: {{ alertmanager_group_interval }}
+  repeat_interval: {{ alertmanager_repeat_interval }}
+
+receivers:
+  - name: ntfy
+    webhook_configs:
+      - url: "{{ alertmanager_ntfy_bridge_url }}"
+        send_resolved: {{ alertmanager_send_resolved | bool | lower }}
+
+{% if alertmanager_enable_severity_inhibit | bool %}
+inhibit_rules:
+  - source_matchers: ["severity=critical"]
+    target_matchers: ["severity=~warning|info"]
+    equal: ["alertname", "job", "instance"]
+{% endif %}
