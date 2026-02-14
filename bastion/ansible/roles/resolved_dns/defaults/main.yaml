@@ -1,4 +1,5 @@
 ---
 resolved_dns_servers: []
 resolved_dropin_path: /etc/systemd/resolved.conf.d/10-homelab-dns.conf
-
+resolved_resolv_conf_path: /etc/resolv.conf
+resolved_resolv_conf_target: /run/systemd/resolve/stub-resolv.conf
