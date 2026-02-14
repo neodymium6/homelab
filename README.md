@@ -226,7 +226,11 @@ secrets:
     grafana_admin_password: "changeme"
   ntfy:
     auth_users:
-      - "admin:$2a$10$REPLACE_WITH_BCRYPT_HASH:admin"
+      - "iphone:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+      - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+    auth_access:
+      - "iphone:alerts:read"
+      - "publisher:alerts:write"
 ```
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`

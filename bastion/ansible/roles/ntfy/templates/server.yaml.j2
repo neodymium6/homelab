@@ -12,3 +12,9 @@ auth-users:
   - "{{ user }}"
 {% endfor %}
 {% endif %}
+{% if ntfy_auth_access | length > 0 %}
+auth-access:
+{% for access in ntfy_auth_access %}
+  - "{{ access }}"
+{% endfor %}
+{% endif %}

@@ -25,6 +25,19 @@
   loop: "{{ ntfy_auth_users }}"
   when: ntfy_enable_login | bool
 
+- name: Validate ntfy auth access format
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item.split(':') | length == 3
+      - item.split(':')[2] in ['read-write', 'rw', 'read-only', 'read', 'ro', 'write-only', 'write', 'wo', 'deny', 'none']
+    fail_msg: >-
+      Invalid ntfy auth access '{{ item }}'.
+      Expected format: username:topic:permission
+      where permission is one of read-write|rw|read-only|read|ro|write-only|write|wo|deny|none.
+  loop: "{{ ntfy_auth_access }}"
+  when: ntfy_enable_login | bool
+
 - name: Ensure ntfy directories exist
   ansible.builtin.file:
     path: "{{ item }}"

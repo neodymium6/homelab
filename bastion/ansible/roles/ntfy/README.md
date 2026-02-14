@@ -20,6 +20,7 @@ Deploys a self-hosted `ntfy` server on app hosts via Docker Compose.
 - `ntfy_upstream_base_url`: `https://ntfy.sh`
 - `ntfy_enable_login`: `true`
 - `ntfy_auth_default_access`: `deny-all`
+- `ntfy_auth_access`: `[]`
 
 ## Required Secrets
 
@@ -29,7 +30,11 @@ Configure at least one bcrypt user in `cluster.yaml`:
 secrets:
   ntfy:
     auth_users:
-      - "admin:$2a$10$REPLACE_WITH_BCRYPT_HASH:admin"
+      - "iphone:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+      - "publisher:$2a$10$REPLACE_WITH_BCRYPT_HASH:user"
+    auth_access:
+      - "iphone:alerts:read"
+      - "publisher:alerts:write"
 ```
 
 Generate a bcrypt hash with:

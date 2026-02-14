@@ -16,6 +16,7 @@ ntfy_enable_login: true
 ntfy_auth_file: "/var/cache/ntfy/user.db"
 ntfy_auth_default_access: "deny-all"
 ntfy_auth_users: []
+ntfy_auth_access: []
 
 ntfy_enable_ufw: true
 ntfy_allow_from_proxy_only: true

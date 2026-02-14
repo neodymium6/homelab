@@ -119,6 +119,7 @@
     ntfy_base_url: "{{ ntfy_service.base_url | default('https://' ~ ntfy_base_hostname) }}"
     ntfy_upstream_base_url: "{{ ntfy_service.upstream_base_url | default('https://ntfy.sh') }}"
     ntfy_auth_users: "{{ ((secrets | default({})).ntfy | default({})).auth_users | default([]) }}"
+    ntfy_auth_access: "{{ ((secrets | default({})).ntfy | default({})).auth_access | default([]) }}"
     ntfy_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
 
   roles:
