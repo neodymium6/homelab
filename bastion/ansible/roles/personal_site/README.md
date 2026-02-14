@@ -1,6 +1,6 @@
 # Personal Site Role
 
-Deploys a personal-site container image and keeps it updated with a systemd timer.
+Deploys a personal-site container image and keeps it updated with a systemd timer using rolling zero-downtime style updates.
 
 ## Purpose
 

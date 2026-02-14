@@ -334,6 +334,8 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 
 The app-01 VM is provisioned with higher resources (4 CPU cores, 8GB RAM) to accommodate multiple Docker Compose stacks.
 
+Personal-site uses dual backends (`:8080`, `:8081`) with rolling updates and Traefik health checks/retry, enabling zero-downtime style deployments for normal web traffic.
+
 ### Homepage Dashboard
 
 The Homepage dashboard is deployed on app-01 as the primary service discovery and monitoring interface:
