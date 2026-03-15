@@ -134,6 +134,7 @@ storage:
       - "app-01"
       - "dns-01"
       - "proxy-01"
+      - "rip-01"
 
 network:
   base_prefix: "192.168.1"
