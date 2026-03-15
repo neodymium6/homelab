@@ -85,6 +85,10 @@
         storage_access_manage_users: false
         storage_access_manage_share_path: true
         storage_access_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+    - role: storage_media_layout
+      vars:
+        storage_media_layout_base_path: "{{ (((storage | default({})).media | default({})).base_path) | default((((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share')) ~ '/music') }}"
+        storage_media_layout_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
     - role: storage_nfs_server
       when: (((storage | default({})).nfs | default({})).clients | default([]) | length) > 0
       vars:

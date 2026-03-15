@@ -1,0 +1,8 @@
+---
+storage_media_layout_base_path: "/mnt/storage/share/music"
+storage_media_layout_group: "storage"
+storage_media_layout_mode: "2775"
+storage_media_layout_directories:
+  - "{{ storage_media_layout_base_path }}"
+  - "{{ storage_media_layout_base_path }}/incoming"
+  - "{{ storage_media_layout_base_path }}/library"

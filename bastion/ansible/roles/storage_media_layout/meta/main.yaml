@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Prepare shared storage directories for music ingest and library workflows
+  min_ansible_version: "2.15"
+
+dependencies: []

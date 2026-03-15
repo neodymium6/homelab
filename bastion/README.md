@@ -29,7 +29,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, storage_access, storage_disk, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -40,6 +40,7 @@ bastion/
 - `roles/ssh_client_config`: Renders SSH `config` entries for all internal hosts using the internal key.
 - `roles/storage_access`: Creates a fixed-GID shared group on internal VMs and prepares the share directory ownership on storage hosts.
 - `roles/storage_disk`: Detects the dedicated storage disk by configured size, creates an ext4 filesystem, and mounts it by UUID.
+- `roles/storage_media_layout`: Creates shared media workflow directories such as `music/incoming` and `music/library` on storage hosts.
 - `roles/storage_nfs_server`: Exports the shared storage directory over NFS only to whitelisted clients and opens UFW for TCP 2049 to those clients.
 - `roles/storage_nfs_client`: Installs NFS client tooling and mounts the shared export at `/mnt/nfs` on whitelisted hosts.
 - `roles/storage_samba`: Publishes the shared storage directory over Samba with user/password authentication and local-network-only UFW rules.
@@ -82,7 +83,7 @@ This file should be copied by the local deployment, but you can create it manual
 | `make tf-init` | Initialize Terraform |
 | `make tf-apply` | Create internal VMs |
 | `make bastion-setup` | Configure bastion (ssh_keypair, ssh_hardening, ssh_client_config) |
-| `make internal-setup` | Configure internal VMs (ssh_hardening, storage_access, storage_disk, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
+| `make internal-setup` | Configure internal VMs (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
 | `make homemanager` | Install Nix + Home Manager on all VMs (nix_installer, home_manager) |
 | `make clean` | Destroy internal VMs |
 
@@ -102,6 +103,7 @@ This file should be copied by the local deployment, but you can create it manual
    - Create a fixed-GID shared storage group on internal VMs
    - Format and mount the dedicated disk on storage role VMs by UUID
    - Create the shared storage directory with setgid permissions on storage role VMs
+   - Create `music/incoming` and `music/library` directories on storage role VMs
    - Export shared storage over NFS to whitelisted client VMs
    - Mount the NFS share on whitelisted clients at `/mnt/nfs`
    - Publish the shared storage directory over Samba with user/password auth

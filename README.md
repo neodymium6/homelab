@@ -314,6 +314,7 @@ This keeps read clients and publish clients separated by both router method matc
 
 The internal Ansible playbook prepares that disk on `role: storage` hosts by creating an `ext4` filesystem and mounting it at `/mnt/storage` via `UUID=...`, so guest device names such as `/dev/sdb` do not need to stay stable.
 It also creates a fixed-GID shared group on internal VMs and prepares `/mnt/storage/share` as `root:storage` with mode `2775`.
+For media workflows, storage hosts also prepare `/mnt/storage/share/music`, `/mnt/storage/share/music/incoming`, and `/mnt/storage/share/music/library`.
 NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
 Samba is also enabled on the storage host with user/password authentication, using `storage.samba.user` and `secrets.storage.samba_password`, and is exposed only to the local homelab CIDR via UFW.
 Any internal VM can also declare `usb_devices` in `cluster.yaml`. Each entry must set exactly one of `host` or `mapping`, matching the provider's VM `usb` block. This is intended for `rip-01`, where an external USB optical drive can be passed through directly to the guest.
