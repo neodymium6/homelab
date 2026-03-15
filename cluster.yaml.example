@@ -15,6 +15,8 @@ storage:
     group: "storage"
     gid: 2000
     share_path: "/mnt/storage/share"
+  media:
+    base_path: "/mnt/storage/share/music"
   samba:
     share_name: "storage"
     user: "your_username"
@@ -37,6 +39,7 @@ network:
     - "1.1.1.1"
   domain: "internal.example.com"
 
+timezone: "Asia/Tokyo"
 login_user: "your_username"
 
 vms:
@@ -88,6 +91,8 @@ services:
     target_vm: "proxy-01"
   - name: "storage"
     target_vm: "storage-01"
+  - name: "rip"
+    target_vm: "rip-01"
   - name: "app"
     target_vm: "app-01"
   - name: "agh"
@@ -108,6 +113,18 @@ services:
       port: 3000
       allow_cidrs:
         - "192.168.1.0/24"
+  - name: "arm"
+    target_vm: "rip-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8080
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "ARM"
+      category: "Media"
+      icon: "mdi-disc-player"
   - name: "ntfy"
     target_vm: "app-01"
     upstream_base_url: "https://ntfy.sh"
