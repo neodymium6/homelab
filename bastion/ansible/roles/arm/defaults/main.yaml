@@ -1,0 +1,17 @@
+---
+arm_image: "automaticrippingmachine/automatic-ripping-machine:2.22.2"
+arm_container_name: "automatic-ripping-machine"
+
+arm_user: "arm"
+arm_group: "arm"
+arm_timezone: "UTC"
+
+arm_dir: "/opt/stacks/arm"
+arm_home_dir: "{{ arm_dir }}/home"
+arm_logs_dir: "{{ arm_dir }}/logs"
+arm_media_dir: "{{ arm_dir }}/media"
+arm_config_dir: "{{ arm_dir }}/config"
+arm_music_dir: "/mnt/nfs/music/incoming"
+arm_compose_path: "{{ arm_dir }}/docker-compose.yml"
+
+arm_port: 8080

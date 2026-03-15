@@ -1,0 +1,17 @@
+services:
+  arm:
+    image: "{{ arm_image }}"
+    container_name: "{{ arm_container_name }}"
+    restart: unless-stopped
+    ports:
+      - "{{ arm_port }}:8080"
+    environment:
+      ARM_UID: "{{ arm_uid_cmd.stdout }}"
+      ARM_GID: "{{ arm_gid_cmd.stdout }}"
+      TZ: "{{ arm_timezone }}"
+    volumes:
+      - "{{ arm_home_dir }}:/home/arm"
+      - "{{ arm_music_dir }}:/home/arm/music"
+      - "{{ arm_logs_dir }}:/home/arm/logs"
+      - "{{ arm_media_dir }}:/home/arm/media"
+      - "{{ arm_config_dir }}:/etc/arm/config"
