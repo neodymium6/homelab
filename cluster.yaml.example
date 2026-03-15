@@ -63,6 +63,12 @@ vms:
     cpu_cores: 2
     memory_mb: 4096
 
+  rip-01:
+    vmid: 105
+    role: "rip"
+    cpu_cores: 2
+    memory_mb: 4096
+
   app-01:
     vmid: 201
     role: "app"
