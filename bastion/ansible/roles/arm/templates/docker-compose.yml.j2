@@ -9,6 +9,9 @@ services:
       ARM_UID: "{{ arm_uid_cmd.stdout }}"
       ARM_GID: "{{ arm_gid_cmd.stdout }}"
       TZ: "{{ arm_timezone }}"
+    devices:
+      - "{{ arm_optical_block_device }}:{{ arm_optical_block_device }}"
+      - "{{ arm_optical_generic_device }}:{{ arm_optical_generic_device }}"
     volumes:
       - "{{ arm_home_dir }}:/home/arm"
       - "{{ arm_music_dir }}:/home/arm/music"
