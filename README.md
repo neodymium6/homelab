@@ -11,7 +11,7 @@ This project automates the deployment and configuration of VMs on Proxmox VE usi
 - **Internal VMs**: Managed exclusively from the bastion host
 
 All VMs are configured with Nix and Home Manager for declarative system configuration.
-All required Ansible roles are vendored in this repository—no external role dependencies. Standard collections (`community.general`, `community.crypto`, `community.docker`) are installed via `ansible-galaxy`.
+All required Ansible roles are vendored in this repository—no external role dependencies. Standard collections (`ansible.posix`, `community.general`, `community.crypto`, `community.docker`) are installed via `ansible-galaxy`.
 
 ## Architecture
 
@@ -285,6 +285,8 @@ For `ntfy`, use two public hosts with different HTTP method policies on the same
 This keeps read clients and publish clients separated by both router method matching and ntfy ACLs.
 
 `role: storage` is treated as an internal VM. When `storage.data_disk` is present, Terraform attaches an extra data disk only to the single storage-role VM using the datastore and slot defined in YAML.
+
+The internal Ansible playbook prepares that disk on `role: storage` hosts by creating an `ext4` filesystem and mounting it at `/mnt/storage` via `UUID=...`, so guest device names such as `/dev/sdb` do not need to stay stable.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 

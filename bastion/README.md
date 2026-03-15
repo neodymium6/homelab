@@ -29,7 +29,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, storage_disk, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -38,6 +38,7 @@ bastion/
 - `roles/ssh_keypair`: Generates `~/.ssh/id_ed25519_internal` for internal VM access.
 - `roles/ssh_hardening`: Applies UFW (open or bastion-restricted), optional fail2ban, and enforces key-only SSH.
 - `roles/ssh_client_config`: Renders SSH `config` entries for all internal hosts using the internal key.
+- `roles/storage_disk`: Detects the dedicated storage disk by configured size, creates an ext4 filesystem, and mounts it by UUID.
 - `roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy`, forwarding Cloudflare Tunnel traffic to Traefik tunnel entrypoint.
 - `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
@@ -77,7 +78,7 @@ This file should be copied by the local deployment, but you can create it manual
 | `make tf-init` | Initialize Terraform |
 | `make tf-apply` | Create internal VMs |
 | `make bastion-setup` | Configure bastion (ssh_keypair, ssh_hardening, ssh_client_config) |
-| `make internal-setup` | Configure internal VMs (ssh_hardening, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
+| `make internal-setup` | Configure internal VMs (ssh_hardening, storage_disk, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
 | `make homemanager` | Install Nix + Home Manager on all VMs (nix_installer, home_manager) |
 | `make clean` | Destroy internal VMs |
 
@@ -94,6 +95,7 @@ This file should be copied by the local deployment, but you can create it manual
 
 3. internal-setup
    - Configure SSH hardening on internal VMs (allow only from bastion)
+   - Format and mount the dedicated disk on storage role VMs by UUID
    - Install and configure Traefik on proxy role VMs
    - Run Cloudflare Tunnel on proxy role VMs
    - Deploy ntfy on app role VMs

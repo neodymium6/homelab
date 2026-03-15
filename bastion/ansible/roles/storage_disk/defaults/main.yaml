@@ -1,0 +1,7 @@
+---
+storage_disk_mount_path: "/mnt/storage"
+storage_disk_filesystem_type: "ext4"
+storage_disk_expected_size_gb: 0
+storage_disk_mount_opts: "defaults"
+storage_disk_ext4_packages:
+  - e2fsprogs

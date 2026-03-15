@@ -49,6 +49,21 @@
         proto: tcp
         src: "{{ proxy_allow_cidr }}"
 
+- name: Prepare storage disk on storage hosts
+  hosts: storage
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: storage_disk
+      vars:
+        storage_disk_mount_path: "{{ (storage | default({})).mount_path | default('/mnt/storage') }}"
+        storage_disk_filesystem_type: "{{ (storage | default({})).filesystem | default('ext4') }}"
+        storage_disk_expected_size_gb: "{{ ((storage | default({})).data_disk | default({})).size_gb | default(0) | int }}"
+
 - name: Configure Traefik on proxy hosts
   hosts: proxy
   become: true
