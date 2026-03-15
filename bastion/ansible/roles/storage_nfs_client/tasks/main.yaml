@@ -12,13 +12,27 @@
       - storage_nfs_client_server | trim | length > 0
     fail_msg: "storage_nfs_client_server must not be empty."
 
-- name: Ensure NFS mount path exists
+- name: Check NFS mount path state
+  ansible.builtin.stat:
+    path: "{{ storage_nfs_client_mount_path }}"
+    follow: false
+  register: storage_nfs_client_mount_path_stat
+  become: true
+
+- name: Ensure NFS mount path is a directory when present
+  ansible.builtin.assert:
+    that:
+      - not storage_nfs_client_mount_path_stat.stat.exists or storage_nfs_client_mount_path_stat.stat.isdir
+    fail_msg: "{{ storage_nfs_client_mount_path }} exists but is not a directory."
+
+- name: Create NFS mount path when absent
   ansible.builtin.file:
     path: "{{ storage_nfs_client_mount_path }}"
     state: directory
     owner: root
     group: root
     mode: "0755"
+  when: not storage_nfs_client_mount_path_stat.stat.exists
   become: true
 
 - name: Mount shared storage over NFS
