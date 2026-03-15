@@ -105,3 +105,25 @@
     dest: "{{ arm_compose_path }}"
     mode: "0644"
   notify: Restart arm
+
+- name: Start ARM via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ arm_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+
+- name: Allow proxy-01 to reach ARM backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ arm_proxy_ip }}"
+    port: "{{ arm_port | string }}"
+  when:
+    - arm_enable_ufw | bool
+    - arm_allow_from_proxy_only | bool
+    - arm_proxy_ip | length > 0

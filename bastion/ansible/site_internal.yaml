@@ -176,6 +176,35 @@
         docker_users:
           - "{{ login_user }}"
 
+- name: Deploy ARM on rip hosts
+  hosts: rip
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    arm_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'arm') | list | first) | default({}) }}"
+    arm_enabled: "{{ arm_service != {} and arm_service.target_vm is defined }}"
+    arm_target_vm: "{{ arm_service.target_vm | default('') }}"
+    arm_port: >-
+      {{
+        (arm_service.proxy.port | int)
+        if (
+          arm_service.proxy is defined and
+          arm_service.proxy.port is defined
+        )
+        else 8080
+      }}
+    arm_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  roles:
+    - role: arm
+      when:
+        - arm_enabled | bool
+        - inventory_hostname == arm_target_vm
+
 - name: Deploy ntfy on app hosts
   hosts: app
   become: true
