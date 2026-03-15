@@ -1,0 +1,7 @@
+---
+storage_nfs_client_packages:
+  - nfs-common
+storage_nfs_client_mount_path: "/mnt/nfs"
+storage_nfs_client_export_path: "/mnt/storage/share"
+storage_nfs_client_server: ""
+storage_nfs_client_mount_opts: "defaults,_netdev,nfsvers=4,proto=tcp"

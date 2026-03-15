@@ -4,6 +4,27 @@ proxmox:
   datastore: "local-zfs"
   debian_template_vmid: 9100
 
+storage:
+  mount_path: "/mnt/storage"
+  data_disk:
+    datastore_id: "tank-zfs"
+    interface: "scsi1"
+    size_gb: 500
+    file_format: "raw"
+  access:
+    group: "storage"
+    gid: 2000
+    share_path: "/mnt/storage/share"
+  samba:
+    share_name: "storage"
+    user: "your_username"
+  nfs:
+    mount_path: "/mnt/nfs"
+    clients:
+      - "app-01"
+      - "dns-01"
+      - "proxy-01"
+
 network:
   base_prefix: "192.168.1"
   cidr_suffix: 24
@@ -36,6 +57,12 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
+  storage-01:
+    vmid: 104
+    role: "storage"
+    cpu_cores: 2
+    memory_mb: 4096
+
   app-01:
     vmid: 201
     role: "app"
@@ -49,6 +76,8 @@ services:
     target_vm: "dns-01"
   - name: "proxy"
     target_vm: "proxy-01"
+  - name: "storage"
+    target_vm: "storage-01"
   - name: "app"
     target_vm: "app-01"
   - name: "agh"
@@ -231,6 +260,8 @@ secrets:
     auth_access:
       - "subscriber:*:read"
       - "publisher:*:write"
+  storage:
+    samba_password: "change_me"
   alertmanager:
     ntfy_user: "alerting"
     ntfy_password: "change_me"

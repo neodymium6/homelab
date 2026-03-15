@@ -11,6 +11,7 @@ terraform {
 locals {
   cluster    = yamldecode(file("${path.module}/../../cluster.yaml"))
   login_user = local.cluster.login_user
+  storage    = try(local.cluster.storage, {})
 
   internal_vms = {
     for name, vm in local.cluster.vms :
@@ -18,7 +19,14 @@ locals {
     if vm.role != "bastion"
   }
 
+  storage_vms = {
+    for name, vm in local.internal_vms :
+    name => vm
+    if vm.role == "storage"
+  }
+
   bastion_internal_pub_path = "/home/${local.login_user}/.ssh/id_ed25519_internal.pub"
+  storage_data_disk         = try(local.storage.data_disk, null)
 }
 
 provider "proxmox" {
@@ -60,6 +68,17 @@ resource "proxmox_virtual_environment_vm" "internal" {
     size         = 20
   }
 
+  dynamic "disk" {
+    for_each = each.value.role == "storage" && local.storage_data_disk != null ? [local.storage_data_disk] : []
+
+    content {
+      datastore_id = lookup(disk.value, "datastore_id", local.cluster.proxmox.datastore)
+      interface    = lookup(disk.value, "interface", "scsi1")
+      size         = lookup(disk.value, "size_gb", 100)
+      file_format  = lookup(disk.value, "file_format", "raw")
+    }
+  }
+
   initialization {
     datastore_id = local.cluster.proxmox.datastore
 
@@ -93,6 +112,15 @@ resource "proxmox_virtual_environment_vm" "internal" {
 
   lifecycle {
     ignore_changes = [started]
+
+    precondition {
+      condition     = length(local.storage_vms) <= 1
+      error_message = "Only one VM with role 'storage' is supported."
+    }
+
+    precondition {
+      condition     = local.storage_data_disk == null || length(local.storage_vms) == 1
+      error_message = "storage.data_disk requires exactly one VM with role 'storage'."
+    }
   }
 }
-

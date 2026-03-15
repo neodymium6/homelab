@@ -49,6 +49,79 @@
         proto: tcp
         src: "{{ proxy_allow_cidr }}"
 
+- name: Configure shared storage access on non-bastion hosts
+  hosts: "cluster:!bastion"
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: storage_access
+      vars:
+        storage_access_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+        storage_access_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
+        storage_access_users: "{{ ((((storage | default({})).access | default({})).users | default([])) + [login_user]) | unique }}"
+
+- name: Prepare storage disk on storage hosts
+  hosts: storage
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: storage_disk
+      vars:
+        storage_disk_mount_path: "{{ (storage | default({})).mount_path | default('/mnt/storage') }}"
+        storage_disk_expected_size_gb: "{{ ((storage | default({})).data_disk | default({})).size_gb | default(0) | int }}"
+    - role: storage_access
+      vars:
+        storage_access_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+        storage_access_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
+        storage_access_manage_group: false
+        storage_access_manage_users: false
+        storage_access_manage_share_path: true
+        storage_access_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+    - role: storage_nfs_server
+      when: (((storage | default({})).nfs | default({})).clients | default([]) | length) > 0
+      vars:
+        storage_nfs_server_export_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+        storage_nfs_server_clients: "{{ ((storage | default({})).nfs | default({})).clients | default([]) }}"
+    - role: storage_samba
+      vars:
+        storage_samba_share_name: "{{ ((storage | default({})).samba | default({})).share_name | default('storage') }}"
+        storage_samba_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+        storage_samba_user: "{{ ((storage | default({})).samba | default({})).user | default(login_user) }}"
+        storage_samba_password: "{{ ((secrets | default({})).storage | default({})).samba_password | default('') }}"
+        storage_samba_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+        storage_samba_ufw_allow_cidr: "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
+
+- name: Mount shared NFS storage on whitelisted hosts
+  hosts: "cluster:!bastion:!storage"
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    storage_nfs_client_names: "{{ ((storage | default({})).nfs | default({})).clients | default([]) }}"
+    storage_nfs_server_name: "{{ (vms | dict2items | selectattr('value.role', 'equalto', 'storage') | map(attribute='key') | list | first) | default('') }}"
+    storage_nfs_server_ip: "{{ (network.base_prefix ~ '.' ~ (vms[storage_nfs_server_name].vmid | string)) if (storage_nfs_server_name | length > 0) else '' }}"
+
+  roles:
+    - role: storage_nfs_client
+      when:
+        - inventory_hostname in storage_nfs_client_names
+        - storage_nfs_server_ip | length > 0
+      vars:
+        storage_nfs_client_mount_path: "{{ ((storage | default({})).nfs | default({})).mount_path | default('/mnt/nfs') }}"
+        storage_nfs_client_export_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+        storage_nfs_client_server: "{{ storage_nfs_server_ip }}"
+
 - name: Configure Traefik on proxy hosts
   hosts: proxy
   become: true

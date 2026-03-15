@@ -13,7 +13,7 @@ bastion-tf-apply:
 
 ansible-deps:
 	cd $(ANSIBLE_DIR) && \
-	  ansible-galaxy collection install community.general community.crypto community.docker
+	  ansible-galaxy collection install ansible.posix community.general community.crypto community.docker
 
 bastion-bootstrap: ansible-deps
 	cd $(ANSIBLE_DIR) && \

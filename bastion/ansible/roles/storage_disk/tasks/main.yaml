@@ -1,0 +1,81 @@
+---
+- name: Validate storage disk configuration
+  ansible.builtin.assert:
+    that:
+      - storage_disk_expected_size_gb | int > 0
+    fail_msg: "storage_disk_expected_size_gb must be greater than zero."
+
+- name: Ensure ext4 tooling is installed
+  ansible.builtin.apt:
+    name: "{{ storage_disk_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Probe block devices
+  ansible.builtin.command:
+    cmd: lsblk --json --bytes --output PATH,TYPE,SIZE,FSTYPE
+  register: storage_disk_lsblk
+  changed_when: false
+
+- name: Derive storage disk candidates from lsblk output
+  ansible.builtin.set_fact:
+    storage_disk_expected_size_bytes: "{{ storage_disk_expected_size_gb | int * 1024 * 1024 * 1024 }}"
+    storage_disk_candidates: []
+
+- name: Collect matching storage disk candidates
+  ansible.builtin.set_fact:
+    storage_disk_candidates: "{{ storage_disk_candidates + [item] }}"
+  loop: "{{ (storage_disk_lsblk.stdout | from_json).blockdevices | default([]) }}"
+  when:
+    - item.type == "disk"
+    - item.size | int == storage_disk_expected_size_bytes | int
+
+- name: Ensure exactly one matching storage disk exists
+  ansible.builtin.assert:
+    that:
+      - storage_disk_candidates | length == 1
+    fail_msg: >-
+      Expected exactly one disk matching {{ storage_disk_expected_size_gb }} GiB for storage,
+      found {{ storage_disk_candidates | length }}.
+
+- name: Select storage disk device
+  ansible.builtin.set_fact:
+    storage_disk_device_path: "{{ storage_disk_candidates[0].path }}"
+
+- name: Ensure storage mount path exists
+  ansible.builtin.file:
+    path: "{{ storage_disk_mount_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure filesystem exists on storage disk
+  community.general.filesystem:
+    dev: "{{ storage_disk_device_path }}"
+    fstype: "ext4"
+
+- name: Settle udev after filesystem changes
+  ansible.builtin.command:
+    cmd: udevadm settle
+  changed_when: false
+
+- name: Read UUID of storage disk
+  ansible.builtin.command:
+    cmd: blkid -o value -s UUID {{ storage_disk_device_path }}
+  register: storage_disk_uuid
+  changed_when: false
+
+- name: Ensure storage disk UUID was detected
+  ansible.builtin.assert:
+    that:
+      - storage_disk_uuid.stdout | trim | length > 0
+    fail_msg: "Could not determine UUID for {{ storage_disk_device_path }}."
+
+- name: Mount storage disk by UUID
+  ansible.posix.mount:
+    path: "{{ storage_disk_mount_path }}"
+    src: "UUID={{ storage_disk_uuid.stdout | trim }}"
+    fstype: "ext4"
+    opts: "{{ storage_disk_mount_opts }}"
+    state: mounted

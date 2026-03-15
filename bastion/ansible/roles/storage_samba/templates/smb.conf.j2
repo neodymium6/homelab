@@ -1,0 +1,18 @@
+[global]
+   workgroup = {{ storage_samba_workgroup }}
+   server role = standalone server
+   security = user
+   map to guest = Never
+   server min protocol = SMB2
+
+[{{ storage_samba_share_name }}]
+   path = {{ storage_samba_share_path }}
+   browseable = yes
+   read only = no
+   guest ok = no
+   valid users = {{ storage_samba_user }}
+   force group = {{ storage_samba_group }}
+   create mask = {{ storage_samba_create_mask }}
+   directory mask = {{ storage_samba_directory_mask }}
+   force directory mode = {{ storage_samba_directory_mask }}
+   inherit permissions = yes

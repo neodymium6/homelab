@@ -19,7 +19,7 @@ tf-apply:
 
 ansible-deps:
 	cd $(ANSIBLE_DIR) && \
-	  $(ANSIBLE_GALAXY) collection install community.general community.crypto community.docker
+	  $(ANSIBLE_GALAXY) collection install ansible.posix community.general community.crypto community.docker
 
 bastion-setup: ansible-deps
 	cd $(ANSIBLE_DIR) && \

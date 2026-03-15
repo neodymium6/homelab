@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Mount shared storage from the storage host over NFS
+  min_ansible_version: "2.15"
+
+dependencies: []

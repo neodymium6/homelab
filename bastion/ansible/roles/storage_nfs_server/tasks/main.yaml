@@ -1,0 +1,64 @@
+---
+- name: Ensure NFS server packages are installed
+  ansible.builtin.apt:
+    name: "{{ storage_nfs_server_packages }}"
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Ensure NFS server client list is not empty
+  ansible.builtin.assert:
+    that:
+      - storage_nfs_server_clients | length > 0
+    fail_msg: "storage.nfs.clients must contain at least one whitelisted client."
+
+- name: Ensure NFS whitelist entries exist in cluster VM map
+  ansible.builtin.assert:
+    that:
+      - item in vms
+      - vms[item].role != "bastion"
+      - vms[item].role != "storage"
+    fail_msg: "Invalid NFS client '{{ item }}'. Clients must be non-bastion, non-storage VMs defined in vms."
+  loop: "{{ storage_nfs_server_clients }}"
+  loop_control:
+    loop_var: item
+
+- name: Ensure exports.d directory exists
+  ansible.builtin.file:
+    path: "{{ storage_nfs_server_exports_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Render storage NFS exports file
+  ansible.builtin.template:
+    src: homelab-storage.exports.j2
+    dest: "{{ storage_nfs_server_exports_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload nfs exports
+    - Restart nfs server
+  become: true
+
+- name: Ensure NFS server service is enabled and running
+  ansible.builtin.service:
+    name: "{{ storage_nfs_server_service }}"
+    state: started
+    enabled: true
+  become: true
+
+- name: Allow NFS from whitelisted clients via ufw
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ network.base_prefix }}.{{ vms[item].vmid }}"
+    port: "{{ storage_nfs_server_ufw_port }}"
+  loop: "{{ storage_nfs_server_clients }}"
+  loop_control:
+    loop_var: item
+  when: storage_nfs_server_ufw_enable | bool
+  become: true
