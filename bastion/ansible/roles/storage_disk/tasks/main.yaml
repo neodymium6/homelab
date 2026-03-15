@@ -7,10 +7,9 @@
 
 - name: Ensure ext4 tooling is installed
   ansible.builtin.apt:
-    name: "{{ storage_disk_ext4_packages }}"
+    name: "{{ storage_disk_packages }}"
     state: present
     update_cache: yes
-  when: storage_disk_filesystem_type == "ext4"
 
 - name: Probe block devices
   ansible.builtin.command:
@@ -54,7 +53,7 @@
 - name: Ensure filesystem exists on storage disk
   community.general.filesystem:
     dev: "{{ storage_disk_device_path }}"
-    fstype: "{{ storage_disk_filesystem_type }}"
+    fstype: "ext4"
 
 - name: Settle udev after filesystem changes
   ansible.builtin.command:
@@ -77,6 +76,6 @@
   ansible.posix.mount:
     path: "{{ storage_disk_mount_path }}"
     src: "UUID={{ storage_disk_uuid.stdout | trim }}"
-    fstype: "{{ storage_disk_filesystem_type }}"
+    fstype: "ext4"
     opts: "{{ storage_disk_mount_opts }}"
     state: mounted
