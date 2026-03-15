@@ -1,0 +1,26 @@
+---
+- name: Ensure shared storage group exists
+  ansible.builtin.group:
+    name: "{{ storage_access_group }}"
+    gid: "{{ storage_access_gid }}"
+    state: present
+  when: storage_access_manage_group | bool
+
+- name: Ensure users are members of shared storage group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ storage_access_group }}"
+    append: true
+  loop: "{{ storage_access_users }}"
+  when:
+    - storage_access_manage_users | bool
+    - storage_access_users | length > 0
+
+- name: Ensure shared storage directory exists
+  ansible.builtin.file:
+    path: "{{ storage_access_share_path }}"
+    state: directory
+    owner: "{{ storage_access_share_owner }}"
+    group: "{{ storage_access_share_group }}"
+    mode: "{{ storage_access_share_mode }}"
+  when: storage_access_manage_share_path | bool

@@ -1,0 +1,11 @@
+---
+storage_access_group: "storage"
+storage_access_gid: 2000
+storage_access_users: []
+storage_access_manage_group: true
+storage_access_manage_users: true
+storage_access_manage_share_path: false
+storage_access_share_path: "/mnt/storage/share"
+storage_access_share_owner: "root"
+storage_access_share_group: "{{ storage_access_group }}"
+storage_access_share_mode: "2775"

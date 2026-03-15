@@ -115,11 +115,16 @@ proxmox:
   debian_template_vmid: 9000
 
 storage:
+  mount_path: "/mnt/storage"
   data_disk:
     datastore_id: "tank-zfs"
     interface: "scsi1"
     size_gb: 500
     file_format: "raw"
+  access:
+    group: "storage"
+    gid: 2000
+    share_path: "/mnt/storage/share"
 
 network:
   base_prefix: "192.168.1"
@@ -287,6 +292,7 @@ This keeps read clients and publish clients separated by both router method matc
 `role: storage` is treated as an internal VM. When `storage.data_disk` is present, Terraform attaches an extra data disk only to the single storage-role VM using the datastore and slot defined in YAML.
 
 The internal Ansible playbook prepares that disk on `role: storage` hosts by creating an `ext4` filesystem and mounting it at `/mnt/storage` via `UUID=...`, so guest device names such as `/dev/sdb` do not need to stay stable.
+It also creates a fixed-GID shared group on internal VMs and prepares `/mnt/storage/share` as `root:storage` with mode `2775`.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
