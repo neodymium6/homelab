@@ -99,6 +99,25 @@
     - { path: "{{ arm_media_dir }}" }
     - { path: "{{ arm_config_dir }}" }
 
+- name: Deploy ARM abcde.conf
+  ansible.builtin.template:
+    src: abcde.conf.j2
+    dest: "{{ arm_abcde_config_path }}"
+    owner: "{{ arm_user }}"
+    group: "{{ arm_group }}"
+    mode: "0644"
+  notify: Restart arm
+
+- name: Link ARM home abcde config to managed config file
+  ansible.builtin.file:
+    src: /etc/arm/config/abcde.conf
+    dest: "{{ arm_abcde_home_link_path }}"
+    state: link
+    force: true
+    owner: "{{ arm_user }}"
+    group: "{{ arm_group }}"
+  notify: Restart arm
+
 - name: Deploy ARM docker-compose.yml
   ansible.builtin.template:
     src: docker-compose.yml.j2
