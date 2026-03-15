@@ -114,6 +114,13 @@ proxmox:
   datastore: "local-zfs"
   debian_template_vmid: 9000
 
+storage:
+  data_disk:
+    datastore_id: "tank-zfs"
+    interface: "scsi1"
+    size_gb: 500
+    file_format: "raw"
+
 network:
   base_prefix: "192.168.1"
   cidr_suffix: 24
@@ -146,6 +153,12 @@ vms:
     cpu_cores: 2
     memory_mb: 2048
 
+  storage-01:
+    vmid: 104
+    role: "storage"
+    cpu_cores: 2
+    memory_mb: 4096
+
   app-01:
     vmid: 201
     role: "app"
@@ -159,6 +172,8 @@ services:
     target_vm: "dns-01"
   - name: "proxy"
     target_vm: "proxy-01"
+  - name: "storage"
+    target_vm: "storage-01"
   - name: "app"
     target_vm: "app-01"
   - name: "agh"
@@ -268,6 +283,8 @@ For `ntfy`, use two public hosts with different HTTP method policies on the same
 - `ntfy-pub.<domain>` for publish paths (`POST`, `PUT`, `OPTIONS`)
 
 This keeps read clients and publish clients separated by both router method matching and ntfy ACLs.
+
+`role: storage` is treated as an internal VM. When `storage.data_disk` is present, Terraform attaches an extra data disk only to the single storage-role VM using the datastore and slot defined in YAML.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
