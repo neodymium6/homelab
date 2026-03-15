@@ -80,12 +80,12 @@ resource "proxmox_virtual_environment_vm" "internal" {
   }
 
   dynamic "usb" {
-    for_each = try(each.value.usb_devices, [])
+    for_each = coalesce(try(each.value.usb_devices, null), [])
 
     content {
-      host    = try(usb.value.host, null)
-      mapping = try(usb.value.mapping, null)
-      usb3    = try(usb.value.usb3, false)
+      host    = try(trimspace(usb.value.host), null)
+      mapping = try(trimspace(usb.value.mapping), null)
+      usb3    = coalesce(try(usb.value.usb3, null), false)
     }
   }
 
@@ -135,7 +135,7 @@ resource "proxmox_virtual_environment_vm" "internal" {
 
     precondition {
       condition = alltrue([
-        for usb_device in try(each.value.usb_devices, []) :
+        for usb_device in coalesce(try(each.value.usb_devices, null), []) :
         length(compact([
           try(trimspace(usb_device.host), ""),
           try(trimspace(usb_device.mapping), ""),
