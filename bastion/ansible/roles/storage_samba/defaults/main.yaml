@@ -8,6 +8,7 @@ storage_samba_share_name: "storage"
 storage_samba_share_path: "/mnt/storage/share"
 storage_samba_user: ""
 storage_samba_password: ""
+storage_samba_update_password: false
 storage_samba_group: "storage"
 storage_samba_create_mask: "0664"
 storage_samba_directory_mask: "2775"

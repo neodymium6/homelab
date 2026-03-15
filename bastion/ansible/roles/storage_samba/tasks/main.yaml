@@ -36,7 +36,30 @@
   loop: "{{ storage_samba_services }}"
   become: true
 
-- name: Set Samba password for share user
+- name: List existing Samba accounts
+  ansible.builtin.command:
+    argv:
+      - pdbedit
+      - -L
+  register: storage_samba_accounts
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: Check whether Samba share user already exists
+  ansible.builtin.set_fact:
+    storage_samba_user_exists: >-
+      {{
+        storage_samba_accounts.rc == 0 and
+        (
+          storage_samba_accounts.stdout_lines
+          | select('search', '^' ~ storage_samba_user ~ ':')
+          | list
+          | length
+        ) > 0
+      }}
+
+- name: Create Samba account for share user
   ansible.builtin.command:
     argv:
       - smbpasswd
@@ -46,7 +69,24 @@
     stdin: |
       {{ storage_samba_password }}
       {{ storage_samba_password }}
-  register: storage_samba_password_cmd
+  when: not storage_samba_user_exists
+  no_log: true
+  changed_when: true
+  become: true
+
+- name: Update Samba password when requested
+  ansible.builtin.command:
+    argv:
+      - smbpasswd
+      - -s
+      - "{{ storage_samba_user }}"
+    stdin: |
+      {{ storage_samba_password }}
+      {{ storage_samba_password }}
+  when:
+    - storage_samba_user_exists
+    - storage_samba_update_password | bool
+  no_log: true
   changed_when: true
   become: true
 
