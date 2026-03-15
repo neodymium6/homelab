@@ -1,0 +1,14 @@
+---
+storage_nfs_server_packages:
+  - nfs-kernel-server
+storage_nfs_server_service: "nfs-kernel-server"
+storage_nfs_server_export_path: "/mnt/storage/share"
+storage_nfs_server_clients: []
+storage_nfs_server_export_options:
+  - rw
+  - sync
+  - no_subtree_check
+  - root_squash
+storage_nfs_server_exports_path: "/etc/exports.d/homelab-storage.exports"
+storage_nfs_server_ufw_enable: true
+storage_nfs_server_ufw_port: "2049"

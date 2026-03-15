@@ -1,0 +1,1 @@
+{{ storage_nfs_server_export_path }}{% for client_name in storage_nfs_server_clients %} {{ network.base_prefix }}.{{ vms[client_name].vmid }}({{ storage_nfs_server_export_options | join(',') }}){% endfor %}

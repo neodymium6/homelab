@@ -15,6 +15,12 @@ storage:
     group: "storage"
     gid: 2000
     share_path: "/mnt/storage/share"
+  nfs:
+    mount_path: "/mnt/nfs"
+    clients:
+      - "app-01"
+      - "dns-01"
+      - "proxy-01"
 
 network:
   base_prefix: "192.168.1"

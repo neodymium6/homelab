@@ -125,6 +125,12 @@ storage:
     group: "storage"
     gid: 2000
     share_path: "/mnt/storage/share"
+  nfs:
+    mount_path: "/mnt/nfs"
+    clients:
+      - "app-01"
+      - "dns-01"
+      - "proxy-01"
 
 network:
   base_prefix: "192.168.1"
@@ -293,6 +299,7 @@ This keeps read clients and publish clients separated by both router method matc
 
 The internal Ansible playbook prepares that disk on `role: storage` hosts by creating an `ext4` filesystem and mounting it at `/mnt/storage` via `UUID=...`, so guest device names such as `/dev/sdb` do not need to stay stable.
 It also creates a fixed-GID shared group on internal VMs and prepares `/mnt/storage/share` as `root:storage` with mode `2775`.
+NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
