@@ -6,8 +6,8 @@ services:
     ports:
       - "{{ arm_port }}:8080"
     environment:
-      ARM_UID: "{{ arm_uid_cmd.stdout }}"
-      ARM_GID: "{{ arm_gid_cmd.stdout }}"
+      ARM_UID: "{{ arm_uid_cmd.stdout | trim }}"
+      ARM_GID: "{{ arm_storage_gid }}"
       TZ: "{{ arm_timezone }}"
     devices:
       - "{{ arm_optical_block_device }}:{{ arm_optical_block_device }}"

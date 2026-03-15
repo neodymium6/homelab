@@ -1,4 +1,10 @@
 ---
+- name: Ensure ARM shared storage group exists
+  ansible.builtin.group:
+    name: "{{ arm_storage_group }}"
+    gid: "{{ arm_storage_gid }}"
+    state: present
+
 - name: Ensure ARM group exists
   ansible.builtin.group:
     name: "{{ arm_group }}"
@@ -7,7 +13,10 @@
 - name: Ensure ARM user exists
   ansible.builtin.user:
     name: "{{ arm_user }}"
-    group: "{{ arm_group }}"
+    group: "{{ arm_storage_group }}"
+    groups:
+      - "{{ arm_group }}"
+    append: true
     home: "{{ arm_home_dir }}"
     create_home: false
     shell: /usr/sbin/nologin
@@ -20,15 +29,6 @@
       - -u
       - "{{ arm_user }}"
   register: arm_uid_cmd
-  changed_when: false
-
-- name: Lookup ARM group id
-  ansible.builtin.command:
-    argv:
-      - id
-      - -g
-      - "{{ arm_user }}"
-  register: arm_gid_cmd
   changed_when: false
 
 - name: List block devices for ARM optical drive detection
@@ -90,7 +90,7 @@
     path: "{{ item.path }}"
     state: directory
     owner: "{{ item.owner | default(arm_user) }}"
-    group: "{{ item.group | default(arm_group) }}"
+    group: "{{ item.group | default(arm_storage_group) }}"
     mode: "{{ item.mode | default('0755') }}"
   loop:
     - { path: "{{ arm_dir }}", owner: "root", group: "root", mode: "0755" }
@@ -104,7 +104,7 @@
     src: abcde.conf.j2
     dest: "{{ arm_abcde_config_path }}"
     owner: "{{ arm_user }}"
-    group: "{{ arm_group }}"
+    group: "{{ arm_storage_group }}"
     mode: "0644"
   notify: Restart arm
 
@@ -115,7 +115,7 @@
     state: link
     force: true
     owner: "{{ arm_user }}"
-    group: "{{ arm_group }}"
+    group: "{{ arm_storage_group }}"
   notify: Restart arm
 
 - name: Deploy ARM docker-compose.yml

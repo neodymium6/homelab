@@ -4,6 +4,8 @@ arm_container_name: "automatic-ripping-machine"
 
 arm_user: "arm"
 arm_group: "arm"
+arm_storage_group: "storage"
+arm_storage_gid: 2000
 arm_timezone: "UTC"
 
 arm_dir: "/opt/stacks/arm"

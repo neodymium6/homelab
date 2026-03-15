@@ -197,6 +197,8 @@
         )
         else 8080
       }}
+    arm_storage_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+    arm_storage_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
     arm_timezone: "{{ timezone | default('UTC') }}"
     arm_music_dir: "{{ (((storage | default({})).nfs | default({})).mount_path | default('/mnt/nfs')) ~ '/music/incoming' }}"
     arm_enable_ufw: "{{ (arm_service.proxy is defined) and (arm_service.proxy.enable | default(false) | bool) }}"
