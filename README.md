@@ -179,6 +179,9 @@ vms:
     role: "rip"
     cpu_cores: 2
     memory_mb: 4096
+    usb_devices:
+      - host: "vendor_id:product_id"
+        usb3: true
 
   app-01:
     vmid: 201
@@ -313,6 +316,7 @@ The internal Ansible playbook prepares that disk on `role: storage` hosts by cre
 It also creates a fixed-GID shared group on internal VMs and prepares `/mnt/storage/share` as `root:storage` with mode `2775`.
 NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
 Samba is also enabled on the storage host with user/password authentication, using `storage.samba.user` and `secrets.storage.samba_password`, and is exposed only to the local homelab CIDR via UFW.
+Any internal VM can also declare `usb_devices` in `cluster.yaml`. Each entry must set exactly one of `host` or `mapping`, matching the provider's VM `usb` block. This is intended for `rip-01`, where an external USB optical drive can be passed through directly to the guest.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 

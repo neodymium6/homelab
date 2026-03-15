@@ -69,6 +69,9 @@ vms:
     role: "rip"
     cpu_cores: 2
     memory_mb: 4096
+    usb_devices:
+      - host: "vendor_id:product_id"
+        usb3: true
 
   app-01:
     vmid: 201

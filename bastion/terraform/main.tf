@@ -79,6 +79,16 @@ resource "proxmox_virtual_environment_vm" "internal" {
     }
   }
 
+  dynamic "usb" {
+    for_each = try(each.value.usb_devices, [])
+
+    content {
+      host    = try(usb.value.host, null)
+      mapping = try(usb.value.mapping, null)
+      usb3    = try(usb.value.usb3, false)
+    }
+  }
+
   initialization {
     datastore_id = local.cluster.proxmox.datastore
 
@@ -121,6 +131,17 @@ resource "proxmox_virtual_environment_vm" "internal" {
     precondition {
       condition     = local.storage_data_disk == null || length(local.storage_vms) == 1
       error_message = "storage.data_disk requires exactly one VM with role 'storage'."
+    }
+
+    precondition {
+      condition = alltrue([
+        for usb_device in try(each.value.usb_devices, []) :
+        length(compact([
+          try(trimspace(usb_device.host), ""),
+          try(trimspace(usb_device.mapping), ""),
+        ])) == 1
+      ])
+      error_message = "Each vm.usb_devices entry must define exactly one of 'host' or 'mapping'."
     }
   }
 }
