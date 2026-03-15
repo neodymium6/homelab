@@ -77,7 +77,7 @@
 - name: Ensure ARM optical generic SCSI device is resolved
   ansible.builtin.assert:
     that:
-      - arm_optical_generic_cmd.stdout | regex_search('/sg[0-9]+$')
+      - arm_optical_generic_cmd.stdout is match('^.*/sg[0-9]+$')
     fail_msg: >-
       Failed to resolve the generic SCSI device for {{ arm_optical_block_device }}.
 
