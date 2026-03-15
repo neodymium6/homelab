@@ -162,6 +162,20 @@
         docker_users:
           - "{{ login_user }}"
 
+- name: Install Docker on rip hosts
+  hosts: rip
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: docker
+      vars:
+        docker_users:
+          - "{{ login_user }}"
+
 - name: Deploy ntfy on app hosts
   hosts: app
   become: true
