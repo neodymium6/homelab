@@ -1,0 +1,21 @@
+---
+storage_samba_packages:
+  - samba
+storage_samba_services:
+  - smbd
+  - nmbd
+storage_samba_share_name: "storage"
+storage_samba_share_path: "/mnt/storage/share"
+storage_samba_user: ""
+storage_samba_password: ""
+storage_samba_group: "storage"
+storage_samba_create_mask: "0664"
+storage_samba_directory_mask: "2775"
+storage_samba_workgroup: "WORKGROUP"
+storage_samba_ufw_enable: true
+storage_samba_ufw_allow_cidr: ""
+storage_samba_ufw_rules:
+  - { port: "137", proto: "udp" }
+  - { port: "138", proto: "udp" }
+  - { port: "139", proto: "tcp" }
+  - { port: "445", proto: "tcp" }

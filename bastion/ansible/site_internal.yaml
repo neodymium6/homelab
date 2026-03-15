@@ -91,6 +91,14 @@
       vars:
         storage_nfs_server_export_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
         storage_nfs_server_clients: "{{ ((storage | default({})).nfs | default({})).clients | default([]) }}"
+    - role: storage_samba
+      vars:
+        storage_samba_share_name: "{{ ((storage | default({})).samba | default({})).share_name | default('storage') }}"
+        storage_samba_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+        storage_samba_user: "{{ ((storage | default({})).samba | default({})).user | default(login_user) }}"
+        storage_samba_password: "{{ ((secrets | default({})).storage | default({})).samba_password | default('') }}"
+        storage_samba_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+        storage_samba_ufw_allow_cidr: "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
 
 - name: Mount shared NFS storage on whitelisted hosts
   hosts: "cluster:!bastion:!storage"

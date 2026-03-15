@@ -15,6 +15,9 @@ storage:
     group: "storage"
     gid: 2000
     share_path: "/mnt/storage/share"
+  samba:
+    share_name: "storage"
+    user: "your_username"
   nfs:
     mount_path: "/mnt/nfs"
     clients:
@@ -257,6 +260,8 @@ secrets:
     auth_access:
       - "subscriber:*:read"
       - "publisher:*:write"
+  storage:
+    samba_password: "change_me"
   alertmanager:
     ntfy_user: "alerting"
     ntfy_password: "change_me"

@@ -125,6 +125,9 @@ storage:
     group: "storage"
     gid: 2000
     share_path: "/mnt/storage/share"
+  samba:
+    share_name: "storage"
+    user: "your_username"
   nfs:
     mount_path: "/mnt/nfs"
     clients:
@@ -287,6 +290,8 @@ secrets:
     auth_access:
       - "subscriber:*:read"
       - "publisher:*:write"
+  storage:
+    samba_password: "change_me"
 ```
 
 For `ntfy`, use two public hosts with different HTTP method policies on the same backend:
@@ -300,6 +305,7 @@ This keeps read clients and publish clients separated by both router method matc
 The internal Ansible playbook prepares that disk on `role: storage` hosts by creating an `ext4` filesystem and mounting it at `/mnt/storage` via `UUID=...`, so guest device names such as `/dev/sdb` do not need to stay stable.
 It also creates a fixed-GID shared group on internal VMs and prepares `/mnt/storage/share` as `root:storage` with mode `2775`.
 NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
+Samba is also enabled on the storage host with user/password authentication, using `storage.samba.user` and `secrets.storage.samba_password`, and is exposed only to the local homelab CIDR via UFW.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 

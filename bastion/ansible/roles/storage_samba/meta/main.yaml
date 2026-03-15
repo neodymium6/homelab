@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Publish the shared storage directory over Samba with user/password auth
+  min_ansible_version: "2.15"
+
+dependencies: []
