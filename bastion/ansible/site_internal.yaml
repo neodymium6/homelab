@@ -323,6 +323,8 @@
     immich_storage_mount_path: "{{ ((storage | default({})).nfs | default({})).mount_path | default('/mnt/nfs') }}"
     immich_upload_location: "{{ ((storage | default({})).immich | default({})).upload_path | default('/mnt/storage/share/immich/upload') | replace(immich_storage_share_path, immich_storage_mount_path) }}"
     immich_db_password: "{{ ((secrets | default({})).immich | default({})).db_password | default('') }}"
+    immich_storage_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+    immich_storage_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
     immich_enable_ufw: "{{ (immich_service.proxy is defined) and (immich_service.proxy.enable | default(false) | bool) }}"
     immich_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
 

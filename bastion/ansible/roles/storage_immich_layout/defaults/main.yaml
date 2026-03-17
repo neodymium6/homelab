@@ -5,3 +5,8 @@ storage_immich_layout_mode: "2775"
 storage_immich_layout_directories:
   - "{{ storage_immich_layout_upload_path | dirname }}"
   - "{{ storage_immich_layout_upload_path }}"
+  - "{{ storage_immich_layout_upload_path }}/encoded-video"
+  - "{{ storage_immich_layout_upload_path }}/library"
+  - "{{ storage_immich_layout_upload_path }}/upload"
+  - "{{ storage_immich_layout_upload_path }}/profile"
+  - "{{ storage_immich_layout_upload_path }}/thumbs"

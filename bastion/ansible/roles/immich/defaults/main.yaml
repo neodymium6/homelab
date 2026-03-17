@@ -11,6 +11,9 @@ immich_timezone: "UTC"
 immich_upload_location: "/mnt/nfs/immich/upload"
 immich_db_data_location: "{{ immich_dir }}/postgres"
 
+immich_storage_group: "storage"
+immich_storage_gid: 2000
+
 immich_db_username: "postgres"
 immich_db_name: "immich"
 immich_db_password: ""
