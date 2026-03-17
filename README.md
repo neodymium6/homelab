@@ -227,6 +227,11 @@ services:
       icon: "mdi-disc-player"
   - name: "navidrome"
     target_vm: "app-01"
+    jukebox_enabled: true
+    # jukebox_devices:
+    #   - name: "dac"
+    #     device: "alsa/default:CARD=MyDAC"
+    # jukebox_default: "dac"
     proxy:
       enable: true
       scheme: "http"
@@ -351,6 +356,7 @@ Samba is also enabled on the storage host with user/password authentication, usi
 Any internal VM can also declare `usb_devices` in `cluster.yaml`. Each entry must set exactly one of `host` or `mapping`, matching the provider's VM `usb` block. This is intended for `rip-01`, where an external USB optical drive can be passed through directly to the guest.
 When the `arm` service is enabled on `rip-01`, ARM is deployed via Docker Compose, auto-detects exactly one `usb rom` optical drive inside the guest, resolves the matching `/dev/sg*` device, and exposes its web UI on port `8080`. The top-level `timezone` setting is also passed through to the ARM container.
 The intended music flow is `rip-01 (ARM) -> /mnt/nfs/music/incoming -> app-01 (music-ingest) -> /mnt/nfs/music/library -> app-01 (Navidrome)`. ARM rips CDs into the incoming directory, music-ingest provides a web UI for reviewing tags and importing albums into the Beets-managed library, and Navidrome serves the library as a streaming server with a read-only mount.
+Navidrome supports Jukebox mode for server-side audio playback via a USB DAC passed through to app-01. When `jukebox_enabled` is set, `/dev/snd` is exposed to the container and mpv drives the DAC directly. Jukebox is controlled from Subsonic-compatible clients (e.g. DSub, play:Sub). The audio device can be explicitly configured via `jukebox_devices` and `jukebox_default` in `cluster.yaml`; otherwise mpv uses `auto`.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
@@ -474,7 +480,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **Docker Compose**: Tool for defining and running multi-container applications
 - **User Access**: Login user added to docker group for non-root Docker access
 - **Web Apps**: Homepage dashboard and personal-site container stack
-- **Media**: music-ingest web UI for importing ripped albums into a Beets-managed library; Navidrome music streaming server reading the library via read-only NFS mount
+- **Media**: music-ingest web UI for importing ripped albums into a Beets-managed library; Navidrome music streaming server reading the library via read-only NFS mount, with optional Jukebox mode for server-side playback via USB DAC
 - **Notifications**: ntfy server for self-hosted push notifications
 - **Monitoring**: Prometheus, Alertmanager, and Grafana deployed for infrastructure observability
 
@@ -906,7 +912,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app` and `role: rip`, and adds specified users to the docker group.
 - `bastion/ansible/roles/arm`: Deploys Automatic Ripping Machine via Docker Compose on VMs with `role: rip`, auto-detecting exactly one USB optical drive in the guest and exposing the web UI for ripping control.
 - `bastion/ansible/roles/music_ingest`: Deploys music-ingest via Docker Compose on VMs with `role: app`, providing a web UI for importing ripped albums from the incoming directory into a Beets-managed music library.
-- `bastion/ansible/roles/navidrome`: Deploys Navidrome music streaming server via Docker Compose on VMs with `role: app`, mounting the Beets-managed library directory as read-only.
+- `bastion/ansible/roles/navidrome`: Deploys Navidrome music streaming server via Docker Compose on VMs with `role: app`, mounting the Beets-managed library directory as read-only. Supports Jukebox mode with USB DAC passthrough (`/dev/snd`) and configurable audio device via `navidrome.toml`.
 - `bastion/ansible/roles/ntfy`: Deploys ntfy server via Docker Compose on VMs with `role: app`, with login/auth and optional proxy-only UFW access.
 - `bastion/ansible/roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
 - `bastion/ansible/roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.
