@@ -3,6 +3,7 @@
   ansible.builtin.apt:
     name: acl
     state: present
+    update_cache: yes
 
 - name: Ensure media layout directories exist on storage hosts
   ansible.builtin.file:

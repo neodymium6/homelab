@@ -232,7 +232,7 @@
           music_ingest_service.proxy is defined and
           music_ingest_service.proxy.port is defined
         )
-        else 8080
+        else 8082
       }}
     music_ingest_storage_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
     music_ingest_storage_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
