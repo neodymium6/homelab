@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Deploy Automatic Ripping Machine via Docker Compose on rip hosts
+  min_ansible_version: "2.15"
+
+dependencies: []

@@ -1,0 +1,20 @@
+services:
+  arm:
+    image: "{{ arm_image }}"
+    container_name: "{{ arm_container_name }}"
+    restart: unless-stopped
+    ports:
+      - "{{ arm_port }}:8080"
+    environment:
+      ARM_UID: "{{ arm_uid_cmd.stdout | trim }}"
+      ARM_GID: "{{ arm_storage_gid }}"
+      TZ: "{{ arm_timezone }}"
+    devices:
+      - "{{ arm_optical_block_device }}:{{ arm_optical_block_device }}"
+      - "{{ arm_optical_generic_device }}:{{ arm_optical_generic_device }}"
+    volumes:
+      - "{{ arm_home_dir }}:/home/arm"
+      - "{{ arm_music_dir }}:/home/arm/music"
+      - "{{ arm_logs_dir }}:/home/arm/logs"
+      - "{{ arm_media_dir }}:/home/arm/media"
+      - "{{ arm_config_dir }}:/etc/arm/config"

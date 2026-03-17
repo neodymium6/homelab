@@ -1,0 +1,148 @@
+---
+- name: Ensure ARM shared storage group exists
+  ansible.builtin.group:
+    name: "{{ arm_storage_group }}"
+    gid: "{{ arm_storage_gid }}"
+    state: present
+
+- name: Ensure ARM group exists
+  ansible.builtin.group:
+    name: "{{ arm_group }}"
+    state: present
+
+- name: Ensure ARM user exists
+  ansible.builtin.user:
+    name: "{{ arm_user }}"
+    group: "{{ arm_storage_group }}"
+    groups:
+      - "{{ arm_group }}"
+    append: true
+    home: "{{ arm_home_dir }}"
+    create_home: false
+    shell: /usr/sbin/nologin
+    state: present
+
+- name: Lookup ARM user id
+  ansible.builtin.command:
+    argv:
+      - id
+      - -u
+      - "{{ arm_user }}"
+  register: arm_uid_cmd
+  changed_when: false
+
+- name: List block devices for ARM optical drive detection
+  ansible.builtin.command:
+    argv:
+      - lsblk
+      - -S
+      - -J
+      - -o
+      - NAME,TRAN,TYPE
+  register: arm_lsblk_scsi_cmd
+  changed_when: false
+
+- name: Select USB optical drives for ARM
+  ansible.builtin.set_fact:
+    arm_usb_optical_devices: >-
+      {{
+        ((arm_lsblk_scsi_cmd.stdout | from_json).blockdevices | default([]))
+        | selectattr('tran', 'equalto', 'usb')
+        | selectattr('type', 'equalto', 'rom')
+        | map(attribute='name')
+        | list
+      }}
+
+- name: Ensure exactly one USB optical drive is available for ARM
+  ansible.builtin.assert:
+    that:
+      - arm_usb_optical_devices | length == 1
+    fail_msg: >-
+      ARM requires exactly one USB optical drive on the rip host.
+      Detected USB optical devices: {{ arm_usb_optical_devices | join(', ') if (arm_usb_optical_devices | length > 0) else 'none' }}.
+
+- name: Set ARM optical block device path
+  ansible.builtin.set_fact:
+    arm_optical_block_device: "/dev/{{ arm_usb_optical_devices[0] }}"
+
+- name: Resolve ARM optical generic SCSI device
+  ansible.builtin.command:
+    argv:
+      - readlink
+      - -f
+      - "/sys/class/block/{{ arm_usb_optical_devices[0] }}/device/generic"
+  register: arm_optical_generic_cmd
+  changed_when: false
+
+- name: Ensure ARM optical generic SCSI device is resolved
+  ansible.builtin.assert:
+    that:
+      - arm_optical_generic_cmd.stdout is match('^.*/sg[0-9]+$')
+    fail_msg: >-
+      Failed to resolve the generic SCSI device for {{ arm_optical_block_device }}.
+
+- name: Set ARM optical generic SCSI device path
+  ansible.builtin.set_fact:
+    arm_optical_generic_device: "/dev/{{ arm_optical_generic_cmd.stdout | basename }}"
+
+- name: Ensure ARM directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(arm_user) }}"
+    group: "{{ item.group | default(arm_storage_group) }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop:
+    - { path: "{{ arm_dir }}", owner: "root", group: "root", mode: "0755" }
+    - { path: "{{ arm_home_dir }}" }
+    - { path: "{{ arm_logs_dir }}" }
+    - { path: "{{ arm_media_dir }}" }
+    - { path: "{{ arm_config_dir }}" }
+
+- name: Deploy ARM abcde.conf
+  ansible.builtin.template:
+    src: abcde.conf.j2
+    dest: "{{ arm_abcde_config_path }}"
+    owner: "{{ arm_user }}"
+    group: "{{ arm_storage_group }}"
+    mode: "0644"
+  notify: Restart arm
+
+- name: Link ARM home abcde config to managed config file
+  ansible.builtin.file:
+    src: /etc/arm/config/abcde.conf
+    dest: "{{ arm_abcde_home_link_path }}"
+    state: link
+    force: true
+    owner: "{{ arm_user }}"
+    group: "{{ arm_storage_group }}"
+  notify: Restart arm
+
+- name: Deploy ARM docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ arm_compose_path }}"
+    mode: "0644"
+  notify: Restart arm
+
+- name: Start ARM via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ arm_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+
+- name: Allow proxy-01 to reach ARM backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ arm_proxy_ip }}"
+    port: "{{ arm_port | string }}"
+  when:
+    - arm_enable_ufw | bool
+    - arm_allow_from_proxy_only | bool
+    - arm_proxy_ip | length > 0

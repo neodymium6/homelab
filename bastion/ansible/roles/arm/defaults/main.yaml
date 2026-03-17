@@ -1,0 +1,37 @@
+---
+arm_image: "automaticrippingmachine/automatic-ripping-machine:2.22.2"
+arm_container_name: "automatic-ripping-machine"
+
+arm_user: "arm"
+arm_group: "arm"
+arm_storage_group: "storage"
+arm_storage_gid: 2000
+arm_timezone: "UTC"
+
+arm_dir: "/opt/stacks/arm"
+arm_home_dir: "{{ arm_dir }}/home"
+arm_logs_dir: "{{ arm_dir }}/logs"
+arm_media_dir: "{{ arm_dir }}/media"
+arm_config_dir: "{{ arm_dir }}/config"
+arm_music_dir: "/mnt/nfs/music/incoming"
+arm_compose_path: "{{ arm_dir }}/docker-compose.yml"
+arm_abcde_config_path: "{{ arm_config_dir }}/abcde.conf"
+arm_abcde_home_link_path: "{{ arm_home_dir }}/.abcde.conf"
+
+arm_port: 8080
+arm_enable_ufw: true
+arm_allow_from_proxy_only: true
+arm_proxy_ip: ""
+
+arm_abcde_cddb_method: "musicbrainz"
+arm_abcde_output_type: "flac"
+arm_abcde_output_dir: "/home/arm/music"
+arm_abcde_output_format: '${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'
+arm_abcde_va_output_format: 'Compilations/${ALBUMFILE}/${TRACKNUM} - ${ARTISTFILE} - ${TRACKFILE}'
+arm_abcde_onetrack_output_format: '${ARTISTFILE}/${ALBUMFILE}/${ALBUMFILE}'
+arm_abcde_va_onetrack_output_format: 'Compilations/${ALBUMFILE}/${ALBUMFILE}'
+arm_abcde_flac_options: '--best --verify'
+arm_abcde_max_procs: 2
+arm_abcde_pad_tracks: "y"
+arm_abcde_eject_cd: "y"
+arm_abcde_interactive: "n"

@@ -125,6 +125,8 @@ storage:
     group: "storage"
     gid: 2000
     share_path: "/mnt/storage/share"
+  media:
+    base_path: "/mnt/storage/share/music"
   samba:
     share_name: "storage"
     user: "your_username"
@@ -134,6 +136,7 @@ storage:
       - "app-01"
       - "dns-01"
       - "proxy-01"
+      - "rip-01"
 
 network:
   base_prefix: "192.168.1"
@@ -146,6 +149,7 @@ network:
     - "1.1.1.1"
   domain: "internal.example.com"
 
+timezone: "Asia/Tokyo"
 login_user: "youruser"
 
 vms:
@@ -173,6 +177,15 @@ vms:
     cpu_cores: 2
     memory_mb: 4096
 
+  rip-01:
+    vmid: 105
+    role: "rip"
+    cpu_cores: 2
+    memory_mb: 4096
+    usb_devices:
+      - host: "vendor_id:product_id"
+        usb3: true
+
   app-01:
     vmid: 201
     role: "app"
@@ -188,6 +201,8 @@ services:
     target_vm: "proxy-01"
   - name: "storage"
     target_vm: "storage-01"
+  - name: "rip"
+    target_vm: "rip-01"
   - name: "app"
     target_vm: "app-01"
   - name: "agh"
@@ -196,6 +211,18 @@ services:
       enable: true
       scheme: "http"
       port: 3000
+  - name: "arm"
+    target_vm: "rip-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8080
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "ARM"
+      category: "Media"
+      icon: "mdi-disc-player"
   - name: "ntfy"
     target_vm: "app-01"
     upstream_base_url: "https://ntfy.sh"
@@ -304,8 +331,12 @@ This keeps read clients and publish clients separated by both router method matc
 
 The internal Ansible playbook prepares that disk on `role: storage` hosts by creating an `ext4` filesystem and mounting it at `/mnt/storage` via `UUID=...`, so guest device names such as `/dev/sdb` do not need to stay stable.
 It also creates a fixed-GID shared group on internal VMs and prepares `/mnt/storage/share` as `root:storage` with mode `2775`.
+For media workflows, storage hosts also prepare `/mnt/storage/share/music`, `/mnt/storage/share/music/incoming`, and `/mnt/storage/share/music/library`.
 NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
 Samba is also enabled on the storage host with user/password authentication, using `storage.samba.user` and `secrets.storage.samba_password`, and is exposed only to the local homelab CIDR via UFW.
+Any internal VM can also declare `usb_devices` in `cluster.yaml`. Each entry must set exactly one of `host` or `mapping`, matching the provider's VM `usb` block. This is intended for `rip-01`, where an external USB optical drive can be passed through directly to the guest.
+When the `arm` service is enabled on `rip-01`, ARM is deployed via Docker Compose, auto-detects exactly one `usb rom` optical drive inside the guest, resolves the matching `/dev/sg*` device, and exposes its web UI on port `8080`. The top-level `timezone` setting is also passed through to the ARM container.
+The intended music flow is `rip-01 -> /mnt/nfs/music/incoming -> review -> /mnt/nfs/music/library`, so ripping output stays separate from the curated playback library.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
@@ -847,9 +878,16 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/ssh_keypair`: Generates `~/.ssh/id_ed25519_internal` for accessing internal VMs from the bastion.
 - `bastion/ansible/roles/ssh_hardening`: Applies UFW rules (open or bastion-restricted), disables password SSH, enables pubkey auth, optional fail2ban.
 - `bastion/ansible/roles/ssh_client_config`: Renders SSH `config` entries for all internal VMs using the internal key.
+- `bastion/ansible/roles/storage_access`: Creates a fixed-GID shared group on internal VMs and prepares the share directory ownership on storage hosts.
+- `bastion/ansible/roles/storage_disk`: Detects the dedicated storage disk by configured size, creates an ext4 filesystem, and mounts it by UUID.
+- `bastion/ansible/roles/storage_media_layout`: Creates shared media workflow directories such as `music/incoming` and `music/library` on storage hosts.
+- `bastion/ansible/roles/storage_nfs_server`: Exports the shared storage directory over NFS only to whitelisted clients and opens UFW for TCP 2049 to those clients.
+- `bastion/ansible/roles/storage_nfs_client`: Installs NFS client tooling and mounts the shared export at `/mnt/nfs` on whitelisted hosts.
+- `bastion/ansible/roles/storage_samba`: Publishes the shared storage directory over Samba with user/password authentication and local-network-only UFW rules.
 - `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `bastion/ansible/roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy` and connects Cloudflare Tunnel to Traefik tunnel entrypoint (`127.0.0.1:8080`).
-- `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
+- `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app` and `role: rip`, and adds specified users to the docker group.
+- `bastion/ansible/roles/arm`: Deploys Automatic Ripping Machine via Docker Compose on VMs with `role: rip`, auto-detecting exactly one USB optical drive in the guest and exposing the web UI for ripping control.
 - `bastion/ansible/roles/ntfy`: Deploys ntfy server via Docker Compose on VMs with `role: app`, with login/auth and optional proxy-only UFW access.
 - `bastion/ansible/roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
 - `bastion/ansible/roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.

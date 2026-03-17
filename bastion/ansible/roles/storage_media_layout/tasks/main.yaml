@@ -1,0 +1,9 @@
+---
+- name: Ensure media layout directories exist on storage hosts
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: "{{ storage_media_layout_group }}"
+    mode: "{{ storage_media_layout_mode }}"
+  loop: "{{ storage_media_layout_directories }}"
