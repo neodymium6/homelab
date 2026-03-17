@@ -46,7 +46,7 @@
   ansible.builtin.template:
     src: docker-compose.yaml.j2
     dest: "{{ immich_compose_path }}"
-    mode: "0644"
+    mode: "0600"
   notify: Restart immich
   become: true
 
