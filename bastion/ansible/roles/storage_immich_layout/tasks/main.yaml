@@ -1,0 +1,9 @@
+---
+- name: Ensure Immich directories exist on storage hosts
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: "{{ storage_immich_layout_group }}"
+    mode: "{{ storage_immich_layout_mode }}"
+  loop: "{{ storage_immich_layout_directories }}"

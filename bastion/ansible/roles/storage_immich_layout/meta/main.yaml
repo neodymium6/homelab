@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Create Immich upload directories on storage hosts
+  min_ansible_version: "2.15"
+
+dependencies: []
