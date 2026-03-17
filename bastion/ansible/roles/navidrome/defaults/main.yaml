@@ -16,6 +16,8 @@ navidrome_storage_group: "storage"
 navidrome_storage_gid: 2000
 
 navidrome_jukebox_enabled: false
+navidrome_jukebox_devices: []
+navidrome_jukebox_default: ""
 
 navidrome_enable_ufw: true
 navidrome_allow_from_proxy_only: true

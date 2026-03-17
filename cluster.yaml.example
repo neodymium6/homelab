@@ -142,6 +142,10 @@ services:
   - name: "navidrome"
     target_vm: "app-01"
     jukebox_enabled: true
+    # jukebox_devices:
+    #   - name: "dac"
+    #     device: "alsa/default:CARD=MyDAC"
+    # jukebox_default: "dac"
     proxy:
       enable: true
       scheme: "http"

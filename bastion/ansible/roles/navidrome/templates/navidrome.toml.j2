@@ -4,3 +4,9 @@ LogLevel = "info"
 Scanner.Schedule = "0 */6 * * *"
 
 Jukebox.Enabled = {{ navidrome_jukebox_enabled | string | lower }}
+{% if navidrome_jukebox_devices | length > 0 %}
+Jukebox.Devices = [{% for dev in navidrome_jukebox_devices %}["{{ dev.name }}", "{{ dev.device }}"]{% if not loop.last %}, {% endif %}{% endfor %}]
+{% endif %}
+{% if navidrome_jukebox_default | length > 0 %}
+Jukebox.Default = "{{ navidrome_jukebox_default }}"
+{% endif %}
