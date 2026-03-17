@@ -1,0 +1,22 @@
+services:
+  navidrome:
+    image: "{{ navidrome_image }}"
+    container_name: "{{ navidrome_container_name }}"
+    restart: unless-stopped
+    user: "{{ navidrome_uid_cmd.stdout | trim }}:{{ navidrome_storage_gid }}"
+    ports:
+      - "{{ navidrome_port }}:4533"
+    environment:
+      TZ: "{{ navidrome_timezone }}"
+      ND_MUSICFOLDER: "/music"
+      ND_DATAFOLDER: "/data"
+      ND_LOGLEVEL: "info"
+      ND_SCANNER_SCHEDULE: "0 */6 * * *"
+    volumes:
+      - "{{ navidrome_data_dir }}:/data"
+      - "{{ navidrome_library_dir }}:/music:ro"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:4533/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
