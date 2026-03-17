@@ -99,13 +99,6 @@
     - { path: "{{ arm_media_dir }}" }
     - { path: "{{ arm_config_dir }}" }
 
-- name: Deploy ARM umask init script
-  ansible.builtin.copy:
-    src: 00_set_umask.sh
-    dest: "{{ arm_config_dir }}/00_set_umask.sh"
-    mode: "0755"
-  notify: Restart arm
-
 - name: Deploy ARM abcde.conf
   ansible.builtin.template:
     src: abcde.conf.j2
