@@ -72,6 +72,7 @@ vms:
     role: "rip"
     cpu_cores: 2
     memory_mb: 4096
+    disk_size_gb: 30
     usb_devices:
       - host: "vendor_id:product_id"
         usb3: true
