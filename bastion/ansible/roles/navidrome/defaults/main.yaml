@@ -1,0 +1,19 @@
+---
+navidrome_image: "deluan/navidrome:latest"
+navidrome_container_name: "navidrome"
+navidrome_dir: "/opt/stacks/navidrome"
+navidrome_data_dir: "{{ navidrome_dir }}/data"
+navidrome_compose_path: "{{ navidrome_dir }}/docker-compose.yaml"
+
+navidrome_port: 4533
+navidrome_timezone: "UTC"
+
+navidrome_library_dir: "/mnt/nfs/music/library"
+
+navidrome_run_user: "{{ login_user | default('nobody') }}"
+navidrome_storage_group: "storage"
+navidrome_storage_gid: 2000
+
+navidrome_enable_ufw: true
+navidrome_allow_from_proxy_only: true
+navidrome_proxy_ip: ""

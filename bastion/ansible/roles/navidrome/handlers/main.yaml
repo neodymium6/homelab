@@ -1,0 +1,11 @@
+---
+- name: Restart navidrome
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ navidrome_compose_path }}"
+      - restart
+      - navidrome
+  become: true
