@@ -1,0 +1,23 @@
+services:
+  app:
+    image: "{{ music_ingest_image }}"
+    container_name: "{{ music_ingest_container_name }}"
+    restart: unless-stopped
+    ports:
+      - "{{ music_ingest_port }}:8080"
+    environment:
+      TZ: "{{ music_ingest_timezone }}"
+      MUSIC_INGEST_STORAGE_SECRET: "{{ music_ingest_storage_secret }}"
+      MUSIC_INGEST_CONF_DIR: "/app/conf"
+      BEETSDIR: "/app/beets"
+    volumes:
+      - "{{ music_ingest_conf_dir }}:/app/conf:ro"
+      - "{{ music_ingest_beets_dir }}:/app/beets:ro"
+      - "{{ music_ingest_data_dir }}:/app/data"
+      - "{{ music_ingest_incoming_dir }}:/music/incoming"
+      - "{{ music_ingest_library_dir }}:/music/library"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
