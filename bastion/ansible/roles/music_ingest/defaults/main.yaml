@@ -7,7 +7,7 @@ music_ingest_conf_dir: "{{ music_ingest_dir }}/conf"
 music_ingest_beets_dir: "{{ music_ingest_dir }}/beets"
 music_ingest_compose_path: "{{ music_ingest_dir }}/docker-compose.yaml"
 
-music_ingest_port: 8080
+music_ingest_port: 8082
 music_ingest_timezone: "UTC"
 
 music_ingest_incoming_dir: "/mnt/nfs/music/incoming"
