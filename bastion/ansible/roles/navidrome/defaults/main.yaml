@@ -14,6 +14,8 @@ navidrome_run_user: "{{ login_user | default('nobody') }}"
 navidrome_storage_group: "storage"
 navidrome_storage_gid: 2000
 
+navidrome_jukebox_enabled: false
+
 navidrome_enable_ufw: true
 navidrome_allow_from_proxy_only: true
 navidrome_proxy_ip: ""
