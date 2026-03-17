@@ -3,7 +3,7 @@ services:
     image: "{{ music_ingest_image }}"
     container_name: "{{ music_ingest_container_name }}"
     restart: unless-stopped
-    user: "0:{{ music_ingest_storage_gid }}"
+    user: "{{ music_ingest_uid_cmd.stdout }}:{{ music_ingest_storage_gid }}"
     ports:
       - "{{ music_ingest_port }}:8080"
     environment:

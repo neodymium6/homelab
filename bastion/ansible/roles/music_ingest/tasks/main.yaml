@@ -3,6 +3,15 @@
   ansible.builtin.set_fact:
     music_ingest_storage_secret: "{{ lookup('community.general.random_string', length=64, special=false) }}"
 
+- name: Lookup music-ingest run user id
+  ansible.builtin.command:
+    argv:
+      - id
+      - -u
+      - "{{ music_ingest_run_user }}"
+  register: music_ingest_uid_cmd
+  changed_when: false
+
 - name: Validate music-ingest backend port range
   ansible.builtin.assert:
     that:
@@ -17,9 +26,16 @@
     mode: "0755"
   loop:
     - "{{ music_ingest_dir }}"
-    - "{{ music_ingest_data_dir }}"
     - "{{ music_ingest_conf_dir }}"
     - "{{ music_ingest_beets_dir }}"
+
+- name: Ensure music-ingest data directory is owned by run user
+  ansible.builtin.file:
+    path: "{{ music_ingest_data_dir }}"
+    state: directory
+    owner: "{{ music_ingest_run_user }}"
+    group: "{{ music_ingest_storage_group }}"
+    mode: "0755"
 
 - name: Deploy music-ingest conf files
   ansible.builtin.copy:
