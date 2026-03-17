@@ -1,4 +1,13 @@
 ---
+- name: Lookup Immich run user UID
+  ansible.builtin.command:
+    argv:
+      - id
+      - -u
+      - "{{ immich_run_user }}"
+  register: immich_uid_cmd
+  changed_when: false
+
 - name: Validate Immich settings
   ansible.builtin.assert:
     that:

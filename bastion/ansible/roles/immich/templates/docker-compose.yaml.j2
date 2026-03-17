@@ -2,8 +2,7 @@ services:
   immich-server:
     image: "ghcr.io/immich-app/immich-server:{{ immich_version }}"
     container_name: "immich_server"
-    group_add:
-      - "{{ immich_storage_gid }}"
+    user: "{{ immich_uid_cmd.stdout | trim }}:{{ immich_storage_gid }}"
     ports:
       - "{{ immich_port }}:2283"
     environment:
