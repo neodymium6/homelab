@@ -3,7 +3,6 @@ services:
     image: "{{ arm_image }}"
     container_name: "{{ arm_container_name }}"
     restart: unless-stopped
-    entrypoint: ["/bin/bash", "-c", "umask 0002 && exec /sbin/my_init"]
     ports:
       - "{{ arm_port }}:8080"
     environment:
@@ -19,3 +18,4 @@ services:
       - "{{ arm_logs_dir }}:/home/arm/logs"
       - "{{ arm_media_dir }}:/home/arm/media"
       - "{{ arm_config_dir }}:/etc/arm/config"
+      - "{{ arm_config_dir }}/00_set_umask.sh:/etc/my_init.d/00_set_umask.sh:ro"
