@@ -1,0 +1,61 @@
+---
+- name: Lookup navidrome run user id
+  ansible.builtin.command:
+    argv:
+      - id
+      - -u
+      - "{{ navidrome_run_user }}"
+  register: navidrome_uid_cmd
+  changed_when: false
+
+- name: Validate navidrome backend port range
+  ansible.builtin.assert:
+    that:
+      - navidrome_port | int >= 1
+      - navidrome_port | int <= 65535
+    fail_msg: "navidrome_port must be between 1 and 65535"
+
+- name: Ensure navidrome directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ navidrome_dir }}"
+
+- name: Ensure navidrome data directory is owned by run user
+  ansible.builtin.file:
+    path: "{{ navidrome_data_dir }}"
+    state: directory
+    owner: "{{ navidrome_run_user }}"
+    group: "{{ navidrome_storage_group }}"
+    mode: "0755"
+
+- name: Deploy navidrome docker-compose file
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ navidrome_compose_path }}"
+    mode: "0644"
+  notify: Restart navidrome
+
+- name: Start navidrome via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ navidrome_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+
+- name: Allow proxy-01 to reach navidrome backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ navidrome_proxy_ip }}"
+    port: "{{ navidrome_port | string }}"
+  when:
+    - navidrome_enable_ufw | bool
+    - navidrome_allow_from_proxy_only | bool
+    - navidrome_proxy_ip | length > 0
