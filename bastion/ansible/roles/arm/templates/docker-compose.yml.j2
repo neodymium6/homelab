@@ -3,7 +3,6 @@ services:
     image: "{{ arm_image }}"
     container_name: "{{ arm_container_name }}"
     restart: unless-stopped
-    entrypoint: ["/bin/bash", "-c", "umask 0002 && exec /sbin/my_init"]
     ports:
       - "{{ arm_port }}:8080"
     environment:

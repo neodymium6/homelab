@@ -35,4 +35,3 @@ arm_abcde_max_procs: 2
 arm_abcde_pad_tracks: "y"
 arm_abcde_eject_cd: "y"
 arm_abcde_interactive: "n"
-arm_abcde_output_umask: "0002"
