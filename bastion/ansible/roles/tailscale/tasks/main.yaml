@@ -26,9 +26,15 @@
     mode: "0755"
   become: true
 
+- name: Get Debian codename
+  ansible.builtin.command:
+    cmd: lsb_release -cs
+  register: tailscale_debian_codename
+  changed_when: false
+
 - name: Download Tailscale GPG key
   ansible.builtin.shell:
-    cmd: curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+    cmd: curl -fsSL https://pkgs.tailscale.com/stable/debian/{{ tailscale_debian_codename.stdout | trim }}.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
     creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
   become: true
 
@@ -36,7 +42,7 @@
   ansible.builtin.copy:
     dest: /etc/apt/sources.list.d/tailscale.list
     mode: "0644"
-    content: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian bookworm main\n"
+    content: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian {{ tailscale_debian_codename.stdout | trim }} main\n"
   become: true
   register: tailscale_repo_added
 
