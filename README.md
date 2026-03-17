@@ -132,7 +132,7 @@ storage:
   media:
     base_path: "/mnt/storage/share/music"
   immich:
-    upload_path: "/mnt/storage/share/immich/upload"
+    upload_path: "/mnt/storage/share/immich"
   samba:
     share_name: "storage"
     user: "your_username"

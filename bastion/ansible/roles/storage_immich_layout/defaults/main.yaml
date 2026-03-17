@@ -1,9 +1,8 @@
 ---
-storage_immich_layout_upload_path: "/mnt/storage/share/immich/upload"
+storage_immich_layout_upload_path: "/mnt/storage/share/immich"
 storage_immich_layout_group: "storage"
 storage_immich_layout_mode: "2775"
 storage_immich_layout_directories:
-  - "{{ storage_immich_layout_upload_path | dirname }}"
   - "{{ storage_immich_layout_upload_path }}"
   - "{{ storage_immich_layout_upload_path }}/encoded-video"
   - "{{ storage_immich_layout_upload_path }}/library"

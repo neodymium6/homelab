@@ -92,7 +92,7 @@
     - role: storage_immich_layout
       when: (storage | default({})).immich is defined
       vars:
-        storage_immich_layout_upload_path: "{{ storage.immich.upload_path | default((((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share')) ~ '/immich/upload') }}"
+        storage_immich_layout_upload_path: "{{ storage.immich.upload_path | default((((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share')) ~ '/immich') }}"
         storage_immich_layout_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
     - role: storage_nfs_server
       when: (((storage | default({})).nfs | default({})).clients | default([]) | length) > 0
@@ -321,12 +321,24 @@
     immich_timezone: "{{ timezone | default('UTC') }}"
     immich_storage_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
     immich_storage_mount_path: "{{ ((storage | default({})).nfs | default({})).mount_path | default('/mnt/nfs') }}"
-    immich_upload_location: "{{ ((storage | default({})).immich | default({})).upload_path | default(immich_storage_share_path ~ '/immich/upload') | replace(immich_storage_share_path, immich_storage_mount_path) }}"
+    immich_upload_location: "{{ ((storage | default({})).immich | default({})).upload_path | default(immich_storage_share_path ~ '/immich') | replace(immich_storage_share_path, immich_storage_mount_path) }}"
     immich_db_password: "{{ ((secrets | default({})).immich | default({})).db_password | default('') }}"
     immich_storage_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
     immich_storage_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
     immich_enable_ufw: "{{ (immich_service.proxy is defined) and (immich_service.proxy.enable | default(false) | bool) }}"
     immich_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  pre_tasks:
+    - name: Validate Immich storage configuration
+      ansible.builtin.assert:
+        that:
+          - (storage | default({})).immich is defined
+          - ((storage | default({})).immich | default({})).upload_path is defined
+          - (((storage | default({})).immich | default({})).upload_path | string) | length > 0
+        fail_msg: "storage.immich.upload_path must be set in cluster.yaml when the Immich service is enabled."
+      when:
+        - immich_enabled | bool
+        - inventory_hostname == immich_target_vm
 
   roles:
     - role: immich
