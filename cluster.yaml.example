@@ -141,6 +141,7 @@ services:
       icon: "mdi-music-box-multiple"
   - name: "navidrome"
     target_vm: "app-01"
+    jukebox_enabled: true
     proxy:
       enable: true
       scheme: "http"
