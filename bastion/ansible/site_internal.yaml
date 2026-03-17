@@ -92,7 +92,7 @@
     - role: storage_immich_layout
       when: (storage | default({})).immich is defined
       vars:
-        storage_immich_layout_upload_path: "{{ ((storage | default({})).immich | default({})).upload_path | default(((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share')) ~ '/immich/upload') }}"
+        storage_immich_layout_upload_path: "{{ storage.immich.upload_path | default('/mnt/storage/share/immich/upload') }}"
         storage_immich_layout_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
     - role: storage_nfs_server
       when: (((storage | default({})).nfs | default({})).clients | default([]) | length) > 0
