@@ -213,6 +213,46 @@
         - arm_enabled | bool
         - inventory_hostname == arm_target_vm
 
+- name: Deploy music-ingest on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    music_ingest_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'music-ingest') | list | first) | default({}) }}"
+    music_ingest_enabled: "{{ music_ingest_service != {} and music_ingest_service.target_vm is defined }}"
+    music_ingest_target_vm: "{{ music_ingest_service.target_vm | default('') }}"
+    music_ingest_port: >-
+      {{
+        (music_ingest_service.proxy.port | int)
+        if (
+          music_ingest_service.proxy is defined and
+          music_ingest_service.proxy.port is defined
+        )
+        else 8080
+      }}
+    music_ingest_storage_secret: "{{ ((secrets | default({})).music_ingest | default({})).storage_secret | default('') }}"
+    music_ingest_storage_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+    music_ingest_storage_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
+    music_ingest_storage_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+    music_ingest_storage_mount_path: "{{ ((storage | default({})).nfs | default({})).mount_path | default('/mnt/nfs') }}"
+    music_ingest_media_base_path: "{{ (((storage | default({})).media | default({})).base_path) | default(music_ingest_storage_share_path ~ '/music') }}"
+    music_ingest_nfs_music_path: "{{ music_ingest_media_base_path | replace(music_ingest_storage_share_path, music_ingest_storage_mount_path) }}"
+    music_ingest_incoming_dir: "{{ music_ingest_nfs_music_path }}/incoming"
+    music_ingest_library_dir: "{{ music_ingest_nfs_music_path }}/library"
+    music_ingest_timezone: "{{ timezone | default('UTC') }}"
+    music_ingest_enable_ufw: "{{ (music_ingest_service.proxy is defined) and (music_ingest_service.proxy.enable | default(false) | bool) }}"
+    music_ingest_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  roles:
+    - role: music_ingest
+      when:
+        - music_ingest_enabled | bool
+        - inventory_hostname == music_ingest_target_vm
+
 - name: Deploy ntfy on app hosts
   hosts: app
   become: true
