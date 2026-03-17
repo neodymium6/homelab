@@ -27,6 +27,7 @@ All required Ansible roles are vendored in this repository—no external role de
 │ - Terraform     │──┐
 │ - Ansible       │  │ SSH
 │ - Home Manager  │  │
+│ - Tailscale     │  │
 └─────────────────┘  │
                      ▼
             ┌──────────────────────────────┐
@@ -387,6 +388,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Generate internal SSH keypair                 │
 │    - SSH hardening (UFW + optional fail2ban)       │
 │    - SSH client config for internal hosts          │
+│    - Join Tailscale (optional, subnet router)      │
 │ 3. ansible: Configure internal VMs                 │
 │    - SSH hardening (allow only from bastion)       │
 │    - Install and configure Traefik (proxy role)    │
@@ -444,6 +446,43 @@ Internal VMs are only accessible from bastion using the dedicated SSH key:
 # From bastion
 ssh -i ~/.ssh/id_ed25519_internal <login_user>@<internal_vm_ip>
 ```
+
+## Tailscale VPN
+
+Bastion can optionally join a Tailscale tailnet as a subnet router, enabling remote access to the entire homelab LAN from any device on the tailnet.
+
+### Configuration
+
+```yaml
+tailscale:
+  enable: true
+  nodes:
+    bastion-01:
+      advertise_tags:
+        - "tag:homelab"
+        - "tag:subnet-router"
+      advertise_routes:
+        - "192.168.1.0/24"
+      enable_ip_forward: true
+
+secrets:
+  tailscale:
+    auth_key: "tskey-auth-..."
+```
+
+The auth key should be a reusable, tagged key from the Tailscale admin console. Tags must be defined in the tailnet ACL policy under `tagOwners`. For subnet route auto-approval, add `autoApprovers.routes` for the advertised CIDR.
+
+### How it works
+
+- Tailscale is installed via the official apt repository
+- Bastion joins the tailnet and advertises `192.168.1.0/24` as a subnet route
+- IP forwarding is enabled via sysctl on subnet router nodes
+- `tailscale up` runs with full flags on every Ansible run for convergence
+- Existing LAN access (SSH, Makefile) continues to work unchanged
+
+### Extending
+
+Additional nodes can be added to `tailscale.nodes` in `cluster.yaml`. Per-node options include `advertise_tags`, `advertise_routes`, `enable_ip_forward`, `accept_routes`, and `ssh`. Only nodes listed under `tailscale.nodes` are joined to the tailnet.
 
 ## Security Features
 
@@ -903,6 +942,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/ssh_keypair`: Generates `~/.ssh/id_ed25519_internal` for accessing internal VMs from the bastion.
 - `bastion/ansible/roles/ssh_hardening`: Applies UFW rules (open or bastion-restricted), disables password SSH, enables pubkey auth, optional fail2ban.
 - `bastion/ansible/roles/ssh_client_config`: Renders SSH `config` entries for all internal VMs using the internal key.
+- `bastion/ansible/roles/tailscale`: Installs Tailscale via apt repository on bastion, joins the tailnet with configured tags and subnet routes, and enables IP forwarding for subnet router nodes.
 - `bastion/ansible/roles/storage_access`: Creates a fixed-GID shared group on internal VMs and prepares the share directory ownership on storage hosts.
 - `bastion/ansible/roles/storage_disk`: Detects the dedicated storage disk by configured size, creates an ext4 filesystem, and mounts it by UUID.
 - `bastion/ansible/roles/storage_media_layout`: Creates shared media workflow directories such as `music/incoming` and `music/library` on storage hosts.
