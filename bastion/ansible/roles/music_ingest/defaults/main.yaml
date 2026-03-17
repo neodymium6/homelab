@@ -1,0 +1,23 @@
+---
+music_ingest_image: "ghcr.io/neodymium6/music-ingest:latest"
+music_ingest_container_name: "music-ingest"
+music_ingest_dir: "/opt/stacks/music-ingest"
+music_ingest_data_dir: "{{ music_ingest_dir }}/data"
+music_ingest_conf_dir: "{{ music_ingest_dir }}/conf"
+music_ingest_beets_dir: "{{ music_ingest_dir }}/beets"
+music_ingest_compose_path: "{{ music_ingest_dir }}/docker-compose.yaml"
+
+music_ingest_port: 8080
+music_ingest_timezone: "UTC"
+
+music_ingest_incoming_dir: "/mnt/nfs/music/incoming"
+music_ingest_library_dir: "/mnt/nfs/music/library"
+
+music_ingest_storage_secret: ""
+
+music_ingest_storage_group: "storage"
+music_ingest_storage_gid: 2000
+
+music_ingest_enable_ufw: true
+music_ingest_allow_from_proxy_only: true
+music_ingest_proxy_ip: ""
