@@ -8,7 +8,6 @@ services:
     environment:
       ARM_UID: "{{ arm_uid_cmd.stdout | trim }}"
       ARM_GID: "{{ arm_storage_gid }}"
-      UMASK: "0002"
       TZ: "{{ arm_timezone }}"
     devices:
       - "{{ arm_optical_block_device }}:{{ arm_optical_block_device }}"
