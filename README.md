@@ -193,6 +193,7 @@ vms:
     role: "app"
     cpu_cores: 4
     memory_mb: 8192
+    disk_size_gb: 40  # default: 20
 
 services:
   - name: "bastion"
