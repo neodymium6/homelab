@@ -1,11 +1,7 @@
 ---
-- name: Validate music-ingest storage secret is set
-  ansible.builtin.assert:
-    that:
-      - music_ingest_storage_secret | length > 0
-    fail_msg: >-
-      music_ingest_storage_secret must be set.
-      Add a value under secrets.music_ingest.storage_secret in cluster.yaml.
+- name: Generate music-ingest storage secret
+  ansible.builtin.set_fact:
+    music_ingest_storage_secret: "{{ lookup('community.general.random_string', length=64, special=false) }}"
 
 - name: Validate music-ingest backend port range
   ansible.builtin.assert:

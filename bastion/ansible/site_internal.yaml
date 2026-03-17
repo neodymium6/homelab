@@ -234,7 +234,6 @@
         )
         else 8080
       }}
-    music_ingest_storage_secret: "{{ ((secrets | default({})).music_ingest | default({})).storage_secret | default('') }}"
     music_ingest_storage_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
     music_ingest_storage_gid: "{{ ((storage | default({})).access | default({})).gid | default(2000) | int }}"
     music_ingest_storage_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"

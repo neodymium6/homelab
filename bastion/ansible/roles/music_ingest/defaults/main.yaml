@@ -13,8 +13,6 @@ music_ingest_timezone: "UTC"
 music_ingest_incoming_dir: "/mnt/nfs/music/incoming"
 music_ingest_library_dir: "/mnt/nfs/music/library"
 
-music_ingest_storage_secret: ""
-
 music_ingest_storage_group: "storage"
 music_ingest_storage_gid: 2000
 
