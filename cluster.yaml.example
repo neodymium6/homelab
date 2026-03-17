@@ -17,6 +17,8 @@ storage:
     share_path: "/mnt/storage/share"
   media:
     base_path: "/mnt/storage/share/music"
+  immich:
+    upload_path: "/mnt/storage/share/immich/upload"
   samba:
     share_name: "storage"
     user: "your_username"
@@ -158,6 +160,18 @@ services:
       display_name: "Navidrome"
       category: "Media"
       icon: "mdi-music-circle"
+  - name: "immich"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 2283
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Immich"
+      category: "Photos"
+      icon: "mdi-image-multiple"
   - name: "ntfy"
     target_vm: "app-01"
     upstream_base_url: "https://ntfy.sh"
@@ -331,6 +345,8 @@ secrets:
     auth_access:
       - "subscriber:*:read"
       - "publisher:*:write"
+  immich:
+    db_password: "change_me"
   storage:
     samba_password: "change_me"
   tailscale:
