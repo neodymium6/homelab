@@ -1,1 +1,69 @@
 ---
+- name: Validate music-ingest storage secret is set
+  ansible.builtin.assert:
+    that:
+      - music_ingest_storage_secret | length > 0
+    fail_msg: >-
+      music_ingest_storage_secret must be set.
+      Add a value under secrets.music_ingest.storage_secret in cluster.yaml.
+
+- name: Validate music-ingest backend port range
+  ansible.builtin.assert:
+    that:
+      - music_ingest_port | int >= 1
+      - music_ingest_port | int <= 65535
+    fail_msg: "music_ingest_port must be between 1 and 65535"
+
+- name: Ensure music-ingest directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ music_ingest_dir }}"
+    - "{{ music_ingest_data_dir }}"
+    - "{{ music_ingest_conf_dir }}"
+    - "{{ music_ingest_beets_dir }}"
+
+- name: Deploy music-ingest conf files
+  ansible.builtin.copy:
+    src: conf/
+    dest: "{{ music_ingest_conf_dir }}/"
+    mode: "0644"
+  notify: Restart music-ingest
+
+- name: Deploy music-ingest beets config
+  ansible.builtin.copy:
+    src: beets/
+    dest: "{{ music_ingest_beets_dir }}/"
+    mode: "0644"
+  notify: Restart music-ingest
+
+- name: Deploy music-ingest docker-compose file
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ music_ingest_compose_path }}"
+    mode: "0644"
+  notify: Restart music-ingest
+
+- name: Start music-ingest via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ music_ingest_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+
+- name: Allow proxy-01 to reach music-ingest backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ music_ingest_proxy_ip }}"
+    port: "{{ music_ingest_port | string }}"
+  when:
+    - music_ingest_enable_ufw | bool
+    - music_ingest_allow_from_proxy_only | bool
+    - music_ingest_proxy_ip | length > 0
