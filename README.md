@@ -342,6 +342,8 @@ secrets:
     auth_access:
       - "subscriber:*:read"
       - "publisher:*:write"
+  immich:
+    db_password: "change_me"
   storage:
     samba_password: "change_me"
 ```
