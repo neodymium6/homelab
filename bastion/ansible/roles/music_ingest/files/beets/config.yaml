@@ -18,5 +18,5 @@ embedart:
   ifempty: yes
 
 paths:
-  default: $albumartist/$album%aunique()/$track $title
+  default: $albumartist/$album%aunique{}/$track $title
   singleton: Non-Album/$artist/$title
