@@ -1,4 +1,10 @@
 ---
+- name: Ensure acl package is installed
+  ansible.builtin.apt:
+    name: acl
+    state: present
+    update_cache: yes
+
 - name: Ensure media layout directories exist on storage hosts
   ansible.builtin.file:
     path: "{{ item }}"
@@ -7,3 +13,21 @@
     group: "{{ storage_media_layout_group }}"
     mode: "{{ storage_media_layout_mode }}"
   loop: "{{ storage_media_layout_directories }}"
+
+- name: Set default ACL for group write on incoming directory
+  ansible.posix.acl:
+    path: "{{ storage_media_layout_base_path }}/incoming"
+    etype: group
+    entity: "{{ storage_media_layout_group }}"
+    permissions: rwX
+    default: true
+    state: present
+
+- name: Set ACL for group write on existing incoming files
+  ansible.posix.acl:
+    path: "{{ storage_media_layout_base_path }}/incoming"
+    etype: group
+    entity: "{{ storage_media_layout_group }}"
+    permissions: rwX
+    recursive: true
+    state: present

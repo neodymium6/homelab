@@ -1,0 +1,11 @@
+---
+- name: Restart music-ingest
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ music_ingest_compose_path }}"
+      - restart
+      - app
+  become: true

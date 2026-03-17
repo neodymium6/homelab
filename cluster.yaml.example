@@ -125,6 +125,18 @@ services:
       display_name: "ARM"
       category: "Media"
       icon: "mdi-disc-player"
+  - name: "music-ingest"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8082
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Music Ingest"
+      category: "Media"
+      icon: "mdi-music-box-multiple"
   - name: "ntfy"
     target_vm: "app-01"
     upstream_base_url: "https://ntfy.sh"
