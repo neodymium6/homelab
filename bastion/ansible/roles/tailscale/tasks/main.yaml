@@ -1,0 +1,120 @@
+---
+# --- Validation ---
+
+- name: Validate Tailscale auth key is configured
+  ansible.builtin.assert:
+    that:
+      - tailscale_auth_key | string | length > 0
+    fail_msg: "Set secrets.tailscale.auth_key in cluster.yaml."
+
+# --- Install via apt repository ---
+
+- name: Install prerequisites for Tailscale repo
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+    state: present
+    update_cache: yes
+  become: true
+
+- name: Create keyrings directory
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Download Tailscale GPG key
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+    creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
+  become: true
+
+- name: Add Tailscale apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/tailscale.list
+    mode: "0644"
+    content: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian bookworm main\n"
+  become: true
+  register: tailscale_repo_added
+
+- name: Update apt cache after adding Tailscale repo
+  ansible.builtin.apt:
+    update_cache: yes
+  when: tailscale_repo_added.changed
+  become: true
+
+- name: Install Tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+  become: true
+
+- name: Ensure tailscaled is enabled and running
+  ansible.builtin.service:
+    name: tailscaled
+    state: started
+    enabled: true
+  become: true
+
+# --- IP forwarding for subnet router ---
+
+- name: Configure IP forwarding for subnet router
+  ansible.builtin.copy:
+    dest: "{{ tailscale_sysctl_path }}"
+    mode: "0644"
+    content: |
+      net.ipv4.ip_forward = 1
+      net.ipv6.conf.all.forwarding = 1
+  when: tailscale_enable_ip_forward | bool
+  notify: Reload sysctl
+  become: true
+
+- name: Remove IP forwarding config when not needed
+  ansible.builtin.file:
+    path: "{{ tailscale_sysctl_path }}"
+    state: absent
+  when: not (tailscale_enable_ip_forward | bool)
+  notify: Reload sysctl
+  become: true
+
+- name: Flush handlers to apply sysctl before tailscale up
+  ansible.builtin.meta: flush_handlers
+
+# --- Tailscale up (full-flag convergence) ---
+
+- name: Get current Tailscale status
+  ansible.builtin.command:
+    cmd: tailscale status --json
+  register: tailscale_status_raw
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: Parse Tailscale status
+  ansible.builtin.set_fact:
+    tailscale_status: "{{ (tailscale_status_raw.stdout | from_json) if tailscale_status_raw.rc == 0 and tailscale_status_raw.stdout | length > 0 else {} }}"
+    tailscale_backend_state: "{{ ((tailscale_status_raw.stdout | from_json).BackendState | default('')) if tailscale_status_raw.rc == 0 and tailscale_status_raw.stdout | length > 0 else '' }}"
+
+- name: Build tailscale up arguments
+  ansible.builtin.set_fact:
+    tailscale_up_args: >-
+      {{ ['tailscale', 'up'] +
+         ['--authkey=' + tailscale_auth_key] +
+         ['--hostname=' + tailscale_hostname] +
+         (['--advertise-tags=' + (tailscale_advertise_tags | join(','))] if tailscale_advertise_tags | length > 0 else []) +
+         (['--advertise-routes=' + (tailscale_advertise_routes | join(','))] if tailscale_advertise_routes | length > 0 else []) +
+         ['--accept-routes=' + (tailscale_accept_routes | string | lower)] +
+         ['--ssh=' + (tailscale_ssh | string | lower)] +
+         (['--reset'] if tailscale_backend_state == 'Running' else [])
+      }}
+
+- name: Join or update Tailscale configuration
+  ansible.builtin.command:
+    argv: "{{ tailscale_up_args }}"
+  no_log: true
+  register: tailscale_up_result
+  changed_when: tailscale_backend_state != 'Running'
+  become: true
