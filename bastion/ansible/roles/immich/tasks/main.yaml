@@ -34,6 +34,19 @@
     mode: "0700"
   become: true
 
+- name: Check if config path is a directory
+  ansible.builtin.stat:
+    path: "{{ immich_config_path }}"
+  register: immich_config_stat
+  become: true
+
+- name: Remove config path if it is a directory (Docker may create it as a dir)
+  ansible.builtin.file:
+    path: "{{ immich_config_path }}"
+    state: absent
+  when: immich_config_stat.stat.isdir | default(false)
+  become: true
+
 - name: Deploy Immich config file
   ansible.builtin.template:
     src: immich.json.j2
