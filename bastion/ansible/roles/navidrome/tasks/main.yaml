@@ -8,6 +8,21 @@
   register: navidrome_uid_cmd
   changed_when: false
 
+- name: Lookup host audio group GID for jukebox
+  ansible.builtin.command:
+    argv:
+      - getent
+      - group
+      - audio
+  register: navidrome_audio_group_cmd
+  changed_when: false
+  when: navidrome_jukebox_enabled | bool
+
+- name: Set host audio GID fact
+  ansible.builtin.set_fact:
+    navidrome_host_audio_gid: "{{ navidrome_audio_group_cmd.stdout.split(':')[2] }}"
+  when: navidrome_jukebox_enabled | bool
+
 - name: Validate navidrome backend port range
   ansible.builtin.assert:
     that:
@@ -22,6 +37,14 @@
     mode: "0755"
   loop:
     - "{{ navidrome_dir }}"
+    - "{{ navidrome_conf_dir }}"
+
+- name: Deploy navidrome configuration file
+  ansible.builtin.template:
+    src: navidrome.toml.j2
+    dest: "{{ navidrome_conf_dir }}/navidrome.toml"
+    mode: "0644"
+  notify: Restart navidrome
 
 - name: Ensure navidrome data directory is owned by run user
   ansible.builtin.file:

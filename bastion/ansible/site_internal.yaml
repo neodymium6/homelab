@@ -280,6 +280,9 @@
     navidrome_media_base_path: "{{ (((storage | default({})).media | default({})).base_path) | default(navidrome_storage_share_path ~ '/music') }}"
     navidrome_library_dir: "{{ (navidrome_media_base_path | replace(navidrome_storage_share_path, navidrome_storage_mount_path)) ~ '/library' }}"
     navidrome_timezone: "{{ timezone | default('UTC') }}"
+    navidrome_jukebox_enabled: "{{ navidrome_service.jukebox_enabled | default(false) | bool }}"
+    navidrome_jukebox_devices: "{{ navidrome_service.jukebox_devices | default([]) }}"
+    navidrome_jukebox_default: "{{ navidrome_service.jukebox_default | default('') }}"
     navidrome_enable_ufw: "{{ (navidrome_service.proxy is defined) and (navidrome_service.proxy.enable | default(false) | bool) }}"
     navidrome_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
 

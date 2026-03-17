@@ -81,6 +81,8 @@ vms:
     role: "app"
     cpu_cores: 4
     memory_mb: 8192
+    usb_devices:
+      - host: "vendor_id:product_id"  # USB DAC for Navidrome Jukebox
 
 services:
   - name: "bastion"
@@ -139,6 +141,11 @@ services:
       icon: "mdi-music-box-multiple"
   - name: "navidrome"
     target_vm: "app-01"
+    jukebox_enabled: true
+    # jukebox_devices:
+    #   - name: "dac"
+    #     device: "alsa/default:CARD=MyDAC"
+    # jukebox_default: "dac"
     proxy:
       enable: true
       scheme: "http"

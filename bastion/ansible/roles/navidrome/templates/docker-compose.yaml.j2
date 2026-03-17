@@ -8,13 +8,18 @@ services:
       - "{{ navidrome_port }}:4533"
     environment:
       TZ: "{{ navidrome_timezone }}"
-      ND_MUSICFOLDER: "/music"
-      ND_DATAFOLDER: "/data"
-      ND_LOGLEVEL: "info"
-      ND_SCANNER_SCHEDULE: "0 */6 * * *"
+      HOME: "/data"
+      ND_CONFIGFILE: "/etc/navidrome/navidrome.toml"
     volumes:
       - "{{ navidrome_data_dir }}:/data"
+      - "{{ navidrome_conf_dir }}/navidrome.toml:/etc/navidrome/navidrome.toml:ro"
       - "{{ navidrome_library_dir }}:/music:ro"
+{% if navidrome_jukebox_enabled | bool %}
+    devices:
+      - "/dev/snd:/dev/snd"
+    group_add:
+      - "{{ navidrome_host_audio_gid }}"
+{% endif %}
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:4533/ping"]
       interval: 30s
