@@ -3,6 +3,7 @@ navidrome_image: "deluan/navidrome:latest"
 navidrome_container_name: "navidrome"
 navidrome_dir: "/opt/stacks/navidrome"
 navidrome_data_dir: "{{ navidrome_dir }}/data"
+navidrome_conf_dir: "{{ navidrome_dir }}/conf"
 navidrome_compose_path: "{{ navidrome_dir }}/docker-compose.yaml"
 
 navidrome_port: 4533

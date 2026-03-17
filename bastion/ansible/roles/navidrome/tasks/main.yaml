@@ -37,6 +37,14 @@
     mode: "0755"
   loop:
     - "{{ navidrome_dir }}"
+    - "{{ navidrome_conf_dir }}"
+
+- name: Deploy navidrome configuration file
+  ansible.builtin.template:
+    src: navidrome.toml.j2
+    dest: "{{ navidrome_conf_dir }}/navidrome.toml"
+    mode: "0644"
+  notify: Restart navidrome
 
 - name: Ensure navidrome data directory is owned by run user
   ansible.builtin.file:
