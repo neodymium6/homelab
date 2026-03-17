@@ -184,6 +184,7 @@ vms:
     role: "rip"
     cpu_cores: 2
     memory_mb: 4096
+    disk_size_gb: 30  # default: 20
     usb_devices:
       - host: "vendor_id:product_id"
         usb3: true
@@ -193,6 +194,7 @@ vms:
     role: "app"
     cpu_cores: 4
     memory_mb: 8192
+    disk_size_gb: 40  # default: 20
 
 services:
   - name: "bastion"

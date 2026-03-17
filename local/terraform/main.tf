@@ -54,7 +54,7 @@ resource "proxmox_virtual_environment_vm" "bastion" {
   disk {
     datastore_id = local.cluster.proxmox.datastore
     interface    = "scsi0"
-    size         = 20
+    size         = lookup(each.value, "disk_size_gb", 20)
   }
 
   initialization {
