@@ -298,6 +298,17 @@ services:
       category: "Monitoring"
       icon: "si-grafana"
 
+tailscale:
+  enable: true
+  nodes:
+    bastion-01:
+      advertise_tags:
+        - "tag:homelab"
+        - "tag:subnet-router"
+      advertise_routes:
+        - "192.168.1.0/24"
+      enable_ip_forward: true
+
 proxy:
   acme_email: "you@example.net"
   cloudflare_dns_api_token: "CF_TOKEN_HERE"
@@ -322,6 +333,8 @@ secrets:
       - "publisher:*:write"
   storage:
     samba_password: "change_me"
+  tailscale:
+    auth_key: "tskey-auth-REPLACE_ME"
   alertmanager:
     ntfy_user: "alerting"
     ntfy_password: "change_me"
