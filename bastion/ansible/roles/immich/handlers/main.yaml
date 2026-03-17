@@ -1,0 +1,12 @@
+---
+- name: Restart immich
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ immich_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  become: true

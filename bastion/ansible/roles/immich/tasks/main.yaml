@@ -1,0 +1,60 @@
+---
+- name: Validate Immich settings
+  ansible.builtin.assert:
+    that:
+      - immich_port | int >= 1
+      - immich_port | int <= 65535
+      - immich_db_password | default('') | string | length > 0
+    fail_msg: "immich_port must be valid and secrets.immich.db_password must be set."
+
+- name: Ensure Immich directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ immich_dir }}"
+    - "{{ immich_db_data_location }}"
+  become: true
+
+- name: Deploy Immich config file
+  ansible.builtin.template:
+    src: immich.json.j2
+    dest: "{{ immich_config_path }}"
+    mode: "0644"
+  notify: Restart immich
+  become: true
+
+- name: Deploy Immich docker-compose.yaml
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ immich_compose_path }}"
+    mode: "0644"
+  notify: Restart immich
+  become: true
+
+- name: Start Immich via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ immich_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  become: true
+
+- name: Allow proxy to reach Immich port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ immich_proxy_ip }}"
+    port: "{{ immich_port | string }}"
+  when:
+    - immich_enable_ufw | bool
+    - immich_allow_from_proxy_only | bool
+    - immich_proxy_ip | length > 0
+  become: true
