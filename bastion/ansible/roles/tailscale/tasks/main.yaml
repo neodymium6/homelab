@@ -4,7 +4,7 @@
 - name: Validate Tailscale auth key is configured
   ansible.builtin.assert:
     that:
-      - tailscale_auth_key | string | length > 0
+      - tailscale_auth_key | default('') | string | length > 0
     fail_msg: "Set secrets.tailscale.auth_key in cluster.yaml."
 
 # --- Install via apt repository ---
@@ -12,9 +12,9 @@
 - name: Install prerequisites for Tailscale repo
   ansible.builtin.apt:
     name:
-      - curl
       - ca-certificates
       - gnupg
+      - lsb-release
     state: present
     update_cache: yes
   become: true
@@ -33,9 +33,10 @@
   changed_when: false
 
 - name: Download Tailscale GPG key
-  ansible.builtin.shell:
-    cmd: curl -fsSL https://pkgs.tailscale.com/stable/debian/{{ tailscale_debian_codename.stdout | trim }}.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
-    creates: /usr/share/keyrings/tailscale-archive-keyring.gpg
+  ansible.builtin.get_url:
+    url: "https://pkgs.tailscale.com/stable/debian/{{ tailscale_debian_codename.stdout | trim }}.noarmor.gpg"
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
   become: true
 
 - name: Add Tailscale apt repository
@@ -101,10 +102,10 @@
 
 - name: Parse Tailscale status
   ansible.builtin.set_fact:
-    tailscale_status: "{{ (tailscale_status_raw.stdout | from_json) if tailscale_status_raw.rc == 0 and tailscale_status_raw.stdout | length > 0 else {} }}"
     tailscale_backend_state: "{{ ((tailscale_status_raw.stdout | from_json).BackendState | default('')) if tailscale_status_raw.rc == 0 and tailscale_status_raw.stdout | length > 0 else '' }}"
 
 - name: Build tailscale up arguments
+  no_log: true
   ansible.builtin.set_fact:
     tailscale_up_args: >-
       {{ ['tailscale', 'up'] +
