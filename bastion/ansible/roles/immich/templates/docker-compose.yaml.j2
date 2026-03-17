@@ -54,7 +54,7 @@ services:
     shm_size: 128mb
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d {{ immich_db_name }}"]
+      test: ["CMD-SHELL", "pg_isready -U {{ immich_db_username }} -d {{ immich_db_name }}"]
       interval: 10s
       timeout: 5s
       retries: 3
