@@ -7,16 +7,22 @@
       - immich_db_password | default('') | string | length > 0
     fail_msg: "immich_port must be valid and secrets.immich.db_password must be set."
 
-- name: Ensure Immich directories exist
+- name: Ensure Immich base directory exists
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ immich_dir }}"
     state: directory
     owner: root
     group: root
     mode: "0755"
-  loop:
-    - "{{ immich_dir }}"
-    - "{{ immich_db_data_location }}"
+  become: true
+
+- name: Ensure Immich Postgres data directory exists
+  ansible.builtin.file:
+    path: "{{ immich_db_data_location }}"
+    state: directory
+    owner: "999"
+    group: "999"
+    mode: "0700"
   become: true
 
 - name: Deploy Immich config file
