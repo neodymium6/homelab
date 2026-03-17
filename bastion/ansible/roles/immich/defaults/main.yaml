@@ -1,0 +1,27 @@
+---
+immich_version: "release"
+
+immich_dir: "/opt/stacks/immich"
+immich_compose_path: "{{ immich_dir }}/docker-compose.yaml"
+immich_config_path: "{{ immich_dir }}/immich.json"
+
+immich_port: 2283
+immich_timezone: "UTC"
+
+immich_upload_location: "/mnt/nfs/immich"
+immich_db_data_location: "{{ immich_dir }}/postgres"
+
+immich_run_user: "{{ login_user | default('nobody') }}"
+immich_storage_group: "storage"
+immich_storage_gid: 2000
+
+immich_db_username: "postgres"
+immich_db_name: "immich"
+immich_db_password: ""
+
+immich_postgres_image: "ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0"
+immich_redis_image: "docker.io/valkey/valkey:8-bookworm"
+
+immich_enable_ufw: true
+immich_allow_from_proxy_only: true
+immich_proxy_ip: ""

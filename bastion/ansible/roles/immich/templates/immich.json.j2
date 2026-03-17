@@ -1,0 +1,107 @@
+{
+  "ffmpeg": {
+    "accel": "disabled",
+    "accelDecode": false,
+    "transcode": "disabled",
+    "targetResolution": "720",
+    "targetVideoCodec": "h264",
+    "targetAudioCodec": "aac",
+    "preset": "ultrafast",
+    "threads": 1,
+    "crf": 28,
+    "acceptedVideoCodecs": ["h264"],
+    "acceptedAudioCodecs": ["aac", "mp3", "libopus"],
+    "acceptedContainers": ["mov", "ogg", "webm"]
+  },
+  "image": {
+    "colorspace": "p3",
+    "extractEmbedded": false,
+    "fullsize": {
+      "enabled": true,
+      "format": "jpeg",
+      "quality": 80
+    },
+    "preview": {
+      "format": "jpeg",
+      "quality": 75,
+      "size": 1080
+    },
+    "thumbnail": {
+      "format": "jpeg",
+      "quality": 75,
+      "size": 250
+    }
+  },
+  "job": {
+    "backgroundTask": {
+      "concurrency": 1
+    },
+    "faceDetection": {
+      "concurrency": 1
+    },
+    "library": {
+      "concurrency": 1
+    },
+    "metadataExtraction": {
+      "concurrency": 1
+    },
+    "migration": {
+      "concurrency": 1
+    },
+    "notifications": {
+      "concurrency": 1
+    },
+    "ocr": {
+      "concurrency": 1
+    },
+    "search": {
+      "concurrency": 1
+    },
+    "sidecar": {
+      "concurrency": 1
+    },
+    "smartSearch": {
+      "concurrency": 1
+    },
+    "thumbnailGeneration": {
+      "concurrency": 1
+    },
+    "videoConversion": {
+      "concurrency": 1
+    }
+  },
+  "library": {
+    "scan": {
+      "cronExpression": "0 3 * * *",
+      "enabled": true
+    },
+    "watch": {
+      "enabled": false
+    }
+  },
+  "logging": {
+    "enabled": true,
+    "level": "log"
+  },
+  "machineLearning": {
+    "enabled": false,
+    "availabilityChecks": {
+      "enabled": false,
+      "interval": 30000,
+      "timeout": 2000
+    },
+    "clip": {
+      "enabled": false,
+      "modelName": "ViT-B-32__openai"
+    },
+    "duplicateDetection": {
+      "enabled": false,
+      "maxDistance": 0.01
+    },
+    "facialRecognition": {
+      "enabled": false,
+      "maxDistance": 0.5,
+      "minFaces": 3
+    }
+  }
+}

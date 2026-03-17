@@ -37,6 +37,7 @@ All required Ansible roles are vendored in this repository—no external role de
             │ - Apps (Docker)              │
             │ - Media (ARM + Music Ingest  │
             │          + Navidrome)        │
+            │ - Photos (Immich)            │
             │ - Monitoring (Prometheus +   │
             │   Alertmanager + Grafana +   │
             │   Node Exporter)             │
@@ -130,6 +131,8 @@ storage:
     share_path: "/mnt/storage/share"
   media:
     base_path: "/mnt/storage/share/music"
+  immich:
+    upload_path: "/mnt/storage/share/immich"
   samba:
     share_name: "storage"
     user: "your_username"
@@ -339,6 +342,8 @@ secrets:
     auth_access:
       - "subscriber:*:read"
       - "publisher:*:write"
+  immich:
+    db_password: "change_me"
   storage:
     samba_password: "change_me"
 ```
@@ -397,6 +402,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Install and configure AdGuard Home (dns role) │
 │    - Deploy music-ingest import UI (app role)      │
 │    - Deploy Navidrome music server (app role)      │
+│    - Deploy Immich photo management (app role)     │
 │    - Deploy ntfy server (app role)                 │
 │    - Deploy Homepage dashboard (app role)          │
 │    - Deploy personal-site container (app role)     │
@@ -522,6 +528,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **User Access**: Login user added to docker group for non-root Docker access
 - **Web Apps**: Homepage dashboard and personal-site container stack
 - **Media**: music-ingest web UI for importing ripped albums into a Beets-managed library; Navidrome music streaming server reading the library via read-only NFS mount, with optional Jukebox mode for server-side playback via USB DAC
+- **Photos**: Immich self-hosted photo management, storing uploads on NFS with ML and video transcoding disabled for lightweight operation
 - **Notifications**: ntfy server for self-hosted push notifications
 - **Monitoring**: Prometheus, Alertmanager, and Grafana deployed for infrastructure observability
 
@@ -955,6 +962,8 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/arm`: Deploys Automatic Ripping Machine via Docker Compose on VMs with `role: rip`, auto-detecting exactly one USB optical drive in the guest and exposing the web UI for ripping control.
 - `bastion/ansible/roles/music_ingest`: Deploys music-ingest via Docker Compose on VMs with `role: app`, providing a web UI for importing ripped albums from the incoming directory into a Beets-managed music library.
 - `bastion/ansible/roles/navidrome`: Deploys Navidrome music streaming server via Docker Compose on VMs with `role: app`, mounting the Beets-managed library directory as read-only. Supports Jukebox mode with USB DAC passthrough (`/dev/snd`) and configurable audio device via `navidrome.toml`.
+- `bastion/ansible/roles/storage_immich_layout`: Creates Immich upload directories on storage hosts with proper group ownership.
+- `bastion/ansible/roles/immich`: Deploys Immich photo management via Docker Compose on VMs with `role: app`, with ML disabled and video transcoding off for lightweight operation. Uploads stored on NFS, database on local disk.
 - `bastion/ansible/roles/ntfy`: Deploys ntfy server via Docker Compose on VMs with `role: app`, with login/auth and optional proxy-only UFW access.
 - `bastion/ansible/roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
 - `bastion/ansible/roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.

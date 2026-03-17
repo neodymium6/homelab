@@ -1,0 +1,60 @@
+services:
+  immich-server:
+    image: "ghcr.io/immich-app/immich-server:{{ immich_version }}"
+    container_name: "immich_server"
+    user: "{{ immich_uid_cmd.stdout | trim }}:{{ immich_storage_gid }}"
+    ports:
+      - "{{ immich_port }}:2283"
+    environment:
+      TZ: "{{ immich_timezone }}"
+      DB_HOSTNAME: "database"
+      DB_PORT: "5432"
+      DB_USERNAME: "{{ immich_db_username }}"
+      DB_PASSWORD: "{{ immich_db_password }}"
+      DB_DATABASE_NAME: "{{ immich_db_name }}"
+      REDIS_HOSTNAME: "redis"
+      IMMICH_MEDIA_LOCATION: "/data"
+      IMMICH_CONFIG_FILE: "/config/immich.json"
+    volumes:
+      - "{{ immich_upload_location }}:/data"
+      - "{{ immich_config_path }}:/config/immich.json:ro"
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2283/api/server/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: "{{ immich_redis_image }}"
+    container_name: "immich_redis"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  database:
+    image: "{{ immich_postgres_image }}"
+    container_name: "immich_postgres"
+    environment:
+      POSTGRES_PASSWORD: "{{ immich_db_password }}"
+      POSTGRES_USER: "{{ immich_db_username }}"
+      POSTGRES_DB: "{{ immich_db_name }}"
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - "{{ immich_db_data_location }}:/var/lib/postgresql/data"
+    shm_size: 128mb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ immich_db_username }} -d {{ immich_db_name }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

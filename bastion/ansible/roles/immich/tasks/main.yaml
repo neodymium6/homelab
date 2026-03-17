@@ -1,0 +1,88 @@
+---
+- name: Lookup Immich run user UID
+  ansible.builtin.command:
+    argv:
+      - id
+      - -u
+      - "{{ immich_run_user }}"
+  register: immich_uid_cmd
+  changed_when: false
+
+- name: Validate Immich settings
+  ansible.builtin.assert:
+    that:
+      - immich_port | int >= 1
+      - immich_port | int <= 65535
+      - immich_db_password | default('') | string | length > 0
+    fail_msg: "immich_port must be valid and secrets.immich.db_password must be set."
+
+- name: Ensure Immich base directory exists
+  ansible.builtin.file:
+    path: "{{ immich_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+
+- name: Ensure Immich Postgres data directory exists
+  ansible.builtin.file:
+    path: "{{ immich_db_data_location }}"
+    state: directory
+    owner: "999"
+    group: "999"
+    mode: "0700"
+  become: true
+
+- name: Check if config path is a directory
+  ansible.builtin.stat:
+    path: "{{ immich_config_path }}"
+  register: immich_config_stat
+  become: true
+
+- name: Remove config path if it is a directory (Docker may create it as a dir)
+  ansible.builtin.file:
+    path: "{{ immich_config_path }}"
+    state: absent
+  when: immich_config_stat.stat.isdir | default(false)
+  become: true
+
+- name: Deploy Immich config file
+  ansible.builtin.template:
+    src: immich.json.j2
+    dest: "{{ immich_config_path }}"
+    mode: "0644"
+  notify: Restart immich
+  become: true
+
+- name: Deploy Immich docker-compose.yaml
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ immich_compose_path }}"
+    mode: "0600"
+  notify: Restart immich
+  become: true
+
+- name: Start Immich via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ immich_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  become: true
+
+- name: Allow proxy to reach Immich port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ immich_proxy_ip }}"
+    port: "{{ immich_port | string }}"
+  when:
+    - immich_enable_ufw | bool
+    - immich_allow_from_proxy_only | bool
+    - immich_proxy_ip | length > 0
+  become: true
