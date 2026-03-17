@@ -20,7 +20,7 @@ services:
     devices:
       - "/dev/snd:/dev/snd"
     group_add:
-      - "audio"
+      - "{{ navidrome_host_audio_gid }}"
 {% endif %}
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:4533/ping"]
