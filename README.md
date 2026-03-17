@@ -225,6 +225,18 @@ services:
       display_name: "ARM"
       category: "Media"
       icon: "mdi-disc-player"
+  - name: "navidrome"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 4533
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Navidrome"
+      category: "Media"
+      icon: "mdi-music-circle"
   - name: "ntfy"
     target_vm: "app-01"
     upstream_base_url: "https://ntfy.sh"
