@@ -8,7 +8,7 @@ immich_config_path: "{{ immich_dir }}/immich.json"
 immich_port: 2283
 immich_timezone: "UTC"
 
-immich_upload_location: "/mnt/nfs/immich/upload"
+immich_upload_location: "/mnt/nfs/immich"
 immich_db_data_location: "{{ immich_dir }}/postgres"
 
 immich_run_user: "{{ login_user | default('nobody') }}"
