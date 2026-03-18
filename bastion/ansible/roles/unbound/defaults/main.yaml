@@ -8,7 +8,6 @@ unbound_upstream_dns: []
 unbound_config_path: /etc/unbound/unbound.conf.d/homelab.conf
 unbound_ufw_allow_cidrs: []
 unbound_zone_name: "home.arpa"
-unbound_zone_dir: /etc/unbound/zones
 
 unbound_zone_vms: {}
 unbound_zone_base_prefix: ""
