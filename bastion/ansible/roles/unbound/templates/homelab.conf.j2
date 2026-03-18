@@ -28,8 +28,3 @@ auth-zone:
   for-downstream: no
   for-upstream: yes
 
-forward-zone:
-  name: "."
-  {% for dns in unbound_upstream_dns %}
-  forward-addr: {{ dns }}
-  {% endfor %}
