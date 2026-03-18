@@ -13,6 +13,25 @@
     mode: "0755"
   become: true
 
+- name: Ensure Unbound zone directory exists
+  ansible.builtin.file:
+    path: "{{ unbound_zone_dir }}"
+    state: directory
+    owner: unbound
+    group: unbound
+    mode: "0755"
+  become: true
+
+- name: Deploy zone file
+  ansible.builtin.template:
+    src: zone.j2
+    dest: "{{ unbound_zone_dir }}/{{ unbound_zone_name }}.zone"
+    owner: unbound
+    group: unbound
+    mode: "0644"
+  notify: Restart unbound
+  become: true
+
 - name: Deploy Unbound homelab config
   ansible.builtin.template:
     src: homelab.conf.j2
