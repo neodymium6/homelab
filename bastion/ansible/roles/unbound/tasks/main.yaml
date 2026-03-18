@@ -18,6 +18,8 @@
     src: homelab.conf.j2
     dest: "{{ unbound_config_path }}"
     mode: "0644"
+    lstrip_blocks: true
+    trim_blocks: true
   notify: Restart unbound
   become: true
 
