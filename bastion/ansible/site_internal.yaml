@@ -607,13 +607,10 @@
     unbound_zone_vms: "{{ vms }}"
     unbound_zone_base_prefix: "{{ network.base_prefix }}"
     unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
-    unbound_proxy_service_name: "proxy"
-
   pre_tasks:
     - name: Initialize Unbound service maps from services
       ansible.builtin.set_fact:
         unbound_zone_services: {}
-        unbound_proxy_entries: []
 
     - name: Build Unbound zone services from services
       ansible.builtin.set_fact:
@@ -623,9 +620,9 @@
         - item.name is defined
         - item.target_vm is defined
 
-    - name: Build Unbound proxy entries from services
+    - name: Add proxy entries to Unbound zone services
       ansible.builtin.set_fact:
-        unbound_proxy_entries: "{{ unbound_proxy_entries + [item.name ~ '-proxy'] }}"
+        unbound_zone_services: "{{ unbound_zone_services | combine({ (item.name ~ '-proxy'): {'target_vm': (services | selectattr('name', 'equalto', 'proxy') | first).target_vm} }) }}"
       loop: "{{ services | default([]) }}"
       when:
         - item.proxy is defined
