@@ -219,6 +219,19 @@ services:
       enable: true
       scheme: "http"
       port: 3000
+  - name: "forgejo"
+    target_vm: "app-01"
+    ssh_port: 2222
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3002
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Forgejo"
+      category: "Infrastructure"
+      icon: "si-forgejo"
   - name: "arm"
     target_vm: "rip-01"
     proxy:
@@ -343,6 +356,8 @@ secrets:
       - "subscriber:*:read"
       - "publisher:*:write"
   immich:
+    db_password: "change_me"
+  forgejo:
     db_password: "change_me"
   storage:
     samba_password: "change_me"
@@ -527,6 +542,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **Docker Compose**: Tool for defining and running multi-container applications
 - **User Access**: Login user added to docker group for non-root Docker access
 - **Web Apps**: Homepage dashboard and personal-site container stack
+- **Code Hosting**: Forgejo with PostgreSQL, Traefik web access, and LAN-only Git over SSH
 - **Media**: music-ingest web UI for importing ripped albums into a Beets-managed library; Navidrome music streaming server reading the library via read-only NFS mount, with optional Jukebox mode for server-side playback via USB DAC
 - **Photos**: Immich self-hosted photo management, storing uploads on NFS with ML and video transcoding disabled for lightweight operation
 - **Notifications**: ntfy server for self-hosted push notifications
@@ -706,7 +722,16 @@ Examples:
 - AdGuard Home UI: `https://agh-proxy.internal.example.com`
 - Personal Site (internal): `https://personal-site-proxy.internal.example.com`
 - Personal Site (public): `https://www.example.com` (if configured in Cloudflare Tunnel)
+- Forgejo: `https://forgejo-proxy.internal.example.com`
 - Traefik Dashboard: `https://traefik-proxy.internal.example.com`
+
+Forgejo Git over SSH uses the service DNS name directly, bypassing Traefik HTTP routing:
+
+```bash
+git clone ssh://git@forgejo.internal.example.com:2222/USER/REPO.git
+```
+
+Set `secrets.forgejo.db_password` before deployment. The Forgejo role stores application data and PostgreSQL data under `/opt/stacks/forgejo`.
 
 ### Security
 
@@ -964,6 +989,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/navidrome`: Deploys Navidrome music streaming server via Docker Compose on VMs with `role: app`, mounting the Beets-managed library directory as read-only. Supports Jukebox mode with USB DAC passthrough (`/dev/snd`) and configurable audio device via `navidrome.toml`.
 - `bastion/ansible/roles/storage_immich_layout`: Creates Immich upload directories on storage hosts with proper group ownership.
 - `bastion/ansible/roles/immich`: Deploys Immich photo management via Docker Compose on VMs with `role: app`, with ML disabled and video transcoding off for lightweight operation. Uploads stored on NFS, database on local disk.
+- `bastion/ansible/roles/forgejo`: Deploys Forgejo with PostgreSQL via Docker Compose on VMs with `role: app`, exposes the web UI through Traefik, and opens LAN-only Git over SSH.
 - `bastion/ansible/roles/ntfy`: Deploys ntfy server via Docker Compose on VMs with `role: app`, with login/auth and optional proxy-only UFW access.
 - `bastion/ansible/roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
 - `bastion/ansible/roles/personal_site`: Deploys a simple Nginx-based personal site via Docker Compose on app VMs, with optional proxy-only UFW access.
