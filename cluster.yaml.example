@@ -119,6 +119,19 @@ services:
       port: 3000
       allow_cidrs:
         - "192.168.1.0/24"
+  - name: "forgejo"
+    target_vm: "app-01"
+    ssh_port: 2222
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3002
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Forgejo"
+      category: "Infrastructure"
+      icon: "si-forgejo"
   - name: "arm"
     target_vm: "rip-01"
     proxy:
@@ -346,6 +359,8 @@ secrets:
       - "subscriber:*:read"
       - "publisher:*:write"
   immich:
+    db_password: "change_me"
+  forgejo:
     db_password: "change_me"
   storage:
     samba_password: "change_me"

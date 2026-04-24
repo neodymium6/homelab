@@ -346,6 +346,38 @@
         - immich_enabled | bool
         - inventory_hostname == immich_target_vm
 
+- name: Deploy Forgejo on app hosts
+  hosts: app
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    forgejo_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'forgejo') | list | first) | default({}) }}"
+    forgejo_enabled: "{{ forgejo_service != {} and forgejo_service.target_vm is defined }}"
+    forgejo_target_vm: "{{ forgejo_service.target_vm | default('') }}"
+    forgejo_web_port: >-
+      {{
+        (forgejo_service.proxy.port | int)
+        if (
+          forgejo_service.proxy is defined and
+          forgejo_service.proxy.port is defined
+        )
+        else 3002
+      }}
+    forgejo_ssh_port: "{{ forgejo_service.ssh_port | default(2222) | int }}"
+    forgejo_enable_ufw: "{{ (forgejo_service.proxy is defined) and (forgejo_service.proxy.enable | default(false) | bool) }}"
+    forgejo_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+    forgejo_db_password: "{{ ((secrets | default({})).forgejo | default({})).db_password | default('') }}"
+
+  roles:
+    - role: forgejo
+      when:
+        - forgejo_enabled | bool
+        - inventory_hostname == forgejo_target_vm
+
 - name: Deploy ntfy on app hosts
   hosts: app
   become: true
