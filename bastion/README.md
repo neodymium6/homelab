@@ -29,7 +29,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_jellyfin_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, jellyfin, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -41,6 +41,7 @@ bastion/
 - `roles/storage_access`: Creates a fixed-GID shared group on internal VMs and prepares the share directory ownership on storage hosts.
 - `roles/storage_disk`: Detects the dedicated storage disk by configured size, creates an ext4 filesystem, and mounts it by UUID.
 - `roles/storage_media_layout`: Creates shared media workflow directories such as `music/incoming` and `music/library` on storage hosts.
+- `roles/storage_jellyfin_layout`: Creates configured Jellyfin library directories on storage hosts.
 - `roles/storage_nfs_server`: Exports the shared storage directory over NFS only to whitelisted clients and opens UFW for TCP 2049 to those clients.
 - `roles/storage_nfs_client`: Installs NFS client tooling and mounts the shared export at `/mnt/nfs` on whitelisted hosts.
 - `roles/storage_samba`: Publishes the shared storage directory over Samba with user/password authentication and local-network-only UFW rules.
@@ -48,6 +49,7 @@ bastion/
 - `roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy`, forwarding Cloudflare Tunnel traffic to Traefik tunnel entrypoint.
 - `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
 - `roles/forgejo`: Deploys Forgejo with PostgreSQL via Docker Compose on app VMs, exposes the web UI through Traefik, and opens LAN-only Git over SSH.
+- `roles/jellyfin`: Deploys Jellyfin via Docker Compose on app VMs, mounting configured media libraries read-only.
 - `roles/ntfy`: Deploys ntfy server via Docker Compose on VMs with `role: app`, with optional proxy-only UFW access.
 - `roles/homepage`: Deploys Homepage dashboard via Docker Compose on VMs with `role: app`, with UFW rules to restrict access to proxy-01.
 - `roles/personal_site`: Deploys a personal-site container image via Docker Compose on app VMs, with optional proxy-only UFW access and a systemd timer for rolling zero-downtime style refresh.
@@ -84,7 +86,7 @@ This file should be copied by the local deployment, but you can create it manual
 | `make tf-init` | Initialize Terraform |
 | `make tf-apply` | Create internal VMs |
 | `make bastion-setup` | Configure bastion (ssh_keypair, ssh_hardening, ssh_client_config) |
-| `make internal-setup` | Configure internal VMs (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, forgejo, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
+| `make internal-setup` | Configure internal VMs (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_jellyfin_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, forgejo, jellyfin, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
 | `make homemanager` | Install Nix + Home Manager on all VMs (nix_installer, home_manager) |
 | `make clean` | Destroy internal VMs |
 
