@@ -1,0 +1,5 @@
+---
+storage_jellyfin_layout_libraries: []
+storage_jellyfin_layout_share_path: "/mnt/storage/share"
+storage_jellyfin_layout_group: "storage"
+storage_jellyfin_layout_mode: "2775"

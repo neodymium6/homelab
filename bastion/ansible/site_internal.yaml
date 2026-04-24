@@ -94,6 +94,12 @@
       vars:
         storage_immich_layout_upload_path: "{{ storage.immich.upload_path }}"
         storage_immich_layout_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
+    - role: storage_jellyfin_layout
+      when: (((storage | default({})).jellyfin | default({})).libraries | default([]) | length) > 0
+      vars:
+        storage_jellyfin_layout_libraries: "{{ storage.jellyfin.libraries }}"
+        storage_jellyfin_layout_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
+        storage_jellyfin_layout_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
     - role: storage_nfs_server
       when: (((storage | default({})).nfs | default({})).clients | default([]) | length) > 0
       vars:

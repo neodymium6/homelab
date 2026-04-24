@@ -19,6 +19,10 @@ storage:
     base_path: "/mnt/storage/share/music"
   immich:
     upload_path: "/mnt/storage/share/immich"
+  jellyfin:
+    libraries:
+      - name: "movies"
+        path: "/mnt/storage/share/jellyfin/movies"
   samba:
     share_name: "storage"
     user: "your_username"
