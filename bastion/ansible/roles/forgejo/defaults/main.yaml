@@ -1,0 +1,34 @@
+---
+forgejo_image: "codeberg.org/forgejo/forgejo:15-rootless"
+forgejo_postgres_image: "postgres:16-alpine"
+
+forgejo_service_name: "forgejo"
+forgejo_dir: "/opt/stacks/forgejo"
+forgejo_data_dir: "{{ forgejo_dir }}/data"
+forgejo_config_dir: "{{ forgejo_dir }}/config"
+forgejo_db_dir: "{{ forgejo_dir }}/postgres"
+forgejo_compose_path: "{{ forgejo_dir }}/docker-compose.yaml"
+
+forgejo_web_port: 3002
+forgejo_ssh_port: 2222
+forgejo_internal_ssh_port: 2222
+
+forgejo_uid: 1000
+forgejo_gid: 1000
+forgejo_postgres_uid: 70
+forgejo_postgres_gid: 70
+
+forgejo_db_name: "forgejo"
+forgejo_db_user: "forgejo"
+forgejo_db_password: ""
+
+forgejo_domain: "forgejo-proxy.{{ network.domain }}"
+forgejo_root_url: "https://{{ forgejo_domain }}/"
+forgejo_ssh_domain: "forgejo.{{ network.domain }}"
+
+forgejo_enable_ufw: true
+forgejo_web_enable_ufw: "{{ forgejo_enable_ufw }}"
+forgejo_ssh_enable_ufw: "{{ forgejo_enable_ufw }}"
+forgejo_allow_from_proxy_only: true
+forgejo_proxy_ip: ""
+forgejo_ssh_allow_cidr: "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"

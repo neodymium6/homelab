@@ -1,0 +1,56 @@
+networks:
+  forgejo:
+    external: false
+
+services:
+  server:
+    image: "{{ forgejo_image }}"
+    container_name: "{{ forgejo_service_name }}"
+    user: "{{ forgejo_uid }}:{{ forgejo_gid }}"
+    environment:
+      USER_UID: "{{ forgejo_uid }}"
+      USER_GID: "{{ forgejo_gid }}"
+      FORGEJO__database__DB_TYPE: "postgres"
+      FORGEJO__database__HOST: "db:5432"
+      FORGEJO__database__NAME: "{{ forgejo_db_name }}"
+      FORGEJO__database__USER: "{{ forgejo_db_user }}"
+      FORGEJO__database__PASSWD: "{{ forgejo_db_password }}"
+      FORGEJO__server__DOMAIN: "{{ forgejo_domain }}"
+      FORGEJO__server__ROOT_URL: "{{ forgejo_root_url }}"
+      FORGEJO__server__HTTP_PORT: "3000"
+      FORGEJO__server__START_SSH_SERVER: "true"
+      FORGEJO__server__SSH_DOMAIN: "{{ forgejo_ssh_domain }}"
+      FORGEJO__server__SSH_PORT: "{{ forgejo_ssh_port }}"
+      FORGEJO__server__SSH_LISTEN_PORT: "{{ forgejo_internal_ssh_port }}"
+      FORGEJO__server__OFFLINE_MODE: "true"
+    restart: unless-stopped
+    networks:
+      - forgejo
+    volumes:
+      - "{{ forgejo_data_dir }}:/var/lib/gitea"
+      - "{{ forgejo_config_dir }}:/etc/gitea"
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "{{ forgejo_web_port }}:3000"
+      - "{{ forgejo_ssh_port }}:{{ forgejo_internal_ssh_port }}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: "{{ forgejo_postgres_image }}"
+    container_name: "{{ forgejo_service_name }}_postgres"
+    environment:
+      POSTGRES_USER: "{{ forgejo_db_user }}"
+      POSTGRES_PASSWORD: "{{ forgejo_db_password }}"
+      POSTGRES_DB: "{{ forgejo_db_name }}"
+    networks:
+      - forgejo
+    volumes:
+      - "{{ forgejo_db_dir }}:/var/lib/postgresql/data"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U {{ forgejo_db_user }} -d {{ forgejo_db_name }}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
