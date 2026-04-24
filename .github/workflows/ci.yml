@@ -44,11 +44,8 @@ jobs:
 
       - name: Check Terraform formatting
         run: |
-          terraform fmt -check \
-            local/terraform/main.tf \
-            local/terraform/variables.tf \
-            bastion/terraform/main.tf \
-            bastion/terraform/variables.tf
+          terraform fmt -check -recursive local/terraform
+          terraform fmt -check -recursive bastion/terraform
 
       - name: Check Ansible syntax
         env:
