@@ -57,7 +57,7 @@
     src: "{{ forgejo_proxy_ip }}"
     port: "{{ forgejo_web_port | string }}"
   when:
-    - forgejo_enable_ufw | bool
+    - forgejo_web_enable_ufw | bool
     - forgejo_allow_from_proxy_only | bool
     - forgejo_proxy_ip | length > 0
   become: true
@@ -69,6 +69,6 @@
     src: "{{ forgejo_ssh_allow_cidr }}"
     port: "{{ forgejo_ssh_port | string }}"
   when:
-    - forgejo_enable_ufw | bool
+    - forgejo_ssh_enable_ufw | bool
     - forgejo_ssh_allow_cidr | length > 0
   become: true

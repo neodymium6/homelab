@@ -27,6 +27,8 @@ forgejo_root_url: "https://{{ forgejo_domain }}/"
 forgejo_ssh_domain: "forgejo.{{ network.domain }}"
 
 forgejo_enable_ufw: true
+forgejo_web_enable_ufw: "{{ forgejo_enable_ufw }}"
+forgejo_ssh_enable_ufw: "{{ forgejo_enable_ufw }}"
 forgejo_allow_from_proxy_only: true
 forgejo_proxy_ip: ""
 forgejo_ssh_allow_cidr: "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
