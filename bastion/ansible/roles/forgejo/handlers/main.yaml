@@ -1,0 +1,10 @@
+---
+- name: Restart forgejo
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ forgejo_compose_path }}"
+      - restart
+  become: true

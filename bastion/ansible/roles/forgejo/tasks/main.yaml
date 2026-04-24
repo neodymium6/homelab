@@ -1,0 +1,74 @@
+---
+- name: Validate Forgejo settings
+  ansible.builtin.assert:
+    that:
+      - forgejo_web_port | int >= 1
+      - forgejo_web_port | int <= 65535
+      - forgejo_ssh_port | int >= 1
+      - forgejo_ssh_port | int <= 65535
+      - forgejo_internal_ssh_port | int >= 1
+      - forgejo_internal_ssh_port | int <= 65535
+      - forgejo_db_password | default('') | string | length > 0
+      - forgejo_domain | string | length > 0
+      - forgejo_root_url | string | length > 0
+      - forgejo_ssh_domain | string | length > 0
+    fail_msg: "Forgejo ports, domains, and secrets.forgejo.db_password must be configured."
+
+- name: Ensure Forgejo directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop:
+    - { path: "{{ forgejo_dir }}", mode: "0755" }
+    - { path: "{{ forgejo_data_dir }}", owner: "{{ forgejo_uid }}", group: "{{ forgejo_gid }}", mode: "0755" }
+    - { path: "{{ forgejo_config_dir }}", owner: "{{ forgejo_uid }}", group: "{{ forgejo_gid }}", mode: "0755" }
+    - { path: "{{ forgejo_db_dir }}", owner: "{{ forgejo_postgres_uid }}", group: "{{ forgejo_postgres_gid }}", mode: "0700" }
+  become: true
+
+- name: Deploy Forgejo docker-compose.yaml
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ forgejo_compose_path }}"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
+    mode: "0600"
+  notify: Restart forgejo
+  become: true
+
+- name: Start Forgejo via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ forgejo_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  become: true
+
+- name: Allow proxy to reach Forgejo web port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ forgejo_proxy_ip }}"
+    port: "{{ forgejo_web_port | string }}"
+  when:
+    - forgejo_enable_ufw | bool
+    - forgejo_allow_from_proxy_only | bool
+    - forgejo_proxy_ip | length > 0
+  become: true
+
+- name: Allow LAN to reach Forgejo SSH port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ forgejo_ssh_allow_cidr }}"
+    port: "{{ forgejo_ssh_port | string }}"
+  when:
+    - forgejo_enable_ufw | bool
+    - forgejo_ssh_allow_cidr | length > 0
+  become: true
