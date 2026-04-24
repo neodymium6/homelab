@@ -199,7 +199,7 @@
   ansible.builtin.template:
     src: dynamic.yml.j2
     dest: "{{ traefik_dynamic_path }}"
-    mode: "0644"
+    mode: "0600"
   notify: Restart traefik
   become: true
 

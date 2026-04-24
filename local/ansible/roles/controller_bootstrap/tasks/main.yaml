@@ -60,7 +60,7 @@
     dest: "{{ checkout_dir }}/cluster.yaml"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: "0644"
+    mode: "0600"
   become: false
 
 - name: Copy bastion terraform.tfvars to bastion (not in git)

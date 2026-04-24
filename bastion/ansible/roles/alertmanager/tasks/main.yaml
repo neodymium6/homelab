@@ -43,7 +43,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ alertmanager_compose_path }}"
-    mode: "0644"
+    mode: "0600"
   notify: Recreate alertmanager stack
   become: true
 

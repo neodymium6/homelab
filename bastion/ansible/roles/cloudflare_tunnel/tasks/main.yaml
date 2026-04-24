@@ -18,7 +18,7 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ cloudflare_tunnel_compose_path }}"
-    mode: "0644"
+    mode: "0600"
   notify: Restart cloudflare_tunnel
   become: true
 
