@@ -63,7 +63,9 @@
   ansible.builtin.template:
     src: server.yaml.j2
     dest: "{{ ntfy_config_path }}"
-    mode: "0640"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
+    mode: "0600"
   notify: Restart ntfy
   become: true
 

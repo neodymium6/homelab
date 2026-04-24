@@ -75,7 +75,9 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ grafana_compose_path }}"
-    mode: "0644"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
+    mode: "0600"
   notify: Restart grafana
   become: true
 

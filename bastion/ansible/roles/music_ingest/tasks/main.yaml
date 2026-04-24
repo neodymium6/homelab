@@ -55,7 +55,9 @@
   ansible.builtin.template:
     src: docker-compose.yaml.j2
     dest: "{{ music_ingest_compose_path }}"
-    mode: "0644"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
+    mode: "0600"
   notify: Restart music-ingest
 
 - name: Start music-ingest via docker compose
