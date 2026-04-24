@@ -25,7 +25,7 @@
     that:
       - item.name is defined
       - item.path is defined
-      - item.name | string | regex_search('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
+      - (item.name | string | trim) is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
       - item.path | string | trim | length > 0
       - (item.path | string | trim) is match('^' ~ (jellyfin_storage_share_path | regex_escape) ~ '(/|$)')
     fail_msg: >-
