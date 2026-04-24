@@ -18,6 +18,8 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ cloudflare_tunnel_compose_path }}"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
     mode: "0600"
   notify: Restart cloudflare_tunnel
   become: true

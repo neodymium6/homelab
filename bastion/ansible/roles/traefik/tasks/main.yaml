@@ -27,6 +27,8 @@
   ansible.builtin.file:
     path: "{{ traefik_acme_path }}"
     state: touch
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
     mode: "0600"
   become: true
 
@@ -199,6 +201,8 @@
   ansible.builtin.template:
     src: dynamic.yml.j2
     dest: "{{ traefik_dynamic_path }}"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
     mode: "0600"
   notify: Restart traefik
   become: true
@@ -207,6 +211,8 @@
   ansible.builtin.template:
     src: traefik.env.j2
     dest: "{{ traefik_env_path }}"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
     mode: "0600"
   notify: Restart traefik
   become: true

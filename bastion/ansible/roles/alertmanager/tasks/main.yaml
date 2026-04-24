@@ -43,6 +43,8 @@
   ansible.builtin.template:
     src: docker-compose.yml.j2
     dest: "{{ alertmanager_compose_path }}"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
     mode: "0600"
   notify: Recreate alertmanager stack
   become: true
