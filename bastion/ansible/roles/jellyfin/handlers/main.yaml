@@ -1,0 +1,12 @@
+---
+- name: Restart jellyfin
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ jellyfin_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  become: true
