@@ -12,5 +12,5 @@ services:
       - "{{ jellyfin_config_dir }}:/config"
       - "{{ jellyfin_cache_dir }}:/cache"
 {% for library in jellyfin_libraries %}
-      - "{{ library.path | replace(jellyfin_storage_share_path, jellyfin_storage_mount_path) }}:/media/{{ library.name }}:ro"
+      - "{{ library.path | string | trim | replace(jellyfin_storage_share_path, jellyfin_storage_mount_path) }}:/media/{{ library.name | string | trim }}:ro"
 {% endfor %}

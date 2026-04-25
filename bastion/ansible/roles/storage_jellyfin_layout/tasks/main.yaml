@@ -12,12 +12,13 @@
     that:
       - item.name is defined
       - item.path is defined
-      - item.name | string | trim | length > 0
+      - (item.name | string | trim) is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
       - item.path | string | trim | length > 0
       - (item.path | string | trim) is match('^' ~ (storage_jellyfin_layout_share_path | regex_escape) ~ '(/|$)')
     fail_msg: >-
-      Each storage.jellyfin.libraries entry must define a non-empty name and a path
-      under {{ storage_jellyfin_layout_share_path }}.
+      Each storage.jellyfin.libraries entry must define a safe name using only
+      letters, numbers, dots, underscores, and dashes, and a path under
+      {{ storage_jellyfin_layout_share_path }}.
   loop: "{{ storage_jellyfin_layout_libraries }}"
   loop_control:
     label: "{{ item.name | default('unnamed-library') }}"
