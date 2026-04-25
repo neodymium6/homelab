@@ -1,0 +1,16 @@
+services:
+  jellyfin:
+    image: "{{ jellyfin_image }}"
+    container_name: "{{ jellyfin_container_name }}"
+    restart: unless-stopped
+    user: "{{ jellyfin_uid_cmd.stdout | trim }}:{{ jellyfin_storage_gid }}"
+    ports:
+      - "{{ jellyfin_port }}:8096"
+    environment:
+      TZ: "{{ jellyfin_timezone }}"
+    volumes:
+      - "{{ jellyfin_config_dir }}:/config"
+      - "{{ jellyfin_cache_dir }}:/cache"
+{% for library in jellyfin_libraries %}
+      - "{{ library.path | string | trim | replace(jellyfin_storage_share_path, jellyfin_storage_mount_path) }}:/media/{{ library.name | string | trim }}:ro"
+{% endfor %}

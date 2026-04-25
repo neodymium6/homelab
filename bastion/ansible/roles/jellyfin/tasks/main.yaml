@@ -1,0 +1,79 @@
+---
+- name: Lookup Jellyfin run user UID
+  ansible.builtin.command:
+    argv:
+      - id
+      - -u
+      - "{{ jellyfin_run_user }}"
+  register: jellyfin_uid_cmd
+  changed_when: false
+
+- name: Validate Jellyfin settings
+  ansible.builtin.assert:
+    that:
+      - jellyfin_port | int >= 1
+      - jellyfin_port | int <= 65535
+      - jellyfin_libraries is sequence
+      - jellyfin_libraries is not string
+      - jellyfin_libraries | length > 0
+      - jellyfin_storage_share_path | string | trim | length > 0
+      - jellyfin_storage_mount_path | string | trim | length > 0
+    fail_msg: "jellyfin_port, storage share path, storage mount path, and storage.jellyfin.libraries must be configured."
+
+- name: Validate Jellyfin library entries
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.path is defined
+      - (item.name | string | trim) is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
+      - item.path | string | trim | length > 0
+      - (item.path | string | trim) is match('^' ~ (jellyfin_storage_share_path | regex_escape) ~ '(/|$)')
+    fail_msg: >-
+      Jellyfin library entries must define a safe name and a path under
+      {{ jellyfin_storage_share_path }}.
+  loop: "{{ jellyfin_libraries }}"
+  loop_control:
+    label: "{{ item.name | default('unnamed-library') }}"
+
+- name: Ensure Jellyfin directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ jellyfin_run_user }}"
+    group: "{{ jellyfin_storage_group }}"
+    mode: "0755"
+  loop:
+    - "{{ jellyfin_dir }}"
+    - "{{ jellyfin_config_dir }}"
+    - "{{ jellyfin_cache_dir }}"
+
+- name: Deploy Jellyfin docker-compose.yaml
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ jellyfin_compose_path }}"
+    owner: "{{ login_user }}"
+    group: "{{ login_user }}"
+    mode: "0644"
+  notify: Restart jellyfin
+
+- name: Start Jellyfin via docker compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - -f
+      - "{{ jellyfin_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+
+- name: Allow proxy-01 to reach Jellyfin backend port
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ jellyfin_proxy_ip }}"
+    port: "{{ jellyfin_port | string }}"
+  when:
+    - jellyfin_enable_ufw | bool
+    - jellyfin_allow_from_proxy_only | bool
+    - jellyfin_proxy_ip | length > 0

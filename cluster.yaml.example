@@ -19,6 +19,10 @@ storage:
     base_path: "/mnt/storage/share/music"
   immich:
     upload_path: "/mnt/storage/share/immich"
+  jellyfin:
+    libraries:
+      - name: "movies"
+        path: "/mnt/storage/share/jellyfin/movies"
   samba:
     share_name: "storage"
     user: "your_username"
@@ -173,6 +177,18 @@ services:
       display_name: "Navidrome"
       category: "Media"
       icon: "mdi-music-circle"
+  - name: "jellyfin"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8096
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Jellyfin"
+      category: "Media"
+      icon: "si-jellyfin"
   - name: "immich"
     target_vm: "app-01"
     proxy:

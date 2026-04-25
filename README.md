@@ -36,7 +36,8 @@ All required Ansible roles are vendored in this repository—no external role de
             │ - Proxy (Traefik)            │
             │ - Apps (Docker)              │
             │ - Media (ARM + Music Ingest  │
-            │          + Navidrome)        │
+            │          + Navidrome +       │
+            │          Jellyfin)           │
             │ - Photos (Immich)            │
             │ - Monitoring (Prometheus +   │
             │   Alertmanager + Grafana +   │
@@ -133,6 +134,10 @@ storage:
     base_path: "/mnt/storage/share/music"
   immich:
     upload_path: "/mnt/storage/share/immich"
+  jellyfin:
+    libraries:
+      - name: "movies"
+        path: "/mnt/storage/share/jellyfin/movies"
   samba:
     share_name: "storage"
     user: "your_username"
@@ -261,6 +266,18 @@ services:
       display_name: "Navidrome"
       category: "Media"
       icon: "mdi-music-circle"
+  - name: "jellyfin"
+    target_vm: "app-01"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8096
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "Jellyfin"
+      category: "Media"
+      icon: "si-jellyfin"
   - name: "ntfy"
     target_vm: "app-01"
     upstream_base_url: "https://ntfy.sh"
@@ -374,12 +391,14 @@ This keeps read clients and publish clients separated by both router method matc
 The internal Ansible playbook prepares that disk on `role: storage` hosts by creating an `ext4` filesystem and mounting it at `/mnt/storage` via `UUID=...`, so guest device names such as `/dev/sdb` do not need to stay stable.
 It also creates a fixed-GID shared group on internal VMs and prepares `/mnt/storage/share` as `root:storage` with mode `2775`.
 For media workflows, storage hosts also prepare `/mnt/storage/share/music`, `/mnt/storage/share/music/incoming`, and `/mnt/storage/share/music/library`.
+For Jellyfin, storage hosts prepare each directory listed under `storage.jellyfin.libraries`, for example `/mnt/storage/share/jellyfin/movies`.
 NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
 Samba is also enabled on the storage host with user/password authentication, using `storage.samba.user` and `secrets.storage.samba_password`, and is exposed only to the local homelab CIDR via UFW.
 Any internal VM can also declare `usb_devices` in `cluster.yaml`. Each entry must set exactly one of `host` or `mapping`, matching the provider's VM `usb` block. This is intended for `rip-01`, where an external USB optical drive can be passed through directly to the guest.
 When the `arm` service is enabled on `rip-01`, ARM is deployed via Docker Compose, auto-detects exactly one `usb rom` optical drive inside the guest, resolves the matching `/dev/sg*` device, and exposes its web UI on port `8080`. The top-level `timezone` setting is also passed through to the ARM container.
 The intended music flow is `rip-01 (ARM) -> /mnt/nfs/music/incoming -> app-01 (music-ingest) -> /mnt/nfs/music/library -> app-01 (Navidrome)`. ARM rips CDs into the incoming directory, music-ingest provides a web UI for reviewing tags and importing albums into the Beets-managed library, and Navidrome serves the library as a streaming server with a read-only mount.
 Navidrome supports Jukebox mode for server-side audio playback via a USB DAC passed through to app-01. When `jukebox_enabled` is set, `/dev/snd` is exposed to the container and mpv drives the DAC directly. Jukebox is controlled from Subsonic-compatible clients (e.g. DSub, play:Sub). The audio device can be explicitly configured via `jukebox_devices` and `jukebox_default` in `cluster.yaml`; otherwise mpv uses `auto`.
+Jellyfin serves the libraries listed in `storage.jellyfin.libraries` from read-only NFS mounts and exposes only the HTTP backend port `8096`.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
 
@@ -417,6 +436,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Install and configure AdGuard Home (dns role) │
 │    - Deploy music-ingest import UI (app role)      │
 │    - Deploy Navidrome music server (app role)      │
+│    - Deploy Jellyfin media server (app role)       │
 │    - Deploy Immich photo management (app role)     │
 │    - Deploy ntfy server (app role)                 │
 │    - Deploy Homepage dashboard (app role)          │
@@ -543,7 +563,7 @@ VMs with `role: app` are configured as Docker hosts for running containerized ap
 - **User Access**: Login user added to docker group for non-root Docker access
 - **Web Apps**: Homepage dashboard and personal-site container stack
 - **Code Hosting**: Forgejo with PostgreSQL, Traefik web access, and LAN-only Git over SSH
-- **Media**: music-ingest web UI for importing ripped albums into a Beets-managed library; Navidrome music streaming server reading the library via read-only NFS mount, with optional Jukebox mode for server-side playback via USB DAC
+- **Media**: music-ingest web UI for importing ripped albums into a Beets-managed library; Navidrome music streaming server reading the library via read-only NFS mount, with optional Jukebox mode for server-side playback via USB DAC; Jellyfin media server reading configured video libraries via read-only NFS mounts
 - **Photos**: Immich self-hosted photo management, storing uploads on NFS with ML and video transcoding disabled for lightweight operation
 - **Notifications**: ntfy server for self-hosted push notifications
 - **Monitoring**: Prometheus, Alertmanager, and Grafana deployed for infrastructure observability
@@ -978,6 +998,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/storage_access`: Creates a fixed-GID shared group on internal VMs and prepares the share directory ownership on storage hosts.
 - `bastion/ansible/roles/storage_disk`: Detects the dedicated storage disk by configured size, creates an ext4 filesystem, and mounts it by UUID.
 - `bastion/ansible/roles/storage_media_layout`: Creates shared media workflow directories such as `music/incoming` and `music/library` on storage hosts.
+- `bastion/ansible/roles/storage_jellyfin_layout`: Creates configured Jellyfin library directories on storage hosts with proper group ownership.
 - `bastion/ansible/roles/storage_nfs_server`: Exports the shared storage directory over NFS only to whitelisted clients and opens UFW for TCP 2049 to those clients.
 - `bastion/ansible/roles/storage_nfs_client`: Installs NFS client tooling and mounts the shared export at `/mnt/nfs` on whitelisted hosts.
 - `bastion/ansible/roles/storage_samba`: Publishes the shared storage directory over Samba with user/password authentication and local-network-only UFW rules.
@@ -987,6 +1008,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/arm`: Deploys Automatic Ripping Machine via Docker Compose on VMs with `role: rip`, auto-detecting exactly one USB optical drive in the guest and exposing the web UI for ripping control.
 - `bastion/ansible/roles/music_ingest`: Deploys music-ingest via Docker Compose on VMs with `role: app`, providing a web UI for importing ripped albums from the incoming directory into a Beets-managed music library.
 - `bastion/ansible/roles/navidrome`: Deploys Navidrome music streaming server via Docker Compose on VMs with `role: app`, mounting the Beets-managed library directory as read-only. Supports Jukebox mode with USB DAC passthrough (`/dev/snd`) and configurable audio device via `navidrome.toml`.
+- `bastion/ansible/roles/jellyfin`: Deploys Jellyfin via Docker Compose on VMs with `role: app`, mounting configured media libraries as read-only and exposing HTTP on port `8096`.
 - `bastion/ansible/roles/storage_immich_layout`: Creates Immich upload directories on storage hosts with proper group ownership.
 - `bastion/ansible/roles/immich`: Deploys Immich photo management via Docker Compose on VMs with `role: app`, with ML disabled and video transcoding off for lightweight operation. Uploads stored on NFS, database on local disk.
 - `bastion/ansible/roles/forgejo`: Deploys Forgejo with PostgreSQL via Docker Compose on VMs with `role: app`, exposes the web UI through Traefik, and opens LAN-only Git over SSH.

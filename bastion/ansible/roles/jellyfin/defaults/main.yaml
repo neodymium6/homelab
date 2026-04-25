@@ -1,0 +1,22 @@
+---
+jellyfin_image: "jellyfin/jellyfin:10.11.8"
+jellyfin_container_name: "jellyfin"
+jellyfin_dir: "/opt/stacks/jellyfin"
+jellyfin_config_dir: "{{ jellyfin_dir }}/config"
+jellyfin_cache_dir: "{{ jellyfin_dir }}/cache"
+jellyfin_compose_path: "{{ jellyfin_dir }}/docker-compose.yaml"
+
+jellyfin_port: 8096
+jellyfin_timezone: "UTC"
+
+jellyfin_libraries: []
+jellyfin_storage_share_path: "/mnt/storage/share"
+jellyfin_storage_mount_path: "/mnt/nfs"
+
+jellyfin_run_user: "{{ login_user | default('nobody') }}"
+jellyfin_storage_group: "storage"
+jellyfin_storage_gid: 2000
+
+jellyfin_enable_ufw: true
+jellyfin_allow_from_proxy_only: true
+jellyfin_proxy_ip: ""
