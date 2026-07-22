@@ -13,6 +13,7 @@ Terraform and Ansible configurations executed on the bastion VM to create and co
    - Runs Cloudflare Tunnel on proxy role VMs
    - Deploys ntfy notification server on app role VMs
    - Installs DNS services (Unbound + AdGuard Home) on dns role VMs
+   - Installs Garage S3-compatible backup storage on storage role VMs
    - Installs monitoring stack (Node Exporter, Prometheus, Alertmanager, Grafana)
    - Configures systemd-resolved on all VMs
 3. **Ansible**: Installs Nix and Home Manager on all VMs
@@ -29,7 +30,7 @@ bastion/
 │   └── terraform.tfvars    # Your credentials (git-ignored)
 └── ansible/                 # Configuration management
     ├── site_bastion.yaml    # Bastion configuration (ssh_keypair, ssh_hardening, ssh_client_config)
-    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_jellyfin_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, jellyfin, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns)
+    ├── site_internal.yaml   # Internal VMs configuration (ssh_hardening, storage roles, garage, traefik, cloudflare_tunnel, application roles, monitoring roles, DNS roles, resolved_dns)
     ├── site_homemanager.yaml # Home Manager setup (nix_installer, home_manager)
     └── roles/               # Vendored Ansible roles (no external role dependencies)
 
@@ -45,6 +46,7 @@ bastion/
 - `roles/storage_nfs_server`: Exports the shared storage directory over NFS only to whitelisted clients and opens UFW for TCP 2049 to those clients.
 - `roles/storage_nfs_client`: Installs NFS client tooling and mounts the shared export at `/mnt/nfs` on whitelisted hosts.
 - `roles/storage_samba`: Publishes the shared storage directory over Samba with user/password authentication and local-network-only UFW rules.
+- `roles/garage`: Installs a single-node Garage S3-compatible backup store as a systemd service and permits its S3 API only from the proxy VM.
 - `roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy`, forwarding Cloudflare Tunnel traffic to Traefik tunnel entrypoint.
 - `roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, and adds specified users to the docker group.
@@ -86,7 +88,7 @@ This file should be copied by the local deployment, but you can create it manual
 | `make tf-init` | Initialize Terraform |
 | `make tf-apply` | Create internal VMs |
 | `make bastion-setup` | Configure bastion (ssh_keypair, ssh_hardening, ssh_client_config) |
-| `make internal-setup` | Configure internal VMs (ssh_hardening, storage_access, storage_disk, storage_media_layout, storage_jellyfin_layout, storage_nfs_server, storage_nfs_client, storage_samba, traefik, cloudflare_tunnel, docker, forgejo, jellyfin, ntfy, alertmanager, homepage, personal_site, node_exporter, prometheus, grafana, unbound, adguard_home, resolved_dns) |
+| `make internal-setup` | Configure internal VMs, including storage, Garage, proxy, application, monitoring, and DNS roles |
 | `make homemanager` | Install Nix + Home Manager on all VMs (nix_installer, home_manager) |
 | `make clean` | Destroy internal VMs |
 
@@ -110,6 +112,7 @@ This file should be copied by the local deployment, but you can create it manual
    - Export shared storage over NFS to whitelisted client VMs
    - Mount the NFS share on whitelisted clients at `/mnt/nfs`
    - Publish the shared storage directory over Samba with user/password auth
+   - Install Garage on the storage VM and create the `backup` bucket
    - Install and configure Traefik on proxy role VMs
    - Run Cloudflare Tunnel on proxy role VMs
    - Deploy Forgejo on app role VMs
@@ -180,5 +183,9 @@ make clean
 This destroys internal VMs and removes:
 - Terraform state
 - SSH keys (`~/.ssh/id_ed25519_internal*`)
+
+It also destroys Terraform-managed attached data disks. Garage objects,
+metadata, and snapshots below `/mnt/storage/garage` are therefore deleted by
+`make clean`.
 
 For full cleanup (including bastion), run `make clean` from root directory on your local machine.

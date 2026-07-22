@@ -1,0 +1,41 @@
+---
+garage_version: "2.3.0"
+garage_download_url: "https://garagehq.deuxfleurs.fr/_releases/v{{ garage_version }}/x86_64-unknown-linux-musl/garage"
+garage_checksum: "sha256:f98d317942bb341151a2775162016bb50cf86b865d0108de03eb5db16e2120cd"
+
+garage_user: "garage"
+garage_group: "garage"
+garage_binary_path: "/usr/local/bin/garage"
+garage_config_path: "/etc/garage.toml"
+garage_env_path: "/etc/garage.env"
+garage_service_name: "garage"
+
+garage_storage_mount_path: "/mnt/storage"
+garage_base_path: "{{ garage_storage_mount_path }}/garage"
+garage_metadata_dir: "{{ garage_base_path }}/meta"
+garage_data_dir: "{{ garage_base_path }}/data"
+garage_metadata_snapshots_dir: "{{ garage_base_path }}/snapshots"
+
+garage_db_engine: "sqlite"
+garage_replication_factor: 1
+garage_consistency_mode: "consistent"
+garage_metadata_fsync: true
+garage_data_fsync: true
+garage_metadata_auto_snapshot_interval: "24h"
+
+garage_rpc_bind_addr: "127.0.0.1:3901"
+garage_rpc_public_addr: "127.0.0.1:3901"
+garage_s3_port: 3900
+garage_s3_bind_addr: "0.0.0.0:{{ garage_s3_port }}"
+garage_s3_region: "garage"
+garage_admin_bind_addr: "127.0.0.1:3903"
+
+garage_bucket_name: "backup"
+garage_access_key_id: ""
+garage_secret_access_key: ""
+garage_rpc_secret: ""
+garage_admin_token: ""
+garage_metrics_token: ""
+
+garage_enable_ufw: true
+garage_proxy_ip: ""

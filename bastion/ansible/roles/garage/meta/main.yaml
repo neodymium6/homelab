@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  author: neodymium6
+  description: Install and configure a single-node Garage S3-compatible backup store
+  min_ansible_version: "2.15"
+
+dependencies: []

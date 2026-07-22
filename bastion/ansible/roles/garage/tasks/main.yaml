@@ -1,0 +1,161 @@
+---
+- name: Validate Garage configuration
+  ansible.builtin.assert:
+    that:
+      - garage_version | string | length > 0
+      - garage_checksum is match('^sha256:[0-9a-f]{64}$')
+      - garage_replication_factor | int == 1
+      - garage_s3_port | int >= 1
+      - garage_s3_port | int <= 65535
+      - garage_bucket_name is match('^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$')
+      - garage_access_key_id | string | length > 0
+      - garage_secret_access_key | string | length >= 32
+      - garage_rpc_secret is match('^[0-9a-fA-F]{64}$')
+      - garage_admin_token | string | length >= 32
+      - garage_metrics_token | string | length >= 32
+      - garage_proxy_ip | string | length > 0
+    fail_msg: >-
+      Configure the Garage service and secrets.garage values in cluster.yaml.
+      This role supports a single-node backup store only.
+  no_log: true
+
+- name: Check Garage storage mount
+  ansible.builtin.command:
+    argv:
+      - mountpoint
+      - -q
+      - "{{ garage_storage_mount_path }}"
+  register: garage_storage_mount
+  changed_when: false
+  failed_when: false
+
+- name: Require Garage storage to be mounted
+  ansible.builtin.assert:
+    that:
+      - garage_storage_mount.rc == 0
+      - garage_base_path != garage_storage_mount_path
+      - garage_base_path.startswith(garage_storage_mount_path ~ '/')
+    fail_msg: >-
+      {{ garage_storage_mount_path }} must be mounted and garage_base_path must
+      be a child of that mount before Garage is deployed.
+
+- name: Ensure Garage group exists
+  ansible.builtin.group:
+    name: "{{ garage_group }}"
+    system: true
+    state: present
+
+- name: Ensure Garage user exists
+  ansible.builtin.user:
+    name: "{{ garage_user }}"
+    group: "{{ garage_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+
+- name: Ensure Garage storage directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ garage_user }}"
+    group: "{{ garage_group }}"
+    mode: "0700"
+  loop:
+    - "{{ garage_base_path }}"
+    - "{{ garage_metadata_dir }}"
+    - "{{ garage_data_dir }}"
+    - "{{ garage_metadata_snapshots_dir }}"
+
+- name: Install Garage binary
+  ansible.builtin.get_url:
+    url: "{{ garage_download_url }}"
+    dest: "{{ garage_binary_path }}"
+    checksum: "{{ garage_checksum }}"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart Garage
+
+- name: Deploy Garage configuration
+  ansible.builtin.template:
+    src: garage.toml.j2
+    dest: "{{ garage_config_path }}"
+    owner: root
+    group: "{{ garage_group }}"
+    mode: "0640"
+  no_log: true
+  notify: Restart Garage
+
+- name: Deploy Garage bootstrap environment
+  ansible.builtin.template:
+    src: garage.env.j2
+    dest: "{{ garage_env_path }}"
+    owner: root
+    group: "{{ garage_group }}"
+    mode: "0640"
+  no_log: true
+  notify: Restart Garage
+
+- name: Deploy Garage systemd unit
+  ansible.builtin.template:
+    src: garage.service.j2
+    dest: "/etc/systemd/system/{{ garage_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Garage
+
+- name: Apply pending Garage restarts
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure Garage is enabled and running
+  ansible.builtin.systemd:
+    name: "{{ garage_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for Garage S3 API
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ garage_s3_port }}"
+    state: started
+    timeout: 60
+
+- name: Check Garage cluster status
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - status
+  become_user: "{{ garage_user }}"
+  changed_when: false
+
+- name: Verify Garage access key
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - key
+      - info
+      - "{{ garage_access_key_id }}"
+  become_user: "{{ garage_user }}"
+  changed_when: false
+
+- name: Verify Garage backup bucket
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - info
+      - "{{ garage_bucket_name }}"
+  become_user: "{{ garage_user }}"
+  changed_when: false
+
+- name: Allow proxy to reach Garage S3 API
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ garage_proxy_ip }}"
+    port: "{{ garage_s3_port | string }}"
+  when: garage_enable_ufw | bool
+  become: true
