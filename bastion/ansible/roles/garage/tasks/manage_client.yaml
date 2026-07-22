@@ -48,7 +48,7 @@
         garage_managed_key_info.stdout_lines
         | select('match', '^Key name:')
         | first
-        | regex_replace('^Key name:\\s*', '')
+        | regex_replace('^Key name:\s*', '')
       }}
   no_log: true
 
