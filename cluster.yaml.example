@@ -106,7 +106,15 @@ services:
   - name: "garage"
     target_vm: "storage-01"
     region: "garage"
-    bucket: "backup"
+    buckets:
+      - name: "backup"
+        clients:
+          - name: "backup-admin"
+            credentials_ref: "backup_admin"
+            permissions:
+              read: true
+              write: true
+              owner: true
     proxy:
       enable: true
       scheme: "http"
@@ -377,8 +385,10 @@ docker:
 
 secrets:
   garage:
-    access_key_id: "GK_REPLACE_ME"
-    secret_access_key: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
+    clients:
+      backup_admin:
+        access_key_id: "GK_REPLACE_ME"
+        secret_access_key: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
     rpc_secret: "REPLACE_WITH_64_HEX_CHARACTERS"
     admin_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
     metrics_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"

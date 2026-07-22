@@ -129,7 +129,7 @@
     garage_storage_mount_path: "{{ (storage | default({})).mount_path | default('/mnt/storage') }}"
     garage_base_path: "{{ ((storage | default({})).garage | default({})).base_path | default(garage_storage_mount_path ~ '/garage') }}"
     garage_s3_region: "{{ garage_service.region | default('garage') }}"
-    garage_bucket_name: "{{ garage_service.bucket | default('backup') }}"
+    garage_managed_buckets: "{{ garage_service.buckets | default([]) }}"
     garage_s3_port: >-
       {{
         (garage_service.proxy.port | int)
@@ -139,12 +139,26 @@
         )
         else 3900
       }}
-    garage_access_key_id: "{{ ((secrets | default({})).garage | default({})).access_key_id | default('') }}"
-    garage_secret_access_key: "{{ ((secrets | default({})).garage | default({})).secret_access_key | default('') }}"
+    garage_secret_config: "{{ (secrets | default({})).garage | default({}) }}"
+    garage_client_secrets: "{{ garage_secret_config.clients | default({}) }}"
     garage_rpc_secret: "{{ ((secrets | default({})).garage | default({})).rpc_secret | default('') }}"
     garage_admin_token: "{{ ((secrets | default({})).garage | default({})).admin_token | default('') }}"
     garage_metrics_token: "{{ ((secrets | default({})).garage | default({})).metrics_token | default('') }}"
     garage_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  pre_tasks:
+    - name: Reject legacy Garage bucket and credential settings
+      ansible.builtin.assert:
+        that:
+          - garage_service.bucket is not defined
+          - garage_secret_config.access_key_id is not defined
+          - garage_secret_config.secret_access_key is not defined
+        fail_msg: >-
+          The legacy Garage bucket and top-level access key settings are no
+          longer supported. Define services[].buckets and
+          secrets.garage.clients instead.
+      when: garage_enabled | bool
+      no_log: true
 
   roles:
     - role: garage

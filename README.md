@@ -221,7 +221,15 @@ services:
   - name: "garage"
     target_vm: "storage-01"
     region: "garage"
-    bucket: "backup"
+    buckets:
+      - name: "backup"
+        clients:
+          - name: "backup-admin"
+            credentials_ref: "backup_admin"
+            permissions:
+              read: true
+              write: true
+              owner: true
     proxy:
       enable: true
       scheme: "http"
@@ -377,8 +385,10 @@ docker:
 
 secrets:
   garage:
-    access_key_id: "GK_REPLACE_ME"
-    secret_access_key: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
+    clients:
+      backup_admin:
+        access_key_id: "GK_REPLACE_ME"
+        secret_access_key: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
     rpc_secret: "REPLACE_WITH_64_HEX_CHARACTERS"
     admin_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
     metrics_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
@@ -414,7 +424,7 @@ For media workflows, storage hosts also prepare `/mnt/storage/share/music`, `/mn
 For Jellyfin, storage hosts prepare each directory listed under `storage.jellyfin.libraries`, for example `/mnt/storage/share/jellyfin/movies`.
 NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
 Samba is also enabled on the storage host with user/password authentication, using `storage.samba.user` and `secrets.storage.samba_password`, and is exposed only to the local homelab CIDR via UFW.
-Garage runs as a native systemd service on the storage host, stores data and metadata under `/mnt/storage/garage`, and creates the `backup` bucket on first bootstrap. Its S3 API is reachable only through the proxy VM.
+Garage runs as a native systemd service on the storage host, stores data and metadata under `/mnt/storage/garage`, and declaratively manages the buckets, access keys, and exact permissions listed under the Garage service. Its S3 API is reachable only through the proxy VM.
 Any internal VM can also declare `usb_devices` in `cluster.yaml`. Each entry must set exactly one of `host` or `mapping`, matching the provider's VM `usb` block. This is intended for `rip-01`, where an external USB optical drive can be passed through directly to the guest.
 When the `arm` service is enabled on `rip-01`, ARM is deployed via Docker Compose, auto-detects exactly one `usb rom` optical drive inside the guest, resolves the matching `/dev/sg*` device, and exposes its web UI on port `8080`. The top-level `timezone` setting is also passed through to the ARM container.
 The intended music flow is `rip-01 (ARM) -> /mnt/nfs/music/incoming -> app-01 (music-ingest) -> /mnt/nfs/music/library -> app-01 (Navidrome)`. ARM rips CDs into the incoming directory, music-ingest provides a web UI for reviewing tags and importing albums into the Beets-managed library, and Navidrome serves the library as a streaming server with a read-only mount.
@@ -607,9 +617,9 @@ The Homepage dashboard is deployed on app-01 as the primary service discovery an
 ## S3 Backup Storage
 
 Garage provides a small S3-compatible target on `storage-01`. Ansible installs
-the pinned Garage binary as a systemd service, creates the `backup` bucket on
-first bootstrap, and keeps its metadata, objects, and metadata snapshots under
-`storage.garage.base_path`.
+the pinned Garage binary as a systemd service and manages every bucket, access
+key, and permission declared in `services[].buckets`. Garage metadata, objects,
+and metadata snapshots are kept under `storage.garage.base_path`.
 
 Client traffic follows the existing internal DNS and Traefik path:
 
@@ -629,10 +639,10 @@ The Garage RPC and admin APIs listen on loopback only.
 Generate values for the ignored `cluster.yaml` before deployment:
 
 ```bash
-# access_key_id
+# access_key_id for each secrets.garage.clients entry
 printf 'GK%s\n' "$(openssl rand -hex 16)"
 
-# Run four times: secret_access_key, rpc_secret, admin_token, metrics_token
+# Run once per client for secret_access_key, then for the three service secrets
 openssl rand -hex 32
 ```
 
@@ -642,10 +652,14 @@ Use path-style S3 URLs because the internal wildcard certificate covers
 ```bash
 export RESTIC_REPOSITORY="s3:https://garage-proxy.internal.example.com/backup/restic"
 export AWS_DEFAULT_REGION="garage"
-export AWS_ACCESS_KEY_ID="<secrets.garage.access_key_id>"
-export AWS_SECRET_ACCESS_KEY="<secrets.garage.secret_access_key>"
+export AWS_ACCESS_KEY_ID="<secrets.garage.clients.backup_admin.access_key_id>"
+export AWS_SECRET_ACCESS_KEY="<secrets.garage.clients.backup_admin.secret_access_key>"
 restic init
 ```
+
+The legacy `services[].bucket`, `secrets.garage.access_key_id`, and
+`secrets.garage.secret_access_key` settings are rejected. Every bucket and
+client must use the declarative `buckets[].clients[]` structure.
 
 This deployment uses replication factor `1`, so it has no Garage-level
 redundancy. Do not treat it as the only copy of important data. Also note that

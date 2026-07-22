@@ -112,7 +112,7 @@ This file should be copied by the local deployment, but you can create it manual
    - Export shared storage over NFS to whitelisted client VMs
    - Mount the NFS share on whitelisted clients at `/mnt/nfs`
    - Publish the shared storage directory over Samba with user/password auth
-   - Install Garage on the storage VM and create the `backup` bucket
+   - Install Garage on the storage VM and reconcile declared buckets, keys, and permissions
    - Install and configure Traefik on proxy role VMs
    - Run Cloudflare Tunnel on proxy role VMs
    - Deploy Forgejo on app role VMs

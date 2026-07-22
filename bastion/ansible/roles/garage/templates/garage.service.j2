@@ -9,10 +9,9 @@ RequiresMountsFor={{ garage_base_path }}
 Type=simple
 User={{ garage_user }}
 Group={{ garage_group }}
-EnvironmentFile={{ garage_env_path }}
 Environment=RUST_LOG=garage=info
 Environment=RUST_BACKTRACE=1
-ExecStart={{ garage_binary_path }} server --single-node --default-bucket
+ExecStart={{ garage_binary_path }} server --single-node
 Restart=on-failure
 RestartSec=5s
 LimitNOFILE=42000
