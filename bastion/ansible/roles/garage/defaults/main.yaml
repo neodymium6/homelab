@@ -7,7 +7,6 @@ garage_user: "garage"
 garage_group: "garage"
 garage_binary_path: "/usr/local/bin/garage"
 garage_config_path: "/etc/garage.toml"
-garage_env_path: "/etc/garage.env"
 garage_service_name: "garage"
 
 garage_storage_mount_path: "/mnt/storage"
@@ -30,12 +29,12 @@ garage_s3_bind_addr: "0.0.0.0:{{ garage_s3_port }}"
 garage_s3_region: "garage"
 garage_admin_bind_addr: "127.0.0.1:3903"
 
-garage_bucket_name: "backup"
-garage_access_key_id: ""
-garage_secret_access_key: ""
 garage_rpc_secret: ""
 garage_admin_token: ""
 garage_metrics_token: ""
+
+garage_managed_buckets: []
+garage_client_secrets: {}
 
 garage_enable_ufw: true
 garage_proxy_ip: ""

@@ -1,0 +1,222 @@
+---
+- name: Select managed Garage client credentials
+  ansible.builtin.set_fact:
+    garage_managed_client_secret: "{{ garage_client_secrets[garage_managed_client.credentials_ref] }}"
+  no_log: true
+
+- name: Check managed Garage access key
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - key
+      - info
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  register: garage_managed_key_check
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Import missing managed Garage access key
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - key
+      - import
+      - --yes
+      - -n
+      - "{{ garage_managed_client.name }}"
+      - "{{ garage_managed_client_secret.access_key_id }}"
+      - "{{ garage_managed_client_secret.secret_access_key }}"
+  when: garage_managed_key_check.rc != 0
+  no_log: true
+
+- name: Read managed Garage access key
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - key
+      - info
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  register: garage_managed_key_info
+  changed_when: false
+  no_log: true
+
+- name: Read managed Garage access key name
+  ansible.builtin.set_fact:
+    garage_managed_key_name: >-
+      {{
+        garage_managed_key_info.stdout_lines
+        | select('match', '^Key name:')
+        | first
+        | regex_replace('^Key name:\\s*', '')
+      }}
+  no_log: true
+
+- name: Rename managed Garage access key
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - key
+      - rename
+      - "{{ garage_managed_client_secret.access_key_id }}"
+      - "{{ garage_managed_client.name }}"
+  when: garage_managed_key_name != garage_managed_client.name
+  no_log: true
+
+- name: Read current managed Garage client permissions
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - info
+      - "{{ garage_managed_client.bucket }}"
+  register: garage_managed_bucket_info
+  changed_when: false
+  no_log: true
+
+- name: Parse current managed Garage client permissions
+  ansible.builtin.set_fact:
+    garage_managed_client_permission_line: >-
+      {{
+        garage_managed_bucket_info.stdout_lines
+        | select('search', garage_managed_client_secret.access_key_id | regex_escape)
+        | first
+        | default('')
+      }}
+    garage_managed_client_permissions: >-
+      {{
+        (
+          garage_managed_bucket_info.stdout_lines
+          | select('search', garage_managed_client_secret.access_key_id | regex_escape)
+          | first
+          | default('')
+        ).split()
+        | first
+        | default('')
+      }}
+  no_log: true
+
+- name: Allow managed Garage client read access
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - allow
+      - --read
+      - "{{ garage_managed_client.bucket }}"
+      - --key
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  when:
+    - garage_managed_client.permissions.read | bool
+    - "'R' not in garage_managed_client_permissions"
+  no_log: true
+
+- name: Deny managed Garage client read access
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - deny
+      - --read
+      - "{{ garage_managed_client.bucket }}"
+      - --key
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  when:
+    - not (garage_managed_client.permissions.read | bool)
+    - "'R' in garage_managed_client_permissions"
+  no_log: true
+
+- name: Allow managed Garage client write access
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - allow
+      - --write
+      - "{{ garage_managed_client.bucket }}"
+      - --key
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  when:
+    - garage_managed_client.permissions.write | bool
+    - "'W' not in garage_managed_client_permissions"
+  no_log: true
+
+- name: Deny managed Garage client write access
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - deny
+      - --write
+      - "{{ garage_managed_client.bucket }}"
+      - --key
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  when:
+    - not (garage_managed_client.permissions.write | bool)
+    - "'W' in garage_managed_client_permissions"
+  no_log: true
+
+- name: Allow managed Garage client owner access
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - allow
+      - --owner
+      - "{{ garage_managed_client.bucket }}"
+      - --key
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  when:
+    - garage_managed_client.permissions.owner | bool
+    - "'O' not in garage_managed_client_permissions"
+  no_log: true
+
+- name: Deny managed Garage client owner access
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - deny
+      - --owner
+      - "{{ garage_managed_client.bucket }}"
+      - --key
+      - "{{ garage_managed_client_secret.access_key_id }}"
+  when:
+    - not (garage_managed_client.permissions.owner | bool)
+    - "'O' in garage_managed_client_permissions"
+  no_log: true
+
+- name: Verify managed Garage client permissions
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - info
+      - "{{ garage_managed_client.bucket }}"
+  register: garage_managed_bucket_verification
+  changed_when: false
+  no_log: true
+
+- name: Parse verified managed Garage client permissions
+  ansible.builtin.set_fact:
+    garage_managed_client_verified_permissions: >-
+      {{
+        (
+          garage_managed_bucket_verification.stdout_lines
+          | select('search', garage_managed_client_secret.access_key_id | regex_escape)
+          | first
+          | default('')
+        ).split()
+        | first
+        | default('')
+      }}
+  no_log: true
+
+- name: Require exact managed Garage client permissions
+  ansible.builtin.assert:
+    that:
+      - "('R' in garage_managed_client_verified_permissions) == (garage_managed_client.permissions.read | bool)"
+      - "('W' in garage_managed_client_verified_permissions) == (garage_managed_client.permissions.write | bool)"
+      - "('O' in garage_managed_client_verified_permissions) == (garage_managed_client.permissions.owner | bool)"
+    fail_msg: "Garage client permissions do not match the declared state."
+  no_log: true

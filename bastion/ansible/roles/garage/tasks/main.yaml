@@ -7,16 +7,15 @@
       - garage_replication_factor | int == 1
       - garage_s3_port | int >= 1
       - garage_s3_port | int <= 65535
-      - garage_bucket_name is match('^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$')
-      - garage_access_key_id | string | length > 0
-      - garage_secret_access_key | string | length >= 32
+      - garage_managed_buckets | length > 0
+      - garage_client_secrets is mapping
       - garage_rpc_secret is match('^[0-9a-fA-F]{64}$')
       - garage_admin_token | string | length >= 32
       - garage_metrics_token | string | length >= 32
       - garage_proxy_ip | string | length > 0
     fail_msg: >-
-      Configure the Garage service and secrets.garage values in cluster.yaml.
-      This role supports a single-node backup store only.
+      Configure Garage buckets, clients, and secrets.garage values in
+      cluster.yaml. This role supports a single-node backup store only.
   no_log: true
 
 - name: Check Garage storage mount
@@ -87,14 +86,10 @@
   no_log: true
   notify: Restart Garage
 
-- name: Deploy Garage bootstrap environment
-  ansible.builtin.template:
-    src: garage.env.j2
-    dest: "{{ garage_env_path }}"
-    owner: root
-    group: "{{ garage_group }}"
-    mode: "0640"
-  no_log: true
+- name: Remove legacy Garage bootstrap environment
+  ansible.builtin.file:
+    path: "/etc/garage.env"
+    state: absent
   notify: Restart Garage
 
 - name: Deploy Garage systemd unit
@@ -128,28 +123,97 @@
     argv:
       - "{{ garage_binary_path }}"
       - status
-  become_user: "{{ garage_user }}"
   changed_when: false
 
-- name: Verify Garage access key
-  ansible.builtin.command:
-    argv:
-      - "{{ garage_binary_path }}"
-      - key
-      - info
-      - "{{ garage_access_key_id }}"
-  become_user: "{{ garage_user }}"
-  changed_when: false
+- name: Validate managed Garage bucket definitions
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.name is match('^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$')
+      - item.clients is defined
+      - item.clients | length > 0
+    fail_msg: "Each Garage bucket must have a valid name and at least one client."
+  loop: "{{ garage_managed_buckets }}"
+  loop_control:
+    label: "{{ item.name | default('invalid bucket') }}"
 
-- name: Verify Garage backup bucket
+- name: Require unique managed Garage bucket names
+  ansible.builtin.assert:
+    that:
+      - >-
+        garage_managed_buckets | map(attribute='name') | list | unique | length
+        == garage_managed_buckets | length
+    fail_msg: "Garage bucket names must be unique."
+
+- name: Initialize managed Garage client list
+  ansible.builtin.set_fact:
+    garage_managed_clients: []
+
+- name: Build managed Garage client list
+  ansible.builtin.set_fact:
+    garage_managed_clients: >-
+      {{
+        garage_managed_clients
+        + [
+          item.1
+          | combine({'bucket': item.0.name})
+        ]
+      }}
+  loop: "{{ query('subelements', garage_managed_buckets, 'clients') }}"
+  loop_control:
+    label: "{{ item.0.name }} / {{ item.1.name | default('invalid client') }}"
+
+- name: Validate managed Garage client definitions and secrets
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.name | string | length > 0
+      - item.credentials_ref is defined
+      - item.credentials_ref in garage_client_secrets
+      - item.permissions is defined
+      - item.permissions.read is defined
+      - item.permissions.write is defined
+      - item.permissions.owner is defined
+      - garage_client_secrets[item.credentials_ref].access_key_id | default('') is match('^GK.+$')
+      - garage_client_secrets[item.credentials_ref].secret_access_key | default('') | string | length >= 32
+    fail_msg: >-
+      Each Garage client must reference valid credentials and explicitly set
+      read, write, and owner permissions.
+  loop: "{{ garage_managed_clients }}"
+  no_log: true
+
+- name: Check managed Garage buckets
   ansible.builtin.command:
     argv:
       - "{{ garage_binary_path }}"
       - bucket
       - info
-      - "{{ garage_bucket_name }}"
-  become_user: "{{ garage_user }}"
+      - "{{ item.name }}"
+  loop: "{{ garage_managed_buckets }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: garage_managed_bucket_checks
   changed_when: false
+  failed_when: false
+
+- name: Create missing managed Garage buckets
+  ansible.builtin.command:
+    argv:
+      - "{{ garage_binary_path }}"
+      - bucket
+      - create
+      - "{{ item.item.name }}"
+  loop: "{{ garage_managed_bucket_checks.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: item.rc != 0
+
+- name: Configure managed Garage clients
+  ansible.builtin.include_tasks: manage_client.yaml
+  loop: "{{ garage_managed_clients }}"
+  loop_control:
+    loop_var: garage_managed_client
+    label: "{{ garage_managed_client.bucket }} / {{ garage_managed_client.name }}"
 
 - name: Allow proxy to reach Garage S3 API
   community.general.ufw:
