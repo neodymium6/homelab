@@ -114,6 +114,44 @@
         storage_samba_group: "{{ ((storage | default({})).access | default({})).group | default('storage') }}"
         storage_samba_ufw_allow_cidr: "{{ network.base_prefix }}.0/{{ network.cidr_suffix }}"
 
+- name: Deploy Garage backup storage on storage hosts
+  hosts: storage
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    garage_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'garage') | list | first) | default({}) }}"
+    garage_enabled: "{{ garage_service != {} and garage_service.target_vm is defined }}"
+    garage_target_vm: "{{ garage_service.target_vm | default('') }}"
+    garage_storage_mount_path: "{{ (storage | default({})).mount_path | default('/mnt/storage') }}"
+    garage_base_path: "{{ ((storage | default({})).garage | default({})).base_path | default(garage_storage_mount_path ~ '/garage') }}"
+    garage_s3_region: "{{ garage_service.region | default('garage') }}"
+    garage_bucket_name: "{{ garage_service.bucket | default('backup') }}"
+    garage_s3_port: >-
+      {{
+        (garage_service.proxy.port | int)
+        if (
+          garage_service.proxy is defined and
+          garage_service.proxy.port is defined
+        )
+        else 3900
+      }}
+    garage_access_key_id: "{{ ((secrets | default({})).garage | default({})).access_key_id | default('') }}"
+    garage_secret_access_key: "{{ ((secrets | default({})).garage | default({})).secret_access_key | default('') }}"
+    garage_rpc_secret: "{{ ((secrets | default({})).garage | default({})).rpc_secret | default('') }}"
+    garage_admin_token: "{{ ((secrets | default({})).garage | default({})).admin_token | default('') }}"
+    garage_metrics_token: "{{ ((secrets | default({})).garage | default({})).metrics_token | default('') }}"
+    garage_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+
+  roles:
+    - role: garage
+      when:
+        - garage_enabled | bool
+        - inventory_hostname == garage_target_vm
+
 - name: Mount shared NFS storage on whitelisted hosts
   hosts: "cluster:!bastion:!storage"
   become: true

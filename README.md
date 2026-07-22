@@ -35,6 +35,8 @@ All required Ansible roles are vendored in this repository—no external role de
             │ - DNS (Unbound + AGH)        │
             │ - Proxy (Traefik)            │
             │ - Apps (Docker)              │
+            │ - Storage (NFS + Samba +     │
+            │            Garage S3)        │
             │ - Media (ARM + Music Ingest  │
             │          + Navidrome +       │
             │          Jellyfin)           │
@@ -148,6 +150,8 @@ storage:
       - "dns-01"
       - "proxy-01"
       - "rip-01"
+  garage:
+    base_path: "/mnt/storage/garage"
 
 network:
   base_prefix: "192.168.1"
@@ -214,6 +218,16 @@ services:
     target_vm: "proxy-01"
   - name: "storage"
     target_vm: "storage-01"
+  - name: "garage"
+    target_vm: "storage-01"
+    region: "garage"
+    bucket: "backup"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3900
+      allow_cidrs:
+        - "192.168.1.0/24"
   - name: "rip"
     target_vm: "rip-01"
   - name: "app"
@@ -362,6 +376,12 @@ docker:
       subnet: "172.30.10.0/28"
 
 secrets:
+  garage:
+    access_key_id: "GK_REPLACE_ME"
+    secret_access_key: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
+    rpc_secret: "REPLACE_WITH_64_HEX_CHARACTERS"
+    admin_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
+    metrics_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
   monitoring:
     grafana_admin_user: "admin"
     grafana_admin_password: "changeme"
@@ -394,6 +414,7 @@ For media workflows, storage hosts also prepare `/mnt/storage/share/music`, `/mn
 For Jellyfin, storage hosts prepare each directory listed under `storage.jellyfin.libraries`, for example `/mnt/storage/share/jellyfin/movies`.
 NFS is then exported from the storage host only to the whitelisted `storage.nfs.clients`, and those clients mount the share at `/mnt/nfs`.
 Samba is also enabled on the storage host with user/password authentication, using `storage.samba.user` and `secrets.storage.samba_password`, and is exposed only to the local homelab CIDR via UFW.
+Garage runs as a native systemd service on the storage host, stores data and metadata under `/mnt/storage/garage`, and creates the `backup` bucket on first bootstrap. Its S3 API is reachable only through the proxy VM.
 Any internal VM can also declare `usb_devices` in `cluster.yaml`. Each entry must set exactly one of `host` or `mapping`, matching the provider's VM `usb` block. This is intended for `rip-01`, where an external USB optical drive can be passed through directly to the guest.
 When the `arm` service is enabled on `rip-01`, ARM is deployed via Docker Compose, auto-detects exactly one `usb rom` optical drive inside the guest, resolves the matching `/dev/sg*` device, and exposes its web UI on port `8080`. The top-level `timezone` setting is also passed through to the ARM container.
 The intended music flow is `rip-01 (ARM) -> /mnt/nfs/music/incoming -> app-01 (music-ingest) -> /mnt/nfs/music/library -> app-01 (Navidrome)`. ARM rips CDs into the incoming directory, music-ingest provides a web UI for reviewing tags and importing albums into the Beets-managed library, and Navidrome serves the library as a streaming server with a read-only mount.
@@ -430,6 +451,7 @@ Example: VMID 102 → 192.168.1.102/24
 │    - Join Tailscale (optional, subnet router)      │
 │ 3. ansible: Configure internal VMs                 │
 │    - SSH hardening (allow only from bastion)       │
+│    - Deploy Garage backup storage (storage role)   │
 │    - Install and configure Traefik (proxy role)    │
 │    - Run Cloudflare Tunnel (proxy role)            │
 │    - Install and configure Unbound (dns role)      │
@@ -581,6 +603,54 @@ The Homepage dashboard is deployed on app-01 as the primary service discovery an
 - **Docker Compose**: Deployed via docker-compose in `/opt/stacks/homepage`
 - **Access**: Available at `https://homepage-proxy.<domain>` via Traefik
 - **Firewall**: UFW configured to allow connections only from proxy-01
+
+## S3 Backup Storage
+
+Garage provides a small S3-compatible target on `storage-01`. Ansible installs
+the pinned Garage binary as a systemd service, creates the `backup` bucket on
+first bootstrap, and keeps its metadata, objects, and metadata snapshots under
+`storage.garage.base_path`.
+
+Client traffic follows the existing internal DNS and Traefik path:
+
+```text
+S3 client
+  -> https://garage-proxy.<network.domain>
+  -> Traefik on proxy-01
+  -> http://garage.<network.domain>:3900
+  -> Garage on storage-01
+```
+
+The Garage service has no `proxy.public_hostnames`, so this repository does not
+configure a public hostname for it. Its Traefik router is restricted to the LAN
+CIDR, and UFW on `storage-01` permits TCP port `3900` only from `proxy-01`.
+The Garage RPC and admin APIs listen on loopback only.
+
+Generate values for the ignored `cluster.yaml` before deployment:
+
+```bash
+# access_key_id
+printf 'GK%s\n' "$(openssl rand -hex 16)"
+
+# Run four times: secret_access_key, rpc_secret, admin_token, metrics_token
+openssl rand -hex 32
+```
+
+Use path-style S3 URLs because the internal wildcard certificate covers
+`garage-proxy.<domain>`, not bucket subdomains. A Restic repository can use:
+
+```bash
+export RESTIC_REPOSITORY="s3:https://garage-proxy.internal.example.com/backup/restic"
+export AWS_DEFAULT_REGION="garage"
+export AWS_ACCESS_KEY_ID="<secrets.garage.access_key_id>"
+export AWS_SECRET_ACCESS_KEY="<secrets.garage.secret_access_key>"
+restic init
+```
+
+This deployment uses replication factor `1`, so it has no Garage-level
+redundancy. Do not treat it as the only copy of important data. Also note that
+`make clean` destroys the Terraform-managed storage VM and attached data disk,
+including all Garage data below `/mnt/storage/garage`.
 
 ## Reverse Proxy with Traefik
 
@@ -1002,6 +1072,7 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/storage_nfs_server`: Exports the shared storage directory over NFS only to whitelisted clients and opens UFW for TCP 2049 to those clients.
 - `bastion/ansible/roles/storage_nfs_client`: Installs NFS client tooling and mounts the shared export at `/mnt/nfs` on whitelisted hosts.
 - `bastion/ansible/roles/storage_samba`: Publishes the shared storage directory over Samba with user/password authentication and local-network-only UFW rules.
+- `bastion/ansible/roles/garage`: Installs a single-node Garage S3-compatible backup store as a systemd service and permits its S3 API only from the proxy VM.
 - `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `bastion/ansible/roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy` and connects Cloudflare Tunnel to Traefik tunnel entrypoint (`127.0.0.1:8080`).
 - `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app` and `role: rip`, and adds specified users to the docker group.

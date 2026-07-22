@@ -33,6 +33,8 @@ storage:
       - "dns-01"
       - "proxy-01"
       - "rip-01"
+  garage:
+    base_path: "/mnt/storage/garage"
 
 network:
   base_prefix: "192.168.1"
@@ -101,6 +103,16 @@ services:
     target_vm: "proxy-01"
   - name: "storage"
     target_vm: "storage-01"
+  - name: "garage"
+    target_vm: "storage-01"
+    region: "garage"
+    bucket: "backup"
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 3900
+      allow_cidrs:
+        - "192.168.1.0/24"
   - name: "rip"
     target_vm: "rip-01"
   - name: "app"
@@ -364,6 +376,12 @@ docker:
       subnet: "172.30.10.0/28"
 
 secrets:
+  garage:
+    access_key_id: "GK_REPLACE_ME"
+    secret_access_key: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
+    rpc_secret: "REPLACE_WITH_64_HEX_CHARACTERS"
+    admin_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
+    metrics_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
   monitoring:
     grafana_admin_user: "admin"
     grafana_admin_password: "changeme"
