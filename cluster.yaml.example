@@ -43,8 +43,8 @@ network:
   homelab_dns:
     - "192.168.1.102"
   upstream_dns:
-    - "192.168.1.1"
     - "1.1.1.1"
+    - "1.0.0.1"
   domain: "internal.example.com"
 
 timezone: "Asia/Tokyo"

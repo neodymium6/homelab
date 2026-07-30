@@ -160,8 +160,8 @@ network:
   homelab_dns:
     - "192.168.1.102"
   upstream_dns:
-    - "192.168.1.1"
     - "1.1.1.1"
+    - "1.0.0.1"
   domain: "internal.example.com"
 
 timezone: "Asia/Tokyo"
@@ -571,7 +571,7 @@ VMs with `role: dns` are configured with DNS services for the homelab:
 - **Unbound**: Local recursive DNS resolver listening on port 5353
   - Serves DNS records for homelab domain (`network.domain`, e.g. `internal.example.com`)
   - Falls back to `home.arpa` only when `network.domain` is not set
-  - Forwards upstream queries to external DNS (1.1.1.1, gateway)
+  - Forwards upstream queries to DNSSEC-validating public resolvers (1.1.1.1, 1.0.0.1)
   - Configured with A, CNAME, and PTR records from `cluster.yaml`
 
 - **AdGuard Home**: DNS filtering and ad-blocking proxy listening on port 53
