@@ -63,7 +63,7 @@ resource "proxmox_virtual_environment_vm" "bastion" {
     user_account {
       username = local.cluster.login_user
       password = var.debian_user_password
-      keys     = [file(var.ssh_public_key_path)]
+      keys     = [trimspace(file(var.ssh_public_key_path))]
     }
 
     ip_config {
@@ -91,4 +91,3 @@ resource "proxmox_virtual_environment_vm" "bastion" {
     ignore_changes = [started]
   }
 }
-

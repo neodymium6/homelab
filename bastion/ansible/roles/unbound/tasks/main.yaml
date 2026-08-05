@@ -30,6 +30,13 @@
     enabled: true
   become: true
 
+- name: Disable Unbound resolvconf helper
+  ansible.builtin.systemd:
+    name: unbound-resolvconf.service
+    state: stopped
+    enabled: false
+  become: true
+
 - name: Allow DNS (TCP) via ufw from allowed CIDRs
   when: unbound_ufw_allow_cidrs | length > 0
   loop: "{{ unbound_ufw_allow_cidrs }}"

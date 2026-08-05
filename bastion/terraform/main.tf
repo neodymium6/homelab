@@ -96,7 +96,7 @@ resource "proxmox_virtual_environment_vm" "internal" {
       username = local.login_user
       password = var.debian_user_password
 
-      keys = [file(local.bastion_internal_pub_path)]
+      keys = [trimspace(file(local.bastion_internal_pub_path))]
     }
 
     ip_config {
