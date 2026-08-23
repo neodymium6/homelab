@@ -430,6 +430,8 @@ When the `arm` service is enabled on `rip-01`, ARM is deployed via Docker Compos
 The intended music flow is `rip-01 (ARM) -> /mnt/nfs/music/incoming -> app-01 (music-ingest) -> /mnt/nfs/music/library -> app-01 (Navidrome)`. ARM rips CDs into the incoming directory, music-ingest provides a web UI for reviewing tags and importing albums into the Beets-managed library, and Navidrome serves the library as a streaming server with a read-only mount.
 Navidrome supports Jukebox mode for server-side audio playback via a USB DAC passed through to app-01. When `jukebox_enabled` is set, `/dev/snd` is exposed to the container and mpv drives the DAC directly. Jukebox is controlled from Subsonic-compatible clients (e.g. DSub, play:Sub). The audio device can be explicitly configured via `jukebox_devices` and `jukebox_default` in `cluster.yaml`; otherwise mpv uses `auto`.
 When proxy-only access is enabled, the Navidrome role also installs a systemd-managed `DOCKER-USER` firewall chain so Docker's published port is reachable only from the proxy VM. The chain is reapplied whenever Docker restarts; UFW remains enabled as defense in depth.
+
+AudioMuse-AI uses a split deployment: `audiomuse-01` permanently runs the web application and PostgreSQL, while the local NVIDIA workstation runs a worker only when analysis is needed. The web port is restricted to the proxy VM and PostgreSQL is restricted to the worker CIDRs declared in `services[].remote_workers`. Authentication is seeded from `secrets.audiomuse` on the first startup. Run `make audiomuse-worker-configure` once to install and configure the NVIDIA container runtime, then start and stop the GPU worker with `make audiomuse-worker-up` and `make audiomuse-worker-down`. The worker is not configured or started by the normal deployment, and `autostart: false` keeps it explicitly on-demand. The initial music-server connection is configured in AudioMuse's Setup Wizard. Media-server plugins should be added only after a successful initial analysis.
 Jellyfin serves the libraries listed in `storage.jellyfin.libraries` from read-only NFS mounts and exposes only the HTTP backend port `8096`.
 
 VMs are assigned IPs based on their VMID: `<base_prefix>.<vmid>/<cidr_suffix>`
@@ -496,6 +498,11 @@ Requirement: `yq` must be installed on the local machine because the root `Makef
 |--------|-------------|
 | `make all` | Deploy local, then bastion (full deployment) |
 | `make local` | Deploy only local components (bastion VM) |
+| `make audiomuse-worker-configure` | Install/configure the local NVIDIA worker (prompts for sudo) |
+| `make audiomuse-worker-up` | Start the local AudioMuse NVIDIA worker |
+| `make audiomuse-worker-down` | Stop and remove the local AudioMuse worker container |
+| `make audiomuse-worker-status` | Show local AudioMuse worker status |
+| `make audiomuse-worker-logs` | Follow local AudioMuse worker logs |
 | `make bastion` | Execute deployment on bastion via SSH |
 | `make debug GIT_BRANCH=<branch>` | Deploy with custom git branch |
 | `make clean` | Destroy all infrastructure |
@@ -1090,7 +1097,8 @@ Repository: [neodymium6/home-manager](https://github.com/neodymium6/home-manager
 - `bastion/ansible/roles/garage`: Installs a single-node Garage S3-compatible backup store as a systemd service and permits its S3 API only from the proxy VM.
 - `bastion/ansible/roles/traefik`: Installs Docker and Traefik reverse proxy on VMs with `role: proxy`, with dynamic configuration generation from `cluster.yaml`.
 - `bastion/ansible/roles/cloudflare_tunnel`: Deploys `cloudflared` on VMs with `role: proxy` and connects Cloudflare Tunnel to Traefik tunnel entrypoint (`127.0.0.1:8080`).
-- `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app` and `role: rip`, and adds specified users to the docker group.
+- `bastion/ansible/roles/docker`: Installs Docker and Docker Compose on VMs with `role: app`, `role: audiomuse`, and `role: rip`, and adds specified users to the docker group.
+- `bastion/ansible/roles/audiomuse`: Deploys the AudioMuse-AI web application and PostgreSQL on its dedicated VM, with proxy-only web access and worker-only database access.
 - `bastion/ansible/roles/arm`: Deploys Automatic Ripping Machine via Docker Compose on VMs with `role: rip`, auto-detecting exactly one USB optical drive in the guest and exposing the web UI for ripping control.
 - `bastion/ansible/roles/music_ingest`: Deploys music-ingest via Docker Compose on VMs with `role: app`, providing a web UI for importing ripped albums from the incoming directory into a Beets-managed music library.
 - `bastion/ansible/roles/navidrome`: Deploys Navidrome music streaming server via Docker Compose on VMs with `role: app`, mounting the Beets-managed library directory as read-only. Supports Jukebox mode with USB DAC passthrough (`/dev/snd`) and configurable audio device via `navidrome.toml`.

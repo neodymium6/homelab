@@ -1,0 +1,31 @@
+---
+audiomuse_version: "3.4.0"
+audiomuse_image: "ghcr.io/neptunehub/audiomuse-ai:{{ audiomuse_version }}"
+audiomuse_postgres_image: "postgres:15-alpine"
+audiomuse_dir: "/opt/stacks/audiomuse"
+audiomuse_compose_path: "{{ audiomuse_dir }}/docker-compose.yaml"
+audiomuse_env_path: "{{ audiomuse_dir }}/.env"
+audiomuse_postgres_dir: "{{ audiomuse_dir }}/postgres"
+audiomuse_temp_dir: "{{ audiomuse_dir }}/temp"
+audiomuse_plugins_dir: "{{ audiomuse_dir }}/plugins"
+
+audiomuse_bind_ip: ""
+audiomuse_web_port: 8000
+audiomuse_db_port: 5432
+audiomuse_timezone: "UTC"
+audiomuse_postgres_user: "audiomuse"
+audiomuse_postgres_db: "audiomusedb"
+audiomuse_postgres_password: ""
+audiomuse_auth_enabled: true
+audiomuse_auth_username: "admin"
+audiomuse_admin_password: ""
+audiomuse_api_token: ""
+audiomuse_jwt_secret: ""
+audiomuse_ivf_global_cache_mb: 256
+
+audiomuse_proxy_ip: ""
+audiomuse_remote_worker_cidrs: []
+audiomuse_firewall_chain: "HOMELAB-AUDIOMUSE"
+audiomuse_firewall_script_path: "/usr/local/sbin/audiomuse-firewall"
+audiomuse_firewall_service_name: "audiomuse-firewall.service"
+audiomuse_firewall_service_path: "/etc/systemd/system/{{ audiomuse_firewall_service_name }}"

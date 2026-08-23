@@ -51,7 +51,7 @@ resource "proxmox_virtual_environment_vm" "internal" {
   cpu {
     cores   = lookup(each.value, "cpu_cores", 2)
     sockets = 1
-    type    = "x86-64-v2-AES"
+    type    = lookup(each.value, "cpu_type", "x86-64-v2-AES")
   }
 
   memory {

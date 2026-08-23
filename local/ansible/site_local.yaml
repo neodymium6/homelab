@@ -1,6 +1,34 @@
 ---
 - import_playbook: plays/inventory_from_cluster.yaml
 
+- name: Configure the on-demand AudioMuse GPU worker
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  tags:
+    - never
+    - audiomuse_worker
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    audiomuse_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'audiomuse') | list | first) | default({}) }}"
+    audiomuse_worker_config: "{{ (audiomuse_service.remote_workers | default([]) | selectattr('deployment', 'equalto', 'local') | list | first) | default({}) }}"
+    audiomuse_worker_enabled: "{{ audiomuse_service != {} and audiomuse_worker_config != {} }}"
+    audiomuse_worker_version: "{{ audiomuse_service.version | default('3.4.0') }}"
+    audiomuse_worker_db_host: "{{ network.base_prefix }}.{{ vms[audiomuse_service.target_vm].vmid }}"
+    audiomuse_worker_db_port: "{{ (audiomuse_service.database | default({})).port | default(5432) | int }}"
+    audiomuse_worker_postgres_password: "{{ ((secrets | default({})).audiomuse | default({})).postgres_password | default('') }}"
+    audiomuse_worker_timezone: "{{ timezone | default('UTC') }}"
+    audiomuse_worker_autostart: "{{ audiomuse_worker_config.autostart | default(false) | bool }}"
+    audiomuse_worker_gpu_device: "{{ audiomuse_worker_config.gpu_device | default('0') | string }}"
+
+  roles:
+    - role: audiomuse_worker
+      when: audiomuse_worker_enabled | bool
+
 - name: Bootstrap bastion as Terraform/Ansible controller
   hosts: bastion
   become: true

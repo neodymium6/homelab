@@ -27,7 +27,7 @@
         ansible_python_interpreter: /usr/bin/python3
         ansible_ssh_private_key_file: "/home/{{ cluster.login_user }}/.ssh/id_ed25519_internal"
       loop: "{{ cluster.vms | dict2items }}"
-      when: item.value.role in ['app', 'dns', 'storage', 'rip']
+      when: item.value.role in ['app', 'audiomuse', 'dns', 'storage', 'rip']
 
     - name: Add proxy hosts
       ansible.builtin.add_host:
@@ -53,6 +53,13 @@
         groups: "app"
       loop: "{{ cluster.vms | dict2items }}"
       when: item.value.role == 'app'
+
+    - name: Add AudioMuse hosts
+      ansible.builtin.add_host:
+        name: "{{ item.key }}"
+        groups: "audiomuse"
+      loop: "{{ cluster.vms | dict2items }}"
+      when: item.value.role == 'audiomuse'
 
     - name: Add storage hosts
       ansible.builtin.add_host:

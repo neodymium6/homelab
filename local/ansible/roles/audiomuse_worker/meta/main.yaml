@@ -1,0 +1,6 @@
+---
+galaxy_info:
+  author: homelab
+  description: Configure an on-demand NVIDIA AudioMuse worker
+  min_ansible_version: "2.15"
+dependencies: []

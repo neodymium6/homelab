@@ -167,7 +167,7 @@
         - inventory_hostname == garage_target_vm
 
 - name: Mount shared NFS storage on whitelisted hosts
-  hosts: "cluster:!bastion:!storage"
+  hosts: "cluster:!bastion:!storage:!audiomuse"
   become: true
   gather_facts: false
 
@@ -224,6 +224,55 @@
       vars:
         docker_users:
           - "{{ login_user }}"
+
+- name: Install Docker on AudioMuse hosts
+  hosts: audiomuse
+  become: true
+  gather_facts: false
+  tags:
+    - audiomuse
+
+  vars_files:
+    - ../../cluster.yaml
+
+  roles:
+    - role: docker
+      vars:
+        docker_users:
+          - "{{ login_user }}"
+
+- name: Deploy AudioMuse core services
+  hosts: audiomuse
+  become: true
+  gather_facts: false
+  tags:
+    - audiomuse
+
+  vars_files:
+    - ../../cluster.yaml
+
+  vars:
+    audiomuse_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'audiomuse') | list | first) | default({}) }}"
+    audiomuse_enabled: "{{ audiomuse_service != {} and audiomuse_service.target_vm is defined }}"
+    audiomuse_target_vm: "{{ audiomuse_service.target_vm | default('') }}"
+    audiomuse_version: "{{ audiomuse_service.version | default('3.4.0') }}"
+    audiomuse_bind_ip: "{{ ansible_host }}"
+    audiomuse_web_port: "{{ (audiomuse_service.proxy | default({})).port | default(8000) | int }}"
+    audiomuse_db_port: "{{ (audiomuse_service.database | default({})).port | default(5432) | int }}"
+    audiomuse_auth_enabled: "{{ (audiomuse_service.auth | default({})).enabled | default(true) | bool }}"
+    audiomuse_auth_username: "{{ (audiomuse_service.auth | default({})).username | default('admin') }}"
+    audiomuse_postgres_password: "{{ ((secrets | default({})).audiomuse | default({})).postgres_password | default('') }}"
+    audiomuse_admin_password: "{{ ((secrets | default({})).audiomuse | default({})).admin_password | default('') }}"
+    audiomuse_api_token: "{{ ((secrets | default({})).audiomuse | default({})).api_token | default('') }}"
+    audiomuse_jwt_secret: "{{ ((secrets | default({})).audiomuse | default({})).jwt_secret | default('') }}"
+    audiomuse_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
+    audiomuse_remote_worker_cidrs: "{{ audiomuse_service.remote_workers | default([]) | map(attribute='source_cidr') | list }}"
+
+  roles:
+    - role: audiomuse
+      when:
+        - audiomuse_enabled | bool
+        - inventory_hostname == audiomuse_target_vm
 
 - name: Install Docker on rip hosts
   hosts: rip

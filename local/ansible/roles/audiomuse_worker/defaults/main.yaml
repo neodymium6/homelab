@@ -1,0 +1,18 @@
+---
+audiomuse_worker_version: "3.4.0"
+audiomuse_worker_image: "ghcr.io/neptunehub/audiomuse-ai:{{ audiomuse_worker_version }}-nvidia"
+audiomuse_worker_dir: "/opt/stacks/audiomuse-worker"
+audiomuse_worker_compose_path: "{{ audiomuse_worker_dir }}/docker-compose.yaml"
+audiomuse_worker_env_path: "{{ audiomuse_worker_dir }}/.env"
+audiomuse_worker_temp_dir: "{{ audiomuse_worker_dir }}/temp"
+audiomuse_worker_plugins_dir: "{{ audiomuse_worker_dir }}/plugins"
+audiomuse_worker_db_host: ""
+audiomuse_worker_db_port: 5432
+audiomuse_worker_postgres_user: "audiomuse"
+audiomuse_worker_postgres_db: "audiomusedb"
+audiomuse_worker_postgres_password: ""
+audiomuse_worker_timezone: "UTC"
+audiomuse_worker_autostart: false
+audiomuse_worker_gpu_device: "0"
+audiomuse_worker_login_user: "{{ login_user }}"
+audiomuse_worker_runtime_format: "{{ '{{' }}json .Runtimes{{ '}}' }}"

@@ -1,0 +1,6 @@
+---
+- name: Restart Docker for NVIDIA runtime
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+    enabled: true

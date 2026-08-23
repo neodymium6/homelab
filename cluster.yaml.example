@@ -94,6 +94,14 @@ vms:
     usb_devices:
       - host: "vendor_id:product_id"  # USB DAC for Navidrome Jukebox
 
+  audiomuse-01:
+    vmid: 202
+    role: "audiomuse"
+    cpu_cores: 2
+    cpu_type: "host"
+    memory_mb: 3072
+    disk_size_gb: 40
+
 services:
   - name: "bastion"
     target_vm: "bastion-01"
@@ -197,6 +205,31 @@ services:
       display_name: "Navidrome"
       category: "Media"
       icon: "mdi-music-circle"
+  - name: "audiomuse"
+    target_vm: "audiomuse-01"
+    version: "3.4.0"
+    auth:
+      enabled: true
+      username: "admin"
+    database:
+      port: 5432
+    remote_workers:
+      - name: "local"
+        deployment: "local"
+        source_cidr: "WORKSTATION_IPV4/32"  # Replace with the GPU worker's IPv4 address
+        accelerator: "nvidia"
+        gpu_device: "0"
+        autostart: false
+    proxy:
+      enable: true
+      scheme: "http"
+      port: 8000
+      allow_cidrs:
+        - "192.168.1.0/24"
+    homepage:
+      display_name: "AudioMuse-AI"
+      category: "Media"
+      icon: "mdi-waveform"
   - name: "jellyfin"
     target_vm: "app-01"
     proxy:
@@ -384,6 +417,11 @@ docker:
       subnet: "172.30.10.0/28"
 
 secrets:
+  audiomuse:
+    postgres_password: "REPLACE_WITH_AT_LEAST_24_CHARACTERS"
+    admin_password: "REPLACE_WITH_AT_LEAST_24_CHARACTERS"
+    api_token: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
+    jwt_secret: "REPLACE_WITH_AT_LEAST_32_CHARACTERS"
   garage:
     clients:
       backup_admin:

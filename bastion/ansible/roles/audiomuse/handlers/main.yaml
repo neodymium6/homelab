@@ -1,0 +1,15 @@
+---
+- name: Restart AudioMuse
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - "{{ audiomuse_env_path }}"
+      - -f
+      - "{{ audiomuse_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  become: true
+  no_log: true

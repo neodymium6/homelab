@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: "{{ audiomuse_postgres_image }}"
+    container_name: audiomuse-postgres
+    restart: unless-stopped
+    environment:
+      TZ: "{{ audiomuse_timezone }}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+    volumes:
+      - "{{ audiomuse_postgres_dir }}:/var/lib/postgresql/data"
+    ports:
+      - "{{ audiomuse_bind_ip }}:{{ audiomuse_db_port }}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: "{{ audiomuse_image }}"
+    container_name: audiomuse-ai-flask-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "{{ audiomuse_bind_ip }}:{{ audiomuse_web_port }}:8000"
+    environment:
+      SERVICE_TYPE: "flask"
+      TZ: "{{ audiomuse_timezone }}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      TEMP_DIR: "/app/temp_audio"
+      AUTH_ENABLED: "{{ audiomuse_auth_enabled | bool | ternary('true', 'false') }}"
+      AUDIOMUSE_USER: "${AUDIOMUSE_USER}"
+      AUDIOMUSE_PASSWORD: "${AUDIOMUSE_PASSWORD}"
+      API_TOKEN: "${API_TOKEN}"
+      JWT_SECRET: "${JWT_SECRET}"
+      IVF_GLOBAL_CACHE_MB: "{{ audiomuse_ivf_global_cache_mb }}"
+    volumes:
+      - "{{ audiomuse_temp_dir }}:/app/temp_audio"
+      - "{{ audiomuse_plugins_dir }}:/app/plugin/installed"

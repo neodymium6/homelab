@@ -1,0 +1,29 @@
+services:
+  worker:
+    image: "{{ audiomuse_worker_image }}"
+    container_name: audiomuse-ai-worker-local
+    restart: "no"
+    environment:
+      SERVICE_TYPE: "worker"
+      TZ: "{{ audiomuse_worker_timezone }}"
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+      POSTGRES_HOST: "${POSTGRES_HOST}"
+      POSTGRES_PORT: "${POSTGRES_PORT}"
+      NVIDIA_VISIBLE_DEVICES: "{{ audiomuse_worker_gpu_device }}"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+      USE_GPU_CLUSTERING: "true"
+      TEMP_DIR: "/app/temp_audio"
+    volumes:
+      - "{{ audiomuse_worker_temp_dir }}:/app/temp_audio"
+      - "{{ audiomuse_worker_plugins_dir }}:/app/plugin/installed"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids:
+                - "{{ audiomuse_worker_gpu_device }}"
+              capabilities:
+                - gpu

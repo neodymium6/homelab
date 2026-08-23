@@ -1,0 +1,114 @@
+---
+- name: Validate AudioMuse worker host and settings
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.os_family == 'Archlinux'
+      - audiomuse_worker_version is match('^[0-9]+\.[0-9]+\.[0-9]+$')
+      - audiomuse_worker_db_host is match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
+      - audiomuse_worker_db_host.split('.') | map('int') | min >= 0
+      - audiomuse_worker_db_host.split('.') | map('int') | max <= 255
+      - audiomuse_worker_db_port | int >= 1
+      - audiomuse_worker_db_port | int <= 65535
+      - audiomuse_worker_postgres_password | length >= 24
+      - audiomuse_worker_gpu_device is match('^[0-9]+$')
+    fail_msg: "This worker requires Arch Linux and valid AudioMuse database/GPU settings."
+  no_log: true
+
+- name: Install NVIDIA Container Toolkit
+  community.general.pacman:
+    name: nvidia-container-toolkit
+    state: present
+    update_cache: false
+
+- name: Ensure Docker is enabled and running
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Inspect configured Docker runtimes
+  ansible.builtin.command:
+    argv:
+      - docker
+      - info
+      - --format
+      - "{{ audiomuse_worker_runtime_format }}"
+  register: audiomuse_worker_docker_runtimes
+  changed_when: false
+
+- name: Configure NVIDIA runtime for Docker
+  ansible.builtin.command:
+    argv:
+      - nvidia-ctk
+      - runtime
+      - configure
+      - --runtime=docker
+  when: "'nvidia' not in audiomuse_worker_docker_runtimes.stdout"
+  notify: Restart Docker for NVIDIA runtime
+
+- name: Apply NVIDIA runtime configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: Verify NVIDIA runtime is available to Docker
+  ansible.builtin.command:
+    argv:
+      - docker
+      - info
+      - --format
+      - "{{ audiomuse_worker_runtime_format }}"
+  register: audiomuse_worker_docker_runtimes_after
+  changed_when: false
+  failed_when: "'nvidia' not in audiomuse_worker_docker_runtimes_after.stdout"
+
+- name: Add the login user to the Docker group
+  ansible.builtin.user:
+    name: "{{ audiomuse_worker_login_user }}"
+    groups: docker
+    append: true
+
+- name: Ensure AudioMuse worker directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: docker
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ audiomuse_worker_dir }}"
+      mode: "0750"
+    - path: "{{ audiomuse_worker_temp_dir }}"
+      mode: "0770"
+    - path: "{{ audiomuse_worker_plugins_dir }}"
+      mode: "0770"
+
+- name: Deploy AudioMuse worker environment file
+  ansible.builtin.template:
+    src: audiomuse-worker.env.j2
+    dest: "{{ audiomuse_worker_env_path }}"
+    owner: root
+    group: docker
+    mode: "0640"
+  no_log: true
+
+- name: Deploy AudioMuse worker docker compose file
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ audiomuse_worker_compose_path }}"
+    owner: root
+    group: docker
+    mode: "0640"
+
+- name: Start AudioMuse worker when autostart is enabled
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - "{{ audiomuse_worker_env_path }}"
+      - -f
+      - "{{ audiomuse_worker_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  when: audiomuse_worker_autostart | bool
+  no_log: true

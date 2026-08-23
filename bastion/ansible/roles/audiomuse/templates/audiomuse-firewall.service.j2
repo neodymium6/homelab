@@ -1,0 +1,15 @@
+[Unit]
+Description=Restrict AudioMuse Docker ports to the proxy and GPU workers
+Requires=docker.service
+After=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ audiomuse_firewall_script_path }} apply
+ExecReload={{ audiomuse_firewall_script_path }} apply
+ExecStop={{ audiomuse_firewall_script_path }} remove
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

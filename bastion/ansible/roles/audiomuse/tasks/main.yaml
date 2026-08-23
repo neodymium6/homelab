@@ -1,0 +1,124 @@
+---
+- name: Validate AudioMuse configuration
+  ansible.builtin.assert:
+    that:
+      - audiomuse_version is match('^[0-9]+\.[0-9]+\.[0-9]+$')
+      - audiomuse_bind_ip is match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
+      - audiomuse_bind_ip.split('.') | map('int') | min >= 0
+      - audiomuse_bind_ip.split('.') | map('int') | max <= 255
+      - audiomuse_proxy_ip is match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
+      - audiomuse_proxy_ip.split('.') | map('int') | min >= 0
+      - audiomuse_proxy_ip.split('.') | map('int') | max <= 255
+      - audiomuse_web_port | int >= 1
+      - audiomuse_web_port | int <= 65535
+      - audiomuse_db_port | int >= 1
+      - audiomuse_db_port | int <= 65535
+      - audiomuse_web_port | int != audiomuse_db_port | int
+      - audiomuse_remote_worker_cidrs | length > 0
+      - audiomuse_remote_worker_cidrs | select('match', '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}/(?:[0-9]|[12][0-9]|3[0-2])$') | list | length == audiomuse_remote_worker_cidrs | length
+      - audiomuse_postgres_password | length >= 24
+      - not audiomuse_auth_enabled | bool or audiomuse_auth_username | length > 0
+      - not audiomuse_auth_enabled | bool or audiomuse_admin_password | length >= 24
+      - audiomuse_api_token | length >= 32
+      - audiomuse_jwt_secret | length >= 32
+      - audiomuse_firewall_chain is match('^[A-Za-z0-9_-]{1,28}$')
+    fail_msg: "AudioMuse settings, worker CIDRs, ports, or secrets are invalid."
+  no_log: true
+
+- name: Ensure AudioMuse directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ audiomuse_dir }}"
+      mode: "0755"
+    - path: "{{ audiomuse_postgres_dir }}"
+      mode: "0700"
+    - path: "{{ audiomuse_temp_dir }}"
+      mode: "0755"
+    - path: "{{ audiomuse_plugins_dir }}"
+      mode: "0755"
+
+- name: Deploy AudioMuse environment file
+  ansible.builtin.template:
+    src: audiomuse.env.j2
+    dest: "{{ audiomuse_env_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart AudioMuse
+  no_log: true
+
+- name: Deploy AudioMuse docker compose file
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ audiomuse_compose_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart AudioMuse
+
+- name: Allow proxy to reach the AudioMuse web port via UFW
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ audiomuse_proxy_ip }}"
+    port: "{{ audiomuse_web_port | string }}"
+
+- name: Allow remote workers to reach PostgreSQL via UFW
+  community.general.ufw:
+    rule: allow
+    proto: tcp
+    src: "{{ item }}"
+    port: "{{ audiomuse_db_port | string }}"
+  loop: "{{ audiomuse_remote_worker_cidrs }}"
+
+- name: Deploy AudioMuse Docker firewall script
+  ansible.builtin.template:
+    src: audiomuse-firewall.sh.j2
+    dest: "{{ audiomuse_firewall_script_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  register: audiomuse_firewall_script
+
+- name: Deploy AudioMuse Docker firewall service
+  ansible.builtin.template:
+    src: audiomuse-firewall.service.j2
+    dest: "{{ audiomuse_firewall_service_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  register: audiomuse_firewall_unit
+
+- name: Enable and start AudioMuse Docker firewall
+  ansible.builtin.systemd:
+    name: "{{ audiomuse_firewall_service_name }}"
+    daemon_reload: true
+    enabled: true
+    state: >-
+      {{
+        'restarted'
+        if (
+          audiomuse_firewall_script.changed | default(false) or
+          audiomuse_firewall_unit.changed | default(false)
+        )
+        else 'started'
+      }}
+
+- name: Start AudioMuse via Docker Compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --env-file
+      - "{{ audiomuse_env_path }}"
+      - -f
+      - "{{ audiomuse_compose_path }}"
+      - up
+      - -d
+      - --remove-orphans
+  no_log: true

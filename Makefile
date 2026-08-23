@@ -24,7 +24,9 @@ NTFY_NOTIFY_USER ?= $(shell $(YQ) -r '.secrets.alertmanager.ntfy_user // empty' 
 NTFY_NOTIFY_PASS ?= $(shell $(YQ) -r '.secrets.alertmanager.ntfy_password // empty' $(CLUSTER_YAML))
 NTFY_NOTIFY_TOKEN ?= $(shell $(YQ) -r '.secrets.alertmanager.ntfy_token // empty' $(CLUSTER_YAML))
 
-.PHONY: local bastion all clean debug notify
+.PHONY: local bastion all clean debug notify \
+        audiomuse-worker-configure \
+        audiomuse-worker-up audiomuse-worker-down audiomuse-worker-logs audiomuse-worker-status
 
 local:
 	@echo "==> Running local deployment..."
@@ -56,6 +58,21 @@ debug:
 	fi; \
 	$(MAKE) notify TARGET=debug STATUS=$$status; \
 	exit $$status
+
+audiomuse-worker-up:
+	$(MAKE) -C local audiomuse-worker-up
+
+audiomuse-worker-configure:
+	$(MAKE) -C local audiomuse-worker-configure
+
+audiomuse-worker-down:
+	$(MAKE) -C local audiomuse-worker-down
+
+audiomuse-worker-logs:
+	$(MAKE) -C local audiomuse-worker-logs
+
+audiomuse-worker-status:
+	$(MAKE) -C local audiomuse-worker-status
 
 notify:
 	@if [ "$(NTFY_NOTIFY_ENABLE)" != "1" ]; then \
