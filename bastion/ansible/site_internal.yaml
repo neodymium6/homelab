@@ -319,6 +319,8 @@
   hosts: app
   become: true
   gather_facts: false
+  tags:
+    - navidrome
 
   vars_files:
     - ../../cluster.yaml

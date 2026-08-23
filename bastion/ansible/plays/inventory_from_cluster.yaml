@@ -1,6 +1,8 @@
 - name: Build in-memory inventory from cluster.yaml (on bastion)
   hosts: localhost
   gather_facts: false
+  tags:
+    - always
 
   vars:
     cluster: "{{ lookup('file', '../../../cluster.yaml') | from_yaml }}"

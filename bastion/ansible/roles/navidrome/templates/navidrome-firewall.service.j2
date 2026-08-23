@@ -1,0 +1,15 @@
+[Unit]
+Description=Restrict Navidrome Docker port to the reverse proxy
+Requires=docker.service
+After=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+ExecStart={{ navidrome_firewall_script_path }} apply
+ExecReload={{ navidrome_firewall_script_path }} apply
+ExecStop={{ navidrome_firewall_script_path }} remove
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

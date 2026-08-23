@@ -82,3 +82,80 @@
     - navidrome_enable_ufw | bool
     - navidrome_allow_from_proxy_only | bool
     - navidrome_proxy_ip | length > 0
+
+- name: Validate navidrome proxy-only firewall settings
+  ansible.builtin.assert:
+    that:
+      - navidrome_proxy_ip is match('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')
+      - navidrome_proxy_ip.split('.') | map('int') | min >= 0
+      - navidrome_proxy_ip.split('.') | map('int') | max <= 255
+      - navidrome_firewall_chain is match('^[A-Za-z0-9_-]{1,28}$')
+    fail_msg: >-
+      navidrome_proxy_ip must be a valid IPv4 address and
+      navidrome_firewall_chain must be a valid iptables chain name.
+  when: navidrome_allow_from_proxy_only | bool
+
+- name: Deploy navidrome Docker firewall script
+  ansible.builtin.template:
+    src: navidrome-firewall.sh.j2
+    dest: "{{ navidrome_firewall_script_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  register: navidrome_firewall_script
+  when: navidrome_allow_from_proxy_only | bool
+
+- name: Deploy navidrome Docker firewall service
+  ansible.builtin.template:
+    src: navidrome-firewall.service.j2
+    dest: "{{ navidrome_firewall_service_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  register: navidrome_firewall_unit
+  when: navidrome_allow_from_proxy_only | bool
+
+- name: Enable and start navidrome Docker firewall
+  ansible.builtin.systemd:
+    name: "{{ navidrome_firewall_service_name }}"
+    daemon_reload: true
+    enabled: true
+    state: >-
+      {{
+        'restarted'
+        if (
+          navidrome_firewall_script.changed | default(false) or
+          navidrome_firewall_unit.changed | default(false)
+        )
+        else 'started'
+      }}
+  when: navidrome_allow_from_proxy_only | bool
+
+- name: Check for obsolete navidrome Docker firewall service
+  ansible.builtin.stat:
+    path: "{{ navidrome_firewall_service_path }}"
+  register: navidrome_firewall_obsolete_unit
+  when: not (navidrome_allow_from_proxy_only | bool)
+
+- name: Remove navidrome Docker firewall when proxy-only access is disabled
+  when:
+    - not (navidrome_allow_from_proxy_only | bool)
+    - navidrome_firewall_obsolete_unit.stat.exists
+  block:
+    - name: Stop and disable navidrome Docker firewall
+      ansible.builtin.systemd:
+        name: "{{ navidrome_firewall_service_name }}"
+        enabled: false
+        state: stopped
+
+    - name: Remove navidrome Docker firewall files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ navidrome_firewall_service_path }}"
+        - "{{ navidrome_firewall_script_path }}"
+
+    - name: Reload systemd after removing navidrome Docker firewall
+      ansible.builtin.systemd:
+        daemon_reload: true

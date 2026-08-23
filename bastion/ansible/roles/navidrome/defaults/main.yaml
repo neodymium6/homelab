@@ -22,3 +22,8 @@ navidrome_jukebox_default: ""
 navidrome_enable_ufw: true
 navidrome_allow_from_proxy_only: true
 navidrome_proxy_ip: ""
+
+navidrome_firewall_chain: "HOMELAB-NAVIDROME"
+navidrome_firewall_script_path: "/usr/local/sbin/navidrome-firewall"
+navidrome_firewall_service_name: "navidrome-firewall.service"
+navidrome_firewall_service_path: "/etc/systemd/system/{{ navidrome_firewall_service_name }}"
