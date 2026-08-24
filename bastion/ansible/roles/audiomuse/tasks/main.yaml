@@ -29,17 +29,25 @@
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
     mode: "{{ item.mode }}"
   loop:
     - path: "{{ audiomuse_dir }}"
+      owner: root
+      group: root
       mode: "0755"
     - path: "{{ audiomuse_postgres_dir }}"
+      owner: "{{ audiomuse_postgres_uid }}"
+      group: "{{ audiomuse_postgres_gid }}"
       mode: "0700"
     - path: "{{ audiomuse_temp_dir }}"
+      owner: root
+      group: root
       mode: "0755"
     - path: "{{ audiomuse_plugins_dir }}"
+      owner: root
+      group: root
       mode: "0755"
 
 - name: Deploy AudioMuse environment file
@@ -122,3 +130,14 @@
       - -d
       - --remove-orphans
   no_log: true
+
+- name: Wait for AudioMuse web endpoint
+  ansible.builtin.uri:
+    url: "http://{{ audiomuse_bind_ip }}:{{ audiomuse_web_port }}/"
+    status_code:
+      - 200
+      - 302
+  register: audiomuse_web_health
+  retries: 30
+  delay: 2
+  until: audiomuse_web_health.status in [200, 302]

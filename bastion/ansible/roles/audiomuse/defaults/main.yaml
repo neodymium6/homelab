@@ -2,6 +2,8 @@
 audiomuse_version: "3.4.0"
 audiomuse_image: "ghcr.io/neptunehub/audiomuse-ai:{{ audiomuse_version }}"
 audiomuse_postgres_image: "postgres:15-alpine"
+audiomuse_postgres_uid: 70
+audiomuse_postgres_gid: 70
 audiomuse_dir: "/opt/stacks/audiomuse"
 audiomuse_compose_path: "{{ audiomuse_dir }}/docker-compose.yaml"
 audiomuse_env_path: "{{ audiomuse_dir }}/.env"
