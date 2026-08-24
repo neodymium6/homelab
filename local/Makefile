@@ -5,6 +5,7 @@ ANSIBLE_DIR := ansible
         ansible-deps bastion-bootstrap bastion-bootstrap-debug \
         audiomuse-worker-configure \
         audiomuse-worker-up audiomuse-worker-down audiomuse-worker-logs audiomuse-worker-status \
+        audiomuse-refresh \
         all clean debug
 
 AUDIOMUSE_WORKER_DIR := /opt/stacks/audiomuse-worker
@@ -52,6 +53,9 @@ audiomuse-worker-logs:
 
 audiomuse-worker-status:
 	sudo docker compose --env-file $(AUDIOMUSE_WORKER_ENV) -f $(AUDIOMUSE_WORKER_COMPOSE) ps
+
+audiomuse-refresh:
+	./scripts/audiomuse-refresh.sh
 
 clean:
 	@echo "==> Destroying bastion-01 from local..."

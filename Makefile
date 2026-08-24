@@ -26,7 +26,8 @@ NTFY_NOTIFY_TOKEN ?= $(shell $(YQ) -r '.secrets.alertmanager.ntfy_token // empty
 
 .PHONY: local bastion all clean debug notify \
         audiomuse-worker-configure \
-        audiomuse-worker-up audiomuse-worker-down audiomuse-worker-logs audiomuse-worker-status
+        audiomuse-worker-up audiomuse-worker-down audiomuse-worker-logs audiomuse-worker-status \
+        audiomuse-refresh
 
 local:
 	@echo "==> Running local deployment..."
@@ -73,6 +74,9 @@ audiomuse-worker-logs:
 
 audiomuse-worker-status:
 	$(MAKE) -C local audiomuse-worker-status
+
+audiomuse-refresh:
+	$(MAKE) -C local audiomuse-refresh
 
 notify:
 	@if [ "$(NTFY_NOTIFY_ENABLE)" != "1" ]; then \
