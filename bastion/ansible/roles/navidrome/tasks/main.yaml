@@ -23,12 +23,32 @@
     navidrome_host_audio_gid: "{{ navidrome_audio_group_cmd.stdout.split(':')[2] }}"
   when: navidrome_jukebox_enabled | bool
 
-- name: Validate navidrome backend port range
+- name: Validate navidrome settings
   ansible.builtin.assert:
     that:
       - navidrome_port | int >= 1
       - navidrome_port | int <= 65535
-    fail_msg: "navidrome_port must be between 1 and 65535"
+      - navidrome_version is match('^[0-9]+\.[0-9]+\.[0-9]+$')
+    fail_msg: >-
+      navidrome_port must be between 1 and 65535 and navidrome_version must
+      use an X.Y.Z release number.
+
+- name: Validate AudioMuse plugin settings
+  ansible.builtin.assert:
+    that:
+      - navidrome_plugins_enabled | bool
+      - navidrome_agents | length > 0
+      - navidrome_agents | first == 'audiomuseai'
+      - navidrome_audiomuse_plugin_version is match('^v[0-9]+$')
+      - navidrome_audiomuse_plugin_checksum is match('^sha256:[0-9a-f]{64}$')
+      - navidrome_audiomuse_api_url is match('^https://[^/]+(?:/.*)?$')
+      - navidrome_audiomuse_api_token | length >= 24
+      - navidrome_audiomuse_server_name | length > 0
+    fail_msg: >-
+      AudioMuse plugin requires plugins enabled, audiomuseai as the first agent,
+      a pinned vN release/checksum, an HTTPS API URL, API token, and server name.
+  when: navidrome_audiomuse_plugin_enabled | bool
+  no_log: true
 
 - name: Ensure navidrome directories exist
   ansible.builtin.file:
@@ -38,6 +58,58 @@
   loop:
     - "{{ navidrome_dir }}"
     - "{{ navidrome_conf_dir }}"
+
+- name: Check current navidrome container
+  community.docker.docker_container_info:
+    name: "{{ navidrome_container_name }}"
+  register: navidrome_container_before_update
+
+- name: Read current navidrome version
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ navidrome_container_name }}"
+      - /app/navidrome
+      - --version
+  register: navidrome_current_version
+  changed_when: false
+  when: navidrome_container_before_update.exists
+
+- name: Determine whether navidrome requires a version update
+  ansible.builtin.set_fact:
+    navidrome_version_update_required: >-
+      {{
+        navidrome_container_before_update.exists and
+        navidrome_version not in (
+          (navidrome_current_version.stdout | default('')) ~
+          (navidrome_current_version.stderr | default(''))
+        )
+      }}
+
+- name: Ensure navidrome backup directory exists before version update
+  ansible.builtin.file:
+    path: "{{ navidrome_backup_dir }}"
+    state: directory
+    owner: "{{ navidrome_run_user }}"
+    group: "{{ navidrome_storage_group }}"
+    mode: "0750"
+  when: navidrome_version_update_required | bool
+
+- name: Back up navidrome database before version update
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ navidrome_container_name }}"
+      - /app/navidrome
+      - --configfile
+      - /etc/navidrome/navidrome.toml
+      - backup
+      - create
+      - --backup-dir
+      - /data/backups
+  when: navidrome_version_update_required | bool
 
 - name: Deploy navidrome configuration file
   ansible.builtin.template:
@@ -54,12 +126,30 @@
     group: "{{ navidrome_storage_group }}"
     mode: "0755"
 
+- name: Ensure navidrome plugins directory exists
+  ansible.builtin.file:
+    path: "{{ navidrome_data_dir }}/plugins"
+    state: directory
+    owner: "{{ navidrome_run_user }}"
+    group: "{{ navidrome_storage_group }}"
+    mode: "0755"
+  when: navidrome_plugins_enabled | bool
+
+- name: Install AudioMuse navidrome plugin package
+  ansible.builtin.get_url:
+    url: "{{ navidrome_audiomuse_plugin_url }}"
+    dest: "{{ navidrome_audiomuse_plugin_path }}"
+    checksum: "{{ navidrome_audiomuse_plugin_checksum }}"
+    owner: "{{ navidrome_run_user }}"
+    group: "{{ navidrome_storage_group }}"
+    mode: "0644"
+  when: navidrome_audiomuse_plugin_enabled | bool
+
 - name: Deploy navidrome docker-compose file
   ansible.builtin.template:
     src: docker-compose.yaml.j2
     dest: "{{ navidrome_compose_path }}"
     mode: "0644"
-  notify: Restart navidrome
 
 - name: Start navidrome via docker compose
   ansible.builtin.command:
@@ -71,6 +161,102 @@
       - up
       - -d
       - --remove-orphans
+
+- name: Wait for navidrome health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ navidrome_port }}/ping"
+    status_code: 200
+  register: navidrome_health
+  retries: 30
+  delay: 2
+  until: navidrome_health.status == 200
+
+- name: Deploy temporary AudioMuse plugin configuration
+  ansible.builtin.copy:
+    content: >-
+      {{
+        {
+          'apiUrl': navidrome_audiomuse_api_url,
+          'apiToken': navidrome_audiomuse_api_token,
+          'server': navidrome_audiomuse_server_name,
+          'artistSimilarCount': 10,
+          'eliminateDuplicates': true,
+          'radiusSimilarity': true
+        } | to_nice_json
+      }}
+    dest: "{{ navidrome_data_dir }}/plugins/.audiomuseai-config.json"
+    owner: "{{ navidrome_run_user }}"
+    group: "{{ navidrome_storage_group }}"
+    mode: "0600"
+  when: navidrome_audiomuse_plugin_enabled | bool
+  no_log: true
+
+- name: Configure and enable AudioMuse navidrome plugin
+  when: navidrome_audiomuse_plugin_enabled | bool
+  no_log: true
+  block:
+    - name: Rescan navidrome plugins
+      ansible.builtin.command:
+        argv:
+          - docker
+          - exec
+          - "{{ navidrome_container_name }}"
+          - /app/navidrome
+          - --configfile
+          - /etc/navidrome/navidrome.toml
+          - plugin
+          - rescan
+      changed_when: false
+
+    - name: Validate AudioMuse navidrome plugin
+      ansible.builtin.command:
+        argv:
+          - docker
+          - exec
+          - "{{ navidrome_container_name }}"
+          - /app/navidrome
+          - --configfile
+          - /etc/navidrome/navidrome.toml
+          - plugin
+          - validate
+          - audiomuseai
+      changed_when: false
+
+    - name: Configure AudioMuse navidrome plugin
+      ansible.builtin.command:
+        argv:
+          - docker
+          - exec
+          - "{{ navidrome_container_name }}"
+          - /app/navidrome
+          - --configfile
+          - /etc/navidrome/navidrome.toml
+          - plugin
+          - edit
+          - audiomuseai
+          - --config-file
+          - /data/plugins/.audiomuseai-config.json
+      changed_when: false
+
+    - name: Enable AudioMuse navidrome plugin
+      ansible.builtin.command:
+        argv:
+          - docker
+          - exec
+          - "{{ navidrome_container_name }}"
+          - /app/navidrome
+          - --configfile
+          - /etc/navidrome/navidrome.toml
+          - plugin
+          - enable
+          - audiomuseai
+      changed_when: false
+  always:
+    - name: Remove temporary AudioMuse plugin configuration
+      ansible.builtin.file:
+        path: "{{ navidrome_data_dir }}/plugins/.audiomuseai-config.json"
+        state: absent
+      no_log: true
 
 - name: Allow proxy-01 to reach navidrome backend port
   community.general.ufw:

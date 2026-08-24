@@ -190,11 +190,24 @@ services:
       icon: "mdi-music-box-multiple"
   - name: "navidrome"
     target_vm: "app-01"
+    version: "0.63.2"
     jukebox_enabled: true
     # jukebox_devices:
     #   - name: "dac"
     #     device: "alsa/default:CARD=MyDAC"
     # jukebox_default: "dac"
+    plugins:
+      enabled: true
+      autoreload: true
+      agents:
+        - "audiomuseai"
+        - "lastfm"
+        - "deezer"
+      audiomuse:
+        enabled: true
+        version: "v9"
+        checksum: "sha256:bca0b84ab29359f364a645fba968c4574b9bc81ef58c6f33d03957ae33b50cfc"
+        server_name: "Navidrome"
     proxy:
       enable: true
       scheme: "http"

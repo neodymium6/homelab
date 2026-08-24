@@ -1,10 +1,12 @@
 ---
-navidrome_image: "deluan/navidrome:latest"
+navidrome_version: "0.63.2"
+navidrome_image: "deluan/navidrome:{{ navidrome_version }}"
 navidrome_container_name: "navidrome"
 navidrome_dir: "/opt/stacks/navidrome"
 navidrome_data_dir: "{{ navidrome_dir }}/data"
 navidrome_conf_dir: "{{ navidrome_dir }}/conf"
 navidrome_compose_path: "{{ navidrome_dir }}/docker-compose.yaml"
+navidrome_backup_dir: "{{ navidrome_data_dir }}/backups"
 
 navidrome_port: 4533
 navidrome_timezone: "UTC"
@@ -18,6 +20,19 @@ navidrome_storage_gid: 2000
 navidrome_jukebox_enabled: false
 navidrome_jukebox_devices: []
 navidrome_jukebox_default: ""
+
+navidrome_plugins_enabled: false
+navidrome_plugins_autoreload: false
+navidrome_agents: []
+navidrome_audiomuse_plugin_enabled: false
+navidrome_audiomuse_plugin_version: "v9"
+navidrome_audiomuse_plugin_url: >-
+  https://github.com/NeptuneHub/AudioMuse-AI-NV-plugin/releases/download/{{ navidrome_audiomuse_plugin_version }}/audiomuseai.ndp
+navidrome_audiomuse_plugin_checksum: "sha256:bca0b84ab29359f364a645fba968c4574b9bc81ef58c6f33d03957ae33b50cfc"
+navidrome_audiomuse_plugin_path: "{{ navidrome_data_dir }}/plugins/audiomuseai.ndp"
+navidrome_audiomuse_api_url: ""
+navidrome_audiomuse_api_token: ""
+navidrome_audiomuse_server_name: "Navidrome"
 
 navidrome_enable_ufw: true
 navidrome_allow_from_proxy_only: true

@@ -10,6 +10,15 @@ services:
       TZ: "{{ navidrome_timezone }}"
       HOME: "/data"
       ND_CONFIGFILE: "/etc/navidrome/navidrome.toml"
+      ND_PLUGINS_ENABLED: "{{ navidrome_plugins_enabled | bool | ternary('true', 'false') }}"
+      ND_PLUGINS_AUTORELOAD: "{{ navidrome_plugins_autoreload | bool | ternary('true', 'false') }}"
+      ND_PLUGINS_FOLDER: "/data/plugins"
+{% if navidrome_agents | length > 0 %}
+      ND_AGENTS: "{{ navidrome_agents | join(',') }}"
+{% endif %}
+{% if navidrome_audiomuse_plugin_enabled | bool %}
+      ND_DEVARTISTINFOTIMETOLIVE: "1s"
+{% endif %}
     volumes:
       - "{{ navidrome_data_dir }}:/data"
       - "{{ navidrome_conf_dir }}/navidrome.toml:/etc/navidrome/navidrome.toml:ro"
