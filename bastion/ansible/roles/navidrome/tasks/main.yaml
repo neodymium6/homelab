@@ -236,6 +236,9 @@
           - audiomuseai
           - --config-file
           - /data/plugins/.audiomuseai-config.json
+          - --all-users
+          - --all-libraries
+          - --no-write-access
       changed_when: false
 
     - name: Enable AudioMuse navidrome plugin
