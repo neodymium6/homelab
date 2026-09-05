@@ -25,10 +25,17 @@
     mode: "0644"
   loop:
     - { src: "settings.yaml.j2",   dest: "settings.yaml" }
-    - { src: "services.yaml.j2",   dest: "services.yaml" }
     - { src: "bookmarks.yaml.j2",  dest: "bookmarks.yaml" }
     - { src: "widgets.yaml.j2",    dest: "widgets.yaml" }
   notify: Restart homepage
+  become: true
+
+- name: Deploy Homepage service links
+  ansible.builtin.template:
+    src: services.yaml.j2
+    dest: "{{ homepage_config_dir }}/services.yaml"
+    mode: "0644"
+  tags: [homepage-links]
   become: true
 
 - name: Start Homepage via docker compose

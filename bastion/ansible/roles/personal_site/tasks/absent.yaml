@@ -1,0 +1,113 @@
+---
+- name: Validate the exact personal-site retirement target
+  ansible.builtin.assert:
+    that:
+      - personal_site_name == 'personal-site'
+      - personal_site_dir == '/opt/stacks/personal-site'
+      - personal_site_compose_path == '/opt/stacks/personal-site/docker-compose.yml'
+    fail_msg: "Retirement supports only the role's dedicated default paths."
+
+- name: Inspect personal-site managed files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /opt/stacks/personal-site
+    - /opt/stacks/personal-site/docker-compose.yml
+    - /etc/systemd/system/personal-site-update.timer
+    - /etc/systemd/system/personal-site-update.service
+  register: personal_site_files
+
+- name: Refuse symlinked personal-site retirement targets
+  ansible.builtin.assert:
+    that:
+      - not (item.stat.islnk | default(false))
+  loop: "{{ personal_site_files.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Inspect containers belonging to the dedicated Compose project
+  ansible.builtin.command:
+    argv: [docker, ps, --all, --quiet, --filter, 'label=com.docker.compose.project=personal-site']
+  changed_when: false
+  check_mode: false
+  register: personal_site_container_ids
+
+- name: Require Compose configuration when project containers still exist
+  ansible.builtin.assert:
+    that:
+      - personal_site_files.results[1].stat.exists or personal_site_container_ids.stdout | trim | length == 0
+    fail_msg: "Project containers remain without the managed Compose file; inspect manually."
+
+- name: Inspect configured personal-site services
+  ansible.builtin.command:
+    argv: [docker, compose, -p, personal-site, -f, '{{ personal_site_compose_path }}', config, --services]
+  changed_when: false
+  check_mode: false
+  register: personal_site_compose_services
+  when: personal_site_files.results[1].stat.exists
+
+- name: Refuse unexpected services in the retirement Compose file
+  ansible.builtin.assert:
+    that:
+      - personal_site_compose_services.stdout_lines | length > 0
+      - personal_site_compose_services.stdout_lines | reject('match', '^personal-site-[0-9]+$') | list | length == 0
+  when: personal_site_files.results[1].stat.exists
+
+- name: Stop and disable personal-site update timer before stopping its service
+  ansible.builtin.systemd:
+    name: personal-site-update.timer
+    enabled: false
+    state: stopped
+  when: personal_site_files.results[2].stat.exists
+
+- name: Stop any in-flight personal-site update
+  ansible.builtin.systemd:
+    name: personal-site-update.service
+    state: stopped
+  when: personal_site_files.results[3].stat.exists
+
+- name: Remove only the personal-site Compose project without removing images or volumes
+  community.docker.docker_compose_v2:
+    project_src: "{{ personal_site_dir }}"
+    project_name: personal-site
+    files: [docker-compose.yml]
+    state: absent
+    remove_orphans: false
+    remove_volumes: false
+  when: personal_site_files.results[1].stat.exists
+
+- name: Confirm project containers have been removed
+  ansible.builtin.command:
+    argv: [docker, ps, --all, --quiet, --filter, 'label=com.docker.compose.project=personal-site']
+  changed_when: false
+  register: personal_site_remaining
+  failed_when: personal_site_remaining.stdout | trim | length > 0
+  when: not ansible_check_mode
+
+- name: Remove personal-site proxy firewall rules
+  community.general.ufw:
+    rule: allow
+    delete: true
+    proto: tcp
+    src: "{{ personal_site_proxy_ip }}"
+    port: "{{ item | string }}"
+  loop: "{{ personal_site_backend_ports }}"
+  when:
+    - personal_site_enable_ufw | bool
+    - personal_site_allow_from_proxy_only | bool
+    - personal_site_proxy_ip is defined
+
+- name: Remove only managed personal-site files, preserving directories and user data
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/personal-site-update.timer
+    - /etc/systemd/system/personal-site-update.service
+    - /opt/stacks/personal-site/docker-compose.yml
+  register: personal_site_removed_files
+
+- name: Reload systemd after unit removal
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: personal_site_removed_files.changed

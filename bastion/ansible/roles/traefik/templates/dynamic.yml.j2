@@ -1,7 +1,7 @@
 http:
   routers:
 {% for s in services | default([]) %}
-{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+{%   if (s.state | default('present')) != 'absent' and s.proxy is defined and s.proxy.enable | default(false) %}
 {%     set host_rules = [] %}
 {%     set _ = host_rules.append("Host(`" ~ s.name ~ "-proxy." ~ network.domain ~ "`)") %}
 {%     if s.proxy.public_hostnames is defined and s.proxy.public_hostnames | length > 0 %}
@@ -52,14 +52,14 @@ http:
 
 {% set ns = namespace(any_service=false) %}
 {% for s in services | default([]) %}
-{%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
+{%   if (s.state | default('present')) != 'absent' and s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
 {%     set ns.any_service = true %}
 {%   endif %}
 {% endfor %}
 {% if ns.any_service %}
   services:
 {% for s in services | default([]) %}
-{%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
+{%   if (s.state | default('present')) != 'absent' and s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
 {%     set service_backend_host = (s.proxy.backend_host | default(s.name ~ '.' ~ network.domain)) %}
     {{ s.name }}-svc:
       loadBalancer:
@@ -93,7 +93,7 @@ http:
 
 {% set ns = namespace(any_mw=false) %}
 {% for s in services | default([]) %}
-{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+{%   if (s.state | default('present')) != 'absent' and s.proxy is defined and s.proxy.enable | default(false) %}
 {%     if (s.proxy.allow_cidrs is defined and s.proxy.allow_cidrs | length > 0) or (s.proxy.auth is defined and s.proxy.auth.users is defined and s.proxy.auth.users | length > 0) or (s.proxy.retry is defined) %}
 {%       set ns.any_mw = true %}
 {%     endif %}
@@ -102,7 +102,7 @@ http:
 {% if ns.any_mw %}
   middlewares:
 {% for s in services | default([]) %}
-{%   if s.proxy is defined and s.proxy.enable | default(false) %}
+{%   if (s.state | default('present')) != 'absent' and s.proxy is defined and s.proxy.enable | default(false) %}
 {%     if s.proxy.allow_cidrs is defined and s.proxy.allow_cidrs | length > 0 %}
     {{ s.name }}-allow:
       ipWhiteList:
@@ -133,7 +133,7 @@ http:
 
 {% set ns = namespace(any_transport=false) %}
 {% for s in services | default([]) %}
-{%   if s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
+{%   if (s.state | default('present')) != 'absent' and s.proxy is defined and s.proxy.enable | default(false) and (s.proxy.service is not defined or s.proxy.service != 'api@internal') %}
 {%     if s.proxy.insecure_skip_verify | default(false) %}
 {%       set ns.any_transport = true %}
 {%     endif %}

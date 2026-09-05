@@ -306,6 +306,7 @@ services:
       public_hostnames:
         - "ntfy-pub.example.com"
   - name: "personal-site"
+    state: present  # Set absent to retire this deployment; retain target and backend metadata.
     target_vm: "app-01"
     image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
     update_enable: true

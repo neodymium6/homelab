@@ -21,6 +21,7 @@
     lstrip_blocks: true
     trim_blocks: true
   notify: Restart unbound
+  tags: [service-dns]
   become: true
 
 - name: Ensure unbound service is enabled and running

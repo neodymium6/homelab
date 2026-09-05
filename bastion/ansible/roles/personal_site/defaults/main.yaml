@@ -1,4 +1,5 @@
 ---
+personal_site_state: present
 personal_site_image: "ghcr.io/neodymium6/profile.neodymium6.net:latest"
 personal_site_dir: "/opt/stacks/personal-site"
 personal_site_compose_path: "{{ personal_site_dir }}/docker-compose.yml"

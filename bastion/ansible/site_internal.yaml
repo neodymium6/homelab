@@ -651,12 +651,14 @@
   hosts: app
   become: true
   gather_facts: false
+  tags: [personal-site]
 
   vars_files:
     - ../../cluster.yaml
 
   vars:
     personal_site_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'personal-site') | list | first) | default({}) }}"
+    personal_site_state: "{{ personal_site_service.state | default('present') }}"
     personal_site_enabled: "{{ personal_site_service != {} and (personal_site_service.proxy is defined and (personal_site_service.proxy.enable | default(false) | bool)) }}"
     personal_site_target_vm: "{{ personal_site_service.target_vm | default('') }}"
     personal_site_image: "{{ personal_site_service.image | default('ghcr.io/neodymium6/profile.neodymium6.net:latest') }}"
@@ -685,10 +687,20 @@
     personal_site_update_cleanup_until: "{{ personal_site_service.update_cleanup_until | default('168h') }}"
     personal_site_proxy_ip: "{{ network.base_prefix }}.{{ vms['proxy-01'].vmid }}"
 
+  pre_tasks:
+    - name: Validate configured personal-site lifecycle and target
+      ansible.builtin.assert:
+        that:
+          - personal_site_state in ['present', 'absent']
+          - personal_site_target_vm in groups['app']
+        fail_msg: "personal-site requires a present/absent state and a valid app target_vm."
+      when: personal_site_service != {}
+
   roles:
     - role: personal_site
       when:
-        - personal_site_enabled | bool
+        - personal_site_service != {}
+        - personal_site_state != 'present' or personal_site_enabled | bool
         - inventory_hostname == personal_site_target_vm
 
 - name: Install node_exporter on all VMs
@@ -800,22 +812,29 @@
     unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
   pre_tasks:
     - name: Initialize Unbound service maps from services
+      tags: [service-dns]
       ansible.builtin.set_fact:
         unbound_zone_services: {}
 
     - name: Build Unbound zone services from services
+      tags: [service-dns]
+      no_log: true
       ansible.builtin.set_fact:
         unbound_zone_services: "{{ unbound_zone_services | combine({ item.name: {'target_vm': item.target_vm} }) }}"
       loop: "{{ services | default([]) }}"
       when:
+        - (item.state | default('present')) != 'absent'
         - item.name is defined
         - item.target_vm is defined
 
     - name: Add proxy entries to Unbound zone services
+      tags: [service-dns]
+      no_log: true
       ansible.builtin.set_fact:
         unbound_zone_services: "{{ unbound_zone_services | combine({ (item.name ~ '-proxy'): {'target_vm': (services | selectattr('name', 'equalto', 'proxy') | first).target_vm} }) }}"
       loop: "{{ services | default([]) }}"
       when:
+        - (item.state | default('present')) != 'absent'
         - item.proxy is defined
         - item.proxy.enable | default(false) | bool
 

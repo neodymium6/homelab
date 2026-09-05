@@ -1,6 +1,6 @@
 {% set categories = {} %}
 {% for s in services | default([]) %}
-{%   if s.homepage is defined and s.proxy is defined and s.proxy.enable | default(false) %}
+{%   if (s.state | default('present')) != 'absent' and s.homepage is defined and s.proxy is defined and s.proxy.enable | default(false) %}
 {%     set category = s.homepage.category | default('Services') %}
 {%     if category not in categories %}
 {%       set _ = categories.update({category: []}) %}
