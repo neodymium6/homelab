@@ -26,8 +26,8 @@ arm_proxy_ip: ""
 arm_abcde_cddb_method: "musicbrainz"
 arm_abcde_output_type: "flac"
 arm_abcde_output_dir: "/home/arm/music"
-arm_abcde_output_format: '${ARTISTFILE}/${ALBUMFILE}/${TRACKNUM} - ${TRACKFILE}'
-arm_abcde_va_output_format: 'Compilations/${ALBUMFILE}/${TRACKNUM} - ${ARTISTFILE} - ${TRACKFILE}'
+arm_abcde_output_format: '${ARTISTFILE}/${ALBUMFILE}/${RIP_ORDER}-${TRACKNUM} - ${TRACKFILE}'
+arm_abcde_va_output_format: 'Compilations/${ALBUMFILE}/${RIP_ORDER}-${TRACKNUM} - ${ARTISTFILE} - ${TRACKFILE}'
 arm_abcde_onetrack_output_format: '${ARTISTFILE}/${ALBUMFILE}/${ALBUMFILE}'
 arm_abcde_va_onetrack_output_format: 'Compilations/${ALBUMFILE}/${ALBUMFILE}'
 arm_abcde_flac_options: '--best --verify'
