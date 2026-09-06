@@ -417,6 +417,7 @@ tailscale:
         - "tag:subnet-router"
       advertise_routes:
         - "192.168.1.0/24"
+      advertise_exit_node: false  # Opt in, then approve the exit node in Tailscale.
       enable_ip_forward: true
 
 proxy:

@@ -9,6 +9,12 @@
 
 # --- Install via apt repository ---
 
+- name: Require IP forwarding when advertising an exit node
+  ansible.builtin.assert:
+    that:
+      - not (tailscale_advertise_exit_node | bool) or (tailscale_enable_ip_forward | bool)
+    fail_msg: "Exit node advertisement requires tailscale_enable_ip_forward=true."
+
 - name: Install prerequisites for Tailscale repo
   ansible.builtin.apt:
     name:
@@ -113,6 +119,7 @@
          ['--hostname=' + tailscale_hostname] +
          (['--advertise-tags=' + (tailscale_advertise_tags | join(','))] if tailscale_advertise_tags | length > 0 else []) +
          (['--advertise-routes=' + (tailscale_advertise_routes | join(','))] if tailscale_advertise_routes | length > 0 else []) +
+         ['--advertise-exit-node=' + (tailscale_advertise_exit_node | bool | string | lower)] +
          ['--accept-routes=' + (tailscale_accept_routes | string | lower)] +
          ['--ssh=' + (tailscale_ssh | string | lower)] +
          (['--reset'] if tailscale_backend_state == 'Running' else [])

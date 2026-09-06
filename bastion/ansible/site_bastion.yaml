@@ -37,6 +37,8 @@
   hosts: bastion
   become: true
   gather_facts: false
+  tags:
+    - tailscale
 
   vars_files:
     - ../../cluster.yaml
@@ -55,6 +57,7 @@
         tailscale_hostname: "{{ inventory_hostname }}"
         tailscale_advertise_tags: "{{ ts_node.advertise_tags | default([]) }}"
         tailscale_advertise_routes: "{{ ts_node.advertise_routes | default([]) }}"
+        tailscale_advertise_exit_node: "{{ ts_node.advertise_exit_node | default(false) | bool }}"
         tailscale_enable_ip_forward: "{{ ts_node.enable_ip_forward | default(false) | bool }}"
         tailscale_accept_routes: "{{ ts_node.accept_routes | default(false) | bool }}"
         tailscale_ssh: "{{ ts_node.ssh | default(false) | bool }}"
