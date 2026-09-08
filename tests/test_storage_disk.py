@@ -12,6 +12,9 @@ class StorageDiskTests(unittest.TestCase):
     def test_resize_is_nonforcing_and_guarded(self):
         tasks = yaml.safe_load((ROOT / "bastion/ansible/roles/storage_disk/tasks/main.yaml").read_text())
         filesystem = next(t["community.general.filesystem"] for t in tasks if "community.general.filesystem" in t)
+        for task in tasks:
+            if task.get("register") in ("storage_disk_lsblk", "storage_disk_mount", "storage_disk_uuid"):
+                self.assertIs(task["check_mode"], False)
         self.assertTrue(filesystem["resizefs"])
         self.assertFalse(filesystem["force"])
         guard = next(t for t in tasks if t["name"].startswith("Reject partitions"))

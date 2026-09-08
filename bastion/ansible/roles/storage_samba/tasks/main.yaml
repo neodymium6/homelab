@@ -37,6 +37,7 @@
   ansible.builtin.command: pdbedit -L
   register: storage_samba_accounts
   changed_when: false
+  check_mode: false
 
 - name: Validate credentials before changing any accounts
   ansible.builtin.assert:

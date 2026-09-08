@@ -84,6 +84,8 @@ class SambaTests(unittest.TestCase):
         plugin.storage_samba_model(samba["users"], samba["shares"], config["login_user"])
         tasks = yaml.safe_load((ROLE / "tasks/main.yaml").read_text())
         render = next(t for t in tasks if "ansible.builtin.template" in t)
+        probe = next(t for t in tasks if t.get("ansible.builtin.command") == "pdbedit -L")
+        self.assertIs(probe["check_mode"], False)
         self.assertIn("testparm", render["ansible.builtin.template"]["validate"])
         handlers = (ROLE / "handlers/main.yaml").read_text()
         self.assertNotIn("restarted", handlers)
