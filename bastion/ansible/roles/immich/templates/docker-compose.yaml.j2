@@ -26,7 +26,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2283/api/server/ping"]
+      # Inherit immich-healthcheck from the image; wget is not bundled.
       interval: 30s
       timeout: 5s
       retries: 3
