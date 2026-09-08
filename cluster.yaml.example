@@ -24,8 +24,30 @@ storage:
       - name: "movies"
         path: "/mnt/storage/share/jellyfin/movies"
   samba:
-    share_name: "storage"
-    user: "your_username"
+    users:
+      your_username:
+        unix_account: existing
+      archive_writer: {}
+      media_reader: {}
+    shares:
+      storage:
+        path: /mnt/storage/share
+        valid_users: [your_username]
+        browseable: true
+        force_group: storage
+        directory_mask: "2775"
+        force_directory_mode: "2775"
+        inherit_permissions: true
+      documents:
+        path: /mnt/storage/documents
+        valid_users: [your_username]
+      archives:
+        path: /mnt/storage/archives
+        valid_users: [archive_writer]
+      media:
+        path: /mnt/storage/media
+        valid_users: [media_reader]
+        read_only: true
   nfs:
     mount_path: "/mnt/nfs"
     clients:
@@ -460,7 +482,10 @@ secrets:
   forgejo:
     db_password: "change_me"
   storage:
-    samba_password: "change_me"
+    samba_passwords:
+      your_username: "REPLACE_ME"
+      archive_writer: "REPLACE_ME"
+      media_reader: "REPLACE_ME"
   tailscale:
     auth_key: "tskey-auth-REPLACE_ME"
   alertmanager:

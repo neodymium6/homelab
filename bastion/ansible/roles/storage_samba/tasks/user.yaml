@@ -1,0 +1,36 @@
+---
+- name: Look up Unix account
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ samba_user.key }}"
+    fail_key: false
+  register: samba_unix_account
+
+- name: Require preexisting Unix account when requested
+  ansible.builtin.assert:
+    that:
+      - samba_unix_account.ansible_facts.getent_passwd[samba_user.key] is not none
+  when: samba_user.value.unix_account | default('managed') == 'existing'
+
+- name: Create missing non-login Unix account
+  ansible.builtin.user:
+    name: "{{ samba_user.key }}"
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+    password_lock: true
+  when:
+    - samba_user.value.unix_account | default('managed') == 'managed'
+    - samba_unix_account.ansible_facts.getent_passwd[samba_user.key] is none
+
+- name: Create or explicitly rotate Samba password
+  ansible.builtin.command:
+    argv: [smbpasswd, -s, -a, "{{ samba_user.key }}"]
+    stdin: |
+      {{ storage_samba_effective_passwords[samba_user.key] }}
+      {{ storage_samba_effective_passwords[samba_user.key] }}
+  when: >-
+    storage_samba_update_password or
+    (storage_samba_accounts.stdout_lines | select('match', '^' ~ samba_user.key ~ ':') | list | length == 0)
+  no_log: true
+  changed_when: true

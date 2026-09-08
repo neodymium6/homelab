@@ -1,32 +1,118 @@
 ---
-- name: Ensure Samba credentials are configured
+- name: Require both mappings when using multi-share configuration
   ansible.builtin.assert:
     that:
-      - storage_samba_user | trim | length > 0
-      - storage_samba_password | trim | length > 0
-    fail_msg: "storage.samba.user and secrets.storage.samba_password must both be set."
+      - (storage_samba_users is none) == (storage_samba_shares is none)
+
+- name: Normalize declarations while preserving legacy share behavior
+  ansible.builtin.set_fact:
+    storage_samba_model: >-
+      {{ (storage_samba_users if storage_samba_users is not none else
+          {storage_samba_user: {'unix_account': 'existing'}})
+         | storage_samba_model(
+           storage_samba_shares if storage_samba_shares is not none else
+           {storage_samba_share_name: {
+             'path': storage_samba_share_path, 'valid_users': [storage_samba_user],
+             'browseable': true, 'force_group': storage_samba_group,
+             'create_mask': storage_samba_create_mask,
+             'directory_mask': storage_samba_directory_mask,
+             'force_directory_mode': storage_samba_directory_mask,
+             'inherit_permissions': true, 'encryption': 'default',
+             'follow_symlinks': true}}, storage_samba_force_user) }}
+
+- name: Normalize private credentials
+  ansible.builtin.set_fact:
+    storage_samba_effective_passwords: >-
+      {{ storage_samba_passwords if storage_samba_users is not none else
+         {storage_samba_user: storage_samba_password} }}
+  no_log: true
 
 - name: Ensure Samba packages are installed
   ansible.builtin.apt:
     name: "{{ storage_samba_packages }}"
     state: present
-    update_cache: yes
-  become: true
+    update_cache: true
 
-- name: Ensure Samba user exists as a local account
+- name: Inspect existing Samba accounts
+  ansible.builtin.command: pdbedit -L
+  register: storage_samba_accounts
+  changed_when: false
+
+- name: Validate credentials before changing any accounts
+  ansible.builtin.assert:
+    that:
+      - >-
+        ((storage_samba_accounts.stdout_lines | select('match', '^' ~ item.key ~ ':') | list | length > 0)
+         and not storage_samba_update_password) or
+        (storage_samba_effective_passwords.get(item.key, '') | length > 0)
+      - "'\n' not in storage_samba_effective_passwords.get(item.key, '')"
+      - "'\r' not in storage_samba_effective_passwords.get(item.key, '')"
+    fail_msg: "A new or rotated Samba account needs a password in secrets.storage.samba_passwords."
+  loop: "{{ storage_samba_model.users | dict2items }}"
+  no_log: true
+
+- name: Configure declared Samba accounts
+  ansible.builtin.include_tasks: user.yaml
+  loop: "{{ storage_samba_model.users | dict2items }}"
+  loop_control:
+    loop_var: samba_user
+    label: "{{ samba_user.key }}"
+
+- name: Check forced Unix users
   ansible.builtin.getent:
     database: passwd
-    key: "{{ storage_samba_user }}"
+    key: "{{ item.value.force_user }}"
+  loop: "{{ storage_samba_model.shares | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
 
-- name: Render Samba configuration
+- name: Check forced Unix groups
+  ansible.builtin.getent:
+    database: group
+    key: "{{ item.value.force_group }}"
+  loop: "{{ storage_samba_model.shares | dict2items }}"
+  when: item.value.force_group is defined
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Inspect declared share directories without following symlinks
+  ansible.builtin.stat:
+    path: "{{ item.value.path }}"
+    follow: false
+  loop: "{{ storage_samba_model.shares | dict2items }}"
+  register: storage_samba_paths
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Require existing share paths to be directories
+  ansible.builtin.assert:
+    that:
+      - not item.stat.exists or (item.stat.isdir | default(false))
+  loop: "{{ storage_samba_paths.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+
+- name: Create missing share directories without changing existing data permissions
+  ansible.builtin.file:
+    path: "{{ item.item.value.path }}"
+    state: directory
+    owner: "{{ item.item.value.force_user }}"
+    group: "{{ item.item.value.force_group | default(omit) }}"
+    mode: "{{ item.item.value.directory_mask }}"
+  loop: "{{ storage_samba_paths.results }}"
+  when: not item.stat.exists
+  loop_control:
+    label: "{{ item.item.key }}"
+
+- name: Validate and install Samba configuration
   ansible.builtin.template:
     src: smb.conf.j2
-    dest: "/etc/samba/smb.conf"
+    dest: /etc/samba/smb.conf
     owner: root
     group: root
     mode: "0644"
-  notify: Restart Samba services
-  become: true
+    validate: /usr/bin/testparm --suppress-prompt %s
+  notify: Reload Samba configuration
 
 - name: Ensure Samba services are enabled and running
   ansible.builtin.service:
@@ -34,61 +120,6 @@
     state: started
     enabled: true
   loop: "{{ storage_samba_services }}"
-  become: true
-
-- name: List existing Samba accounts
-  ansible.builtin.command:
-    argv:
-      - pdbedit
-      - -L
-  register: storage_samba_accounts
-  changed_when: false
-  failed_when: false
-  become: true
-
-- name: Check whether Samba share user already exists
-  ansible.builtin.set_fact:
-    storage_samba_user_exists: >-
-      {{
-        storage_samba_accounts.rc == 0 and
-        (
-          storage_samba_accounts.stdout_lines
-          | select('search', '^' ~ storage_samba_user ~ ':')
-          | list
-          | length
-        ) > 0
-      }}
-
-- name: Create Samba account for share user
-  ansible.builtin.command:
-    argv:
-      - smbpasswd
-      - -s
-      - -a
-      - "{{ storage_samba_user }}"
-    stdin: |
-      {{ storage_samba_password }}
-      {{ storage_samba_password }}
-  when: not storage_samba_user_exists
-  no_log: true
-  changed_when: true
-  become: true
-
-- name: Update Samba password when requested
-  ansible.builtin.command:
-    argv:
-      - smbpasswd
-      - -s
-      - "{{ storage_samba_user }}"
-    stdin: |
-      {{ storage_samba_password }}
-      {{ storage_samba_password }}
-  when:
-    - storage_samba_user_exists
-    - storage_samba_update_password | bool
-  no_log: true
-  changed_when: true
-  become: true
 
 - name: Allow Samba from local network via ufw
   community.general.ufw:
@@ -100,4 +131,3 @@
   when:
     - storage_samba_ufw_enable | bool
     - storage_samba_ufw_allow_cidr | trim | length > 0
-  become: true

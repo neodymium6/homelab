@@ -5,14 +5,28 @@
    map to guest = Never
    server min protocol = SMB2
 
-[{{ storage_samba_share_name }}]
-   path = {{ storage_samba_share_path }}
-   browseable = yes
-   read only = no
+{% for name, share in storage_samba_model.shares.items() %}
+[{{ name }}]
+   path = {{ share.path }}
+   browseable = {{ 'yes' if share.browseable else 'no' }}
+   read only = {{ 'yes' if share.read_only else 'no' }}
    guest ok = no
-   valid users = {{ storage_samba_user }}
-   force group = {{ storage_samba_group }}
-   create mask = {{ storage_samba_create_mask }}
-   directory mask = {{ storage_samba_directory_mask }}
-   force directory mode = {{ storage_samba_directory_mask }}
-   inherit permissions = yes
+   valid users = {{ share.valid_users | join(' ') }}
+{% if storage_samba_users is not none %}
+   force user = {{ share.force_user }}
+{% endif %}
+{% if share.force_group is defined %}
+   force group = {{ share.force_group }}
+{% endif %}
+   create mask = {{ share.create_mask }}
+   directory mask = {{ share.directory_mask }}
+{% if share.force_directory_mode is defined %}
+   force directory mode = {{ share.force_directory_mode }}
+{% endif %}
+   inherit permissions = {{ 'yes' if share.inherit_permissions else 'no' }}
+   follow symlinks = {{ 'yes' if share.follow_symlinks else 'no' }}
+{% if share.encryption != 'default' %}
+   smb encrypt = {{ share.encryption }}
+{% endif %}
+
+{% endfor %}

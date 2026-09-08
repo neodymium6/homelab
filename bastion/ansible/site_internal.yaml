@@ -106,7 +106,12 @@
         storage_nfs_server_export_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
         storage_nfs_server_clients: "{{ ((storage | default({})).nfs | default({})).clients | default([]) }}"
     - role: storage_samba
+      tags: [storage-samba]
       vars:
+        storage_samba_users: "{{ ((storage | default({})).samba | default({})).users | default(none) }}"
+        storage_samba_shares: "{{ ((storage | default({})).samba | default({})).shares | default(none) }}"
+        storage_samba_passwords: "{{ ((secrets | default({})).storage | default({})).samba_passwords | default({}) }}"
+        storage_samba_force_user: "{{ login_user }}"
         storage_samba_share_name: "{{ ((storage | default({})).samba | default({})).share_name | default('storage') }}"
         storage_samba_share_path: "{{ ((storage | default({})).access | default({})).share_path | default(((storage | default({})).mount_path | default('/mnt/storage')) ~ '/share') }}"
         storage_samba_user: "{{ ((storage | default({})).samba | default({})).user | default(login_user) }}"
