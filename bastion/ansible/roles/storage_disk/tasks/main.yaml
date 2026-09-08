@@ -17,6 +17,13 @@
   register: storage_disk_lsblk
   changed_when: false
 
+- name: Identify the currently mounted storage filesystem
+  ansible.builtin.command:
+    argv: [findmnt, --noheadings, --raw, --output, SOURCE,FSTYPE, --mountpoint, "{{ storage_disk_mount_path }}"]
+  register: storage_disk_mount
+  changed_when: false
+  failed_when: storage_disk_mount.rc not in [0, 1]
+
 - name: Derive storage disk candidates from lsblk output
   ansible.builtin.set_fact:
     storage_disk_expected_size_bytes: "{{ storage_disk_expected_size_gb | int * 1024 * 1024 * 1024 }}"
@@ -42,6 +49,18 @@
   ansible.builtin.set_fact:
     storage_disk_device_path: "{{ storage_disk_candidates[0].path }}"
 
+- name: Reject partitions, foreign filesystems and a changed mounted device
+  ansible.builtin.assert:
+    that:
+      - storage_disk_candidates[0].children | default([]) | length == 0
+      - storage_disk_candidates[0].fstype | default('', true) in ['', 'ext4']
+      - >-
+        storage_disk_mount.rc == 1 or
+        storage_disk_mount.stdout.split() == [storage_disk_device_path, 'ext4']
+    fail_msg: >-
+      Refusing to initialize or resize a partitioned, non-ext4, or different
+      mounted storage device. Inspect disk identity before proceeding.
+
 - name: Ensure storage mount path exists
   ansible.builtin.file:
     path: "{{ storage_disk_mount_path }}"
@@ -54,6 +73,8 @@
   community.general.filesystem:
     dev: "{{ storage_disk_device_path }}"
     fstype: "ext4"
+    force: false
+    resizefs: true
 
 - name: Settle udev after filesystem changes
   ansible.builtin.command:
