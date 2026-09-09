@@ -126,6 +126,7 @@
   changed_when: false
 
 - name: Validate managed Garage bucket definitions
+  tags: [garage-buckets]
   ansible.builtin.assert:
     that:
       - item.name is defined
@@ -138,6 +139,7 @@
     label: "{{ item.name | default('invalid bucket') }}"
 
 - name: Require unique managed Garage bucket names
+  tags: [garage-buckets]
   ansible.builtin.assert:
     that:
       - >-
@@ -146,10 +148,12 @@
     fail_msg: "Garage bucket names must be unique."
 
 - name: Initialize managed Garage client list
+  tags: [garage-buckets]
   ansible.builtin.set_fact:
     garage_managed_clients: []
 
 - name: Build managed Garage client list
+  tags: [garage-buckets]
   ansible.builtin.set_fact:
     garage_managed_clients: >-
       {{
@@ -164,6 +168,7 @@
     label: "{{ item.0.name }} / {{ item.1.name | default('invalid client') }}"
 
 - name: Validate managed Garage client definitions and secrets
+  tags: [garage-buckets]
   ansible.builtin.assert:
     that:
       - item.name is defined
@@ -183,6 +188,7 @@
   no_log: true
 
 - name: Check managed Garage buckets
+  tags: [garage-buckets]
   ansible.builtin.command:
     argv:
       - "{{ garage_binary_path }}"
@@ -197,6 +203,7 @@
   failed_when: false
 
 - name: Create missing managed Garage buckets
+  tags: [garage-buckets]
   ansible.builtin.command:
     argv:
       - "{{ garage_binary_path }}"
@@ -209,7 +216,11 @@
   when: item.rc != 0
 
 - name: Configure managed Garage clients
-  ansible.builtin.include_tasks: manage_client.yaml
+  tags: [garage-buckets]
+  ansible.builtin.include_tasks:
+    file: manage_client.yaml
+    apply:
+      tags: [garage-buckets]
   loop: "{{ garage_managed_clients }}"
   loop_control:
     loop_var: garage_managed_client
