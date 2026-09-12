@@ -1,0 +1,55 @@
+---
+- name: Validate snapshot options
+  ansible.builtin.assert:
+    that:
+      - zfs_snapshot_config.enabled | default(false) | type_debug == 'bool'
+      - zfs_snapshot_config.dataset is match('^[A-Za-z0-9][A-Za-z0-9_.:-]*(/[A-Za-z0-9][A-Za-z0-9_.:-]*)+$')
+      - zfs_snapshot_config.guid | string is match('^[0-9]+$')
+      - zfs_snapshot_keep | int >= 1
+      - zfs_snapshot_keep | int <= 366
+
+- name: Install bounded snapshot manager
+  ansible.builtin.copy:
+    src: snapshots.py
+    dest: /usr/local/sbin/homelab-zfs-snapshots
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install snapshot configuration
+  ansible.builtin.copy:
+    content: >-
+      {{ dict(dataset=zfs_snapshot_config.dataset,
+              guid=zfs_snapshot_config.guid | string,
+              keep=zfs_snapshot_keep | int,
+              timezone=zfs_snapshot_timezone) | to_nice_json }}
+    dest: /etc/homelab-zfs-snapshots.json
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Verify target and retention plan without mutations
+  ansible.builtin.command:
+    argv: [/usr/local/sbin/homelab-zfs-snapshots, --dry-run]
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Install systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - homelab-zfs-snapshots.service
+    - homelab-zfs-snapshots.timer
+  register: zfs_snapshot_units
+
+- name: Reconcile snapshot timer
+  ansible.builtin.systemd_service:
+    name: homelab-zfs-snapshots.timer
+    daemon_reload: "{{ zfs_snapshot_units.changed }}"
+    enabled: "{{ zfs_snapshot_config.enabled | default(false) }}"
+    state: "{{ ('restarted' if zfs_snapshot_units.changed else 'started') if zfs_snapshot_config.enabled | default(false) else 'stopped' }}"
+  when: not ansible_check_mode

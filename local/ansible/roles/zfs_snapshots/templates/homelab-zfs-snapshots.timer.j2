@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily data-volume recovery point
+
+[Timer]
+OnCalendar=*-*-* {{ zfs_snapshot_time }} {{ zfs_snapshot_timezone }}
+Persistent=true
+AccuracySec=1min
+Unit=homelab-zfs-snapshots.service
+
+[Install]
+WantedBy=timers.target

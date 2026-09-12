@@ -1,0 +1,5 @@
+---
+zfs_snapshot_config: {}
+zfs_snapshot_timezone: UTC
+zfs_snapshot_keep: 7
+zfs_snapshot_time: "06:30:00"

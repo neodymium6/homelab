@@ -3,6 +3,12 @@ proxmox:
   node_name: "pve"
   datastore: "local-zfs"
   debian_template_vmid: 9100
+  # Optional host-side data-volume snapshots (disabled unless configured).
+  # ssh_host: "proxmox.example.com"
+  # zfs_snapshots:
+  #   enabled: true
+  #   dataset: "tank/vm-data/vm-104-disk-0"
+  #   guid: "1234567890123456789"  # Read with: zfs get -H -o value guid DATASET
 
 storage:
   mount_path: "/mnt/storage"

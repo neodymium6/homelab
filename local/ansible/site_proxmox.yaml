@@ -1,0 +1,28 @@
+---
+- name: Build optional Proxmox snapshot inventory
+  hosts: localhost
+  gather_facts: false
+  tags: [proxmox-snapshots]
+  vars_files:
+    - ../../cluster.yaml
+  tasks:
+    - name: Add explicitly configured Proxmox SSH target
+      ansible.builtin.add_host:
+        name: homelab-snapshot-host
+        groups: proxmox_snapshot_hosts
+        ansible_host: "{{ proxmox.ssh_host }}"
+        ansible_user: root
+        ansible_python_interpreter: /usr/bin/python3
+      when: proxmox.zfs_snapshots is defined
+
+- name: Manage data-volume snapshots on Proxmox
+  hosts: proxmox_snapshot_hosts
+  gather_facts: false
+  tags: [proxmox-snapshots]
+  vars_files:
+    - ../../cluster.yaml
+  roles:
+    - role: zfs_snapshots
+      vars:
+        zfs_snapshot_config: "{{ proxmox.zfs_snapshots }}"
+        zfs_snapshot_timezone: "{{ timezone | default('UTC') }}"

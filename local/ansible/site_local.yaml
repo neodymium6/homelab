@@ -1,4 +1,6 @@
 ---
+- import_playbook: site_proxmox.yaml
+
 - import_playbook: plays/inventory_from_cluster.yaml
 
 - name: Configure the on-demand AudioMuse GPU worker

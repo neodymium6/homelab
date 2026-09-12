@@ -1,0 +1,16 @@
+[Unit]
+Description=Daily recovery snapshots of the configured ZFS data volume
+After=zfs-import.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelab-zfs-snapshots
+TimeoutStartSec=15min
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/run/lock
+PrivateTmp=true
