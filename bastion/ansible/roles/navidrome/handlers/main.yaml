@@ -1,11 +1,6 @@
 ---
 - name: Restart navidrome
-  ansible.builtin.command:
-    argv:
-      - docker
-      - compose
-      - -f
-      - "{{ navidrome_compose_path }}"
-      - restart
-      - navidrome
+  ansible.builtin.systemd:
+    name: navidrome.service
+    state: restarted
   become: true

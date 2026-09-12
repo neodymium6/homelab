@@ -1,0 +1,21 @@
+[Unit]
+Description=Navidrome Compose application
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+PartOf=docker.service
+RequiresMountsFor={{ navidrome_library_dir }}
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory={{ navidrome_dir }}
+ExecStartPre=/usr/bin/test -d {{ navidrome_library_dir }}
+ExecStart=/usr/bin/docker compose -f {{ navidrome_compose_path }} up --no-build --pull never --no-color --exit-code-from navidrome navidrome
+ExecStop=/usr/bin/docker compose -f {{ navidrome_compose_path }} stop --timeout 30 navidrome
+Restart=always
+RestartSec=10
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target docker.service

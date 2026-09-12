@@ -1,5 +1,6 @@
 ---
 - name: Lookup navidrome run user id
+  tags: [navidrome-startup]
   ansible.builtin.command:
     argv:
       - id
@@ -9,6 +10,7 @@
   changed_when: false
 
 - name: Lookup host audio group GID for jukebox
+  tags: [navidrome-startup]
   ansible.builtin.command:
     argv:
       - getent
@@ -19,6 +21,7 @@
   when: navidrome_jukebox_enabled | bool
 
 - name: Set host audio GID fact
+  tags: [navidrome-startup]
   ansible.builtin.set_fact:
     navidrome_host_audio_gid: "{{ navidrome_audio_group_cmd.stdout.split(':')[2] }}"
   when: navidrome_jukebox_enabled | bool
@@ -145,22 +148,9 @@
     mode: "0644"
   when: navidrome_audiomuse_plugin_enabled | bool
 
-- name: Deploy navidrome docker-compose file
-  ansible.builtin.template:
-    src: docker-compose.yaml.j2
-    dest: "{{ navidrome_compose_path }}"
-    mode: "0644"
-
-- name: Start navidrome via docker compose
-  ansible.builtin.command:
-    argv:
-      - docker
-      - compose
-      - -f
-      - "{{ navidrome_compose_path }}"
-      - up
-      - -d
-      - --remove-orphans
+- name: Configure mount-aware navidrome startup
+  ansible.builtin.import_tasks: startup.yaml
+  tags: [navidrome-startup]
 
 - name: Wait for navidrome health endpoint
   ansible.builtin.uri:

@@ -2,7 +2,8 @@ services:
   navidrome:
     image: "{{ navidrome_image }}"
     container_name: "{{ navidrome_container_name }}"
-    restart: unless-stopped
+    # systemd owns startup ordering and restarts; Docker must not bypass it.
+    restart: "no"
     user: "{{ navidrome_uid_cmd.stdout | trim }}:{{ navidrome_storage_gid }}"
     ports:
       - "{{ navidrome_port }}:4533"

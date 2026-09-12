@@ -1,0 +1,30 @@
+---
+- name: Ensure the configured navidrome image is available before service startup
+  community.docker.docker_image:
+    name: "{{ navidrome_image }}"
+    source: pull
+
+- name: Deploy navidrome docker-compose file
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ navidrome_compose_path }}"
+    mode: "0644"
+  register: navidrome_compose_deploy
+
+- name: Deploy mount-aware navidrome service
+  ansible.builtin.template:
+    src: navidrome.service.j2
+    dest: /etc/systemd/system/navidrome.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: navidrome_service_deploy
+
+- name: Enable and start navidrome through systemd
+  ansible.builtin.systemd:
+    name: navidrome.service
+    daemon_reload: true
+    enabled: true
+    state: >-
+      {{ 'restarted' if (navidrome_compose_deploy.changed or
+                         navidrome_service_deploy.changed) else 'started' }}
