@@ -428,6 +428,7 @@
   hosts: app
   become: true
   gather_facts: false
+  tags: [jellyfin-lifecycle]
 
   vars_files:
     - ../../cluster.yaml
@@ -435,6 +436,7 @@
   vars:
     jellyfin_service: "{{ (services | default([]) | selectattr('name', 'equalto', 'jellyfin') | list | first) | default({}) }}"
     jellyfin_enabled: "{{ jellyfin_service != {} and jellyfin_service.target_vm is defined }}"
+    jellyfin_state: "{{ jellyfin_service.state | default('present') }}"
     jellyfin_target_vm: "{{ jellyfin_service.target_vm | default('') }}"
     jellyfin_port: >-
       {{

@@ -266,6 +266,7 @@ services:
       category: "Media"
       icon: "mdi-waveform"
   - name: "jellyfin"
+    state: present  # absent removes the service but preserves configuration and media.
     target_vm: "app-01"
     proxy:
       enable: true

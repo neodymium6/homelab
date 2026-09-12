@@ -1,0 +1,86 @@
+---
+- name: Validate the exact Jellyfin retirement target
+  ansible.builtin.assert:
+    that:
+      - jellyfin_container_name == 'jellyfin'
+      - jellyfin_dir == '/opt/stacks/jellyfin'
+      - jellyfin_compose_path == '/opt/stacks/jellyfin/docker-compose.yaml'
+    fail_msg: "Retirement supports only the role's dedicated default paths."
+
+- name: Inspect Jellyfin managed paths
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /opt/stacks/jellyfin
+    - /opt/stacks/jellyfin/docker-compose.yaml
+  register: jellyfin_retirement_paths
+
+- name: Refuse symlinked retirement targets
+  ansible.builtin.assert:
+    that:
+      - not (item.stat.islnk | default(false))
+  loop: "{{ jellyfin_retirement_paths.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Inspect dedicated project containers
+  ansible.builtin.command:
+    argv: [docker, ps, --all, --quiet, --filter, 'label=com.docker.compose.project=jellyfin']
+  changed_when: false
+  check_mode: false
+  register: jellyfin_retirement_containers
+
+- name: Require Compose configuration when project containers remain
+  ansible.builtin.assert:
+    that:
+      - jellyfin_retirement_paths.results[1].stat.exists or jellyfin_retirement_containers.stdout | trim | length == 0
+
+- name: Inspect configured services
+  ansible.builtin.command:
+    argv: [docker, compose, -p, jellyfin, -f, '{{ jellyfin_compose_path }}', config, --services]
+  changed_when: false
+  check_mode: false
+  register: jellyfin_retirement_services
+  when: jellyfin_retirement_paths.results[1].stat.exists
+
+- name: Refuse unexpected Compose services
+  ansible.builtin.assert:
+    that:
+      - jellyfin_retirement_services.stdout_lines == ['jellyfin']
+  when: jellyfin_retirement_paths.results[1].stat.exists
+
+- name: Remove only the Jellyfin project without deleting images or volumes
+  community.docker.docker_compose_v2:
+    project_src: "{{ jellyfin_dir }}"
+    project_name: jellyfin
+    files: [docker-compose.yaml]
+    state: absent
+    remove_orphans: false
+    remove_volumes: false
+    timeout: 60
+  when: jellyfin_retirement_paths.results[1].stat.exists
+
+- name: Verify that Jellyfin containers are gone
+  ansible.builtin.command:
+    argv: [docker, ps, --all, --quiet, --filter, 'label=com.docker.compose.project=jellyfin']
+  changed_when: false
+  register: jellyfin_retirement_remaining
+  failed_when: jellyfin_retirement_remaining.stdout | trim | length > 0
+  when: not ansible_check_mode
+
+- name: Remove dedicated proxy firewall allowance
+  community.general.ufw:
+    rule: allow
+    delete: true
+    proto: tcp
+    src: "{{ jellyfin_proxy_ip }}"
+    port: "{{ jellyfin_port | string }}"
+  when:
+    - jellyfin_enable_ufw | bool
+    - jellyfin_allow_from_proxy_only | bool
+    - jellyfin_proxy_ip | length > 0
+
+- name: Remove only managed Compose file, preserving all application data
+  ansible.builtin.file:
+    path: /opt/stacks/jellyfin/docker-compose.yaml
+    state: absent

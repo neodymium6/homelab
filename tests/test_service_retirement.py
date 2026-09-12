@@ -55,6 +55,40 @@ class RetirementTests(unittest.TestCase):
             "/opt/stacks/personal-site/docker-compose.yml",
         ])
 
+    def test_jellyfin_only_routes_and_link_removed(self):
+        service = next(s for s in self.context['services'] if s['name'] == 'jellyfin')
+        before = self.render('traefik/templates/dynamic.yml.j2')
+        service['state'] = 'absent'
+        after = self.render('traefik/templates/dynamic.yml.j2')
+        for section in ('routers', 'services', 'middlewares'):
+            before['http'][section] = {k: v for k, v in before['http'][section].items()
+                                       if k != 'jellyfin' and not k.startswith('jellyfin-')}
+        self.assertEqual(before, after)
+        links = self.render('homepage/templates/services.yaml.j2')
+        self.context['services'].remove(service)
+        self.assertEqual(links, self.render('homepage/templates/services.yaml.j2'))
+
+    def test_jellyfin_retirement_preserves_data(self):
+        role = ROLES / 'jellyfin'
+        defaults = yaml.safe_load((role / 'defaults/main.yaml').read_text())
+        self.assertEqual(defaults['jellyfin_state'], 'present')
+        tasks = yaml.safe_load((role / 'tasks/absent.yaml').read_text())
+        compose = next(t['community.docker.docker_compose_v2'] for t in tasks
+                       if 'community.docker.docker_compose_v2' in t)
+        self.assertEqual(compose['project_name'], 'jellyfin')
+        self.assertEqual(compose['state'], 'absent')
+        self.assertFalse(compose['remove_volumes'])
+        self.assertFalse(compose['remove_orphans'])
+        self.assertNotIn('remove_images', compose)
+        deletes = [t['ansible.builtin.file'] for t in tasks if 'ansible.builtin.file' in t]
+        self.assertEqual(deletes, [{'path': '/opt/stacks/jellyfin/docker-compose.yaml', 'state': 'absent'}])
+        handlers = yaml.safe_load((role / 'handlers/main.yaml').read_text())
+        self.assertTrue(all(t['when'] == "jellyfin_state == 'present'" for t in handlers))
+        main = yaml.safe_load((role / 'tasks/main.yaml').read_text())
+        self.assertEqual(main[0]['ansible.builtin.assert']['that'],
+                         ["jellyfin_state in ['present', 'absent']"])
+        self.assertEqual(main[1]['ansible.builtin.include_tasks'], '{{ jellyfin_state }}.yaml')
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,5 @@
 ---
+jellyfin_state: present
 jellyfin_image: "jellyfin/jellyfin:10.11.8"
 jellyfin_container_name: "jellyfin"
 jellyfin_dir: "/opt/stacks/jellyfin"

@@ -1,5 +1,6 @@
 ---
 - name: Restart jellyfin
+  when: jellyfin_state == 'present'
   ansible.builtin.command:
     argv:
       - docker
