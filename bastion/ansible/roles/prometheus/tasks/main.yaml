@@ -42,11 +42,12 @@
   become: true
 
 - name: Deploy Prometheus baseline alert rules
+  tags: [prometheus-rules]
   ansible.builtin.template:
     src: baseline_alerts.yml.j2
     dest: "{{ prometheus_baseline_alert_rules_path }}"
     mode: "0644"
-  notify: Restart prometheus
+  notify: Reload prometheus
   become: true
 
 - name: Deploy Prometheus docker-compose.yml
