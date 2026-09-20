@@ -130,6 +130,15 @@ vms:
     memory_mb: 3072
     disk_size_gb: 40
 
+  # Optional general-purpose Docker VM. Receives shared host setup and Docker,
+  # but none of the app-role applications. Deploy its workloads separately.
+  workload-01:
+    vmid: 203
+    role: "workload"
+    cpu_cores: 2
+    memory_mb: 2048
+    disk_size_gb: 32
+
 services:
   - name: "bastion"
     target_vm: "bastion-01"

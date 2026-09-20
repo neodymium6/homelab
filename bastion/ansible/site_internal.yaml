@@ -217,8 +217,8 @@
   roles:
     - role: cloudflare_tunnel
 
-- name: Install Docker on app hosts
-  hosts: app
+- name: Install Docker on app and workload hosts
+  hosts: "app:workload"
   become: true
   gather_facts: false
 
