@@ -75,10 +75,46 @@ Generated from `templates/traefik.yml.j2`:
   - Provider: Cloudflare DNS
   - Storage: `/etc/traefik/acme.json`
   - Domain: `{{ network.domain }}` with wildcard SAN
+  - Optional extra certificate names: `proxy.additional_tls_domains` (default `[]`)
 
 - **File Provider**: Watches `/etc/traefik/dynamic` directory
 
 - **API Dashboard**: Enabled
+
+### Additional Internal HTTPS Names
+
+Keep the existing certificate and request additional certificates with:
+
+```yaml
+proxy:
+  # Retain the existing email and Cloudflare credentials here.
+  additional_tls_domains:
+    - "*.int.example.net"
+```
+
+Each entry creates a separate TLS domain entry using the existing `cf` resolver.
+Names must be fully qualified DNS names, optionally prefixed with `*.`; quote
+wildcards in YAML. A wildcard covers one label, not the zone apex or deeper names.
+The Cloudflare DNS token must have access to each requested zone. The proxy
+obtains and renews its own certificate; no Kubernetes certificate/key copy is
+needed. Certificate names appear in public Certificate Transparency logs.
+
+This setting does not add DNS records, routes, Tunnel mappings, or authorization.
+Configure `dns.records` separately to point at the proxy, and use the existing
+service `proxy.hostnames` list to accept an alias. Currently `public_hostnames`
+takes precedence over `hostnames`; do not use the latter to extend a service that
+already has public names. Review application allowed-host, redirect and canonical
+URL settings before switching clients. Old service names remain available.
+
+An ordinary role apply includes this setting. For an existing installation, the
+`service-certificates` tag validates and updates only the static Traefik config;
+combine it with the existing `service-routing` tag when updating aliases. Preview
+with Ansible `--check --diff` before applying. Static changes restart Traefik and
+briefly interrupt all proxy traffic; dynamic routing changes are hot-reloaded.
+Removing entries stops requesting those certificates but does not erase existing
+ACME state. Keep the ACME file private and do not delete it during rollback.
+
+See [Traefik entrypoint TLS configuration](https://doc.traefik.io/traefik/v2.11/routing/entrypoints/#tls).
 
 ### Dynamic Configuration (dynamic.yml)
 
@@ -108,6 +144,7 @@ Auto-generated from `templates/dynamic.yml.j2` based on services in `cluster.yam
 | `backends` | list | No | - | Multiple backend targets (`[{port, host?}]`) |
 | `service` | string | No | - | Use Traefik internal service (e.g., `api@internal`) |
 | `public_hostnames` | list | No | - | Additional public hostnames; `-proxy` hostname remains active |
+| `hostnames` | list | No | - | Alias hostnames, used only when `public_hostnames` is empty |
 | `backend_host` | string | No | `<name>.<domain>` | Backend hostname or IP address |
 | `backend_url` | string | No | - | Full backend URL (overrides scheme/host/port) |
 | `healthcheck` | map | No | - | Traefik health check block (`path`, `interval`, `timeout`) |

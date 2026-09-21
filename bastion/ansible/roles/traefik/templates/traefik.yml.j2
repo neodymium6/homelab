@@ -16,6 +16,9 @@ entryPoints:
           - main: "{{ network.domain }}"
             sans:
               - "*.{{ network.domain }}"
+{% for domain in traefik_additional_tls_domains %}
+          - main: "{{ domain }}"
+{% endfor %}
 
   tunnel:
     address: ":8080"

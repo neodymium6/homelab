@@ -471,6 +471,9 @@ tailscale:
 
 proxy:
   acme_email: "you@example.net"
+  # Optional extra certificates; existing network.domain + wildcard remain.
+  # Quote wildcards. DNS records and service proxy.hostnames are separate.
+  additional_tls_domains: []  # Example: ["*.int.example.net"]
   cloudflare_dns_api_token: "CF_TOKEN_HERE"
   cloudflare_tunnel_token: "CF_TUNNEL_TOKEN_HERE"
 
