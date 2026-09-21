@@ -1,4 +1,9 @@
 ---
+- name: Validate additive DNS records before making changes
+  ansible.builtin.set_fact:
+    unbound_validated_records: "{{ unbound_custom_dns | homelab_dns_records(unbound_zone_name, unbound_zone_vms, unbound_zone_services) }}"
+  tags: [service-dns]
+
 - name: Install Unbound
   ansible.builtin.apt:
     name: unbound
@@ -20,6 +25,8 @@
     mode: "0644"
     lstrip_blocks: true
     trim_blocks: true
+    validate: /usr/sbin/unbound-checkconf %s
+    backup: true
   notify: Restart unbound
   tags: [service-dns]
   become: true

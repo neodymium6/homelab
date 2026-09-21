@@ -6,13 +6,22 @@ ANSIBLE_PLAYBOOK ?= $(ANSIBLE_VENV_BIN)/ansible-playbook
 ANSIBLE_GALAXY   ?= $(ANSIBLE_VENV_BIN)/ansible-galaxy
 TERRAFORM        ?= /usr/local/bin/terraform
 
-.PHONY: tf-init tf-apply \
+.PHONY: dns-check dns-apply tf-init tf-apply \
         ansible-deps bastion-setup internal-setup \
 				homemanager \
         all clean
 
 tf-init:
 	cd $(TF_DIR) && $(TERRAFORM) init
+
+# Existing DNS hosts only; does not provision VMs, install packages, or alter AGH.
+dns-check:
+	cd $(ANSIBLE_DIR) && $(ANSIBLE_PLAYBOOK) -i localhost, site_internal.yaml \
+	  --limit 'localhost,dns' --tags service-dns --check --diff
+
+dns-apply:
+	cd $(ANSIBLE_DIR) && $(ANSIBLE_PLAYBOOK) -i localhost, site_internal.yaml \
+	  --limit 'localhost,dns' --tags service-dns
 
 tf-apply:
 	cd $(TF_DIR) && $(TERRAFORM) apply -auto-approve

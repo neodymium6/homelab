@@ -818,6 +818,7 @@
     unbound_zone_vms: "{{ vms }}"
     unbound_zone_base_prefix: "{{ network.base_prefix }}"
     unbound_zone_cidr_suffix: "{{ network.cidr_suffix }}"
+    unbound_custom_dns: "{{ dns | default({}) }}"
   pre_tasks:
     - name: Initialize Unbound service maps from services
       tags: [service-dns]

@@ -75,6 +75,17 @@ network:
     - "1.0.0.1"
   domain: "internal.example.com"
 
+# Optional additive DNS records. Existing VM/service names remain automatic.
+# Omit this section or use records: [] when no extra records are needed.
+dns:
+  records:
+    - name: reader.internal.example.com
+      type: A
+      value: 192.0.2.10
+    - name: reader.internal.example.com
+      type: AAAA
+      value: "2001:db8::10"
+
 timezone: "Asia/Tokyo"
 login_user: "your_username"
 

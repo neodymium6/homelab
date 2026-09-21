@@ -37,6 +37,13 @@ server:
   {% endfor %}
   {% endif %}
 
+  {% for record in unbound_validated_records | default([]) %}
+  {% if record.outside_zone and (loop.first or record.name != loop.previtem.name) %}
+  local-zone: "{{ record.name }}." transparent
+  {% endif %}
+  local-data: "{{ record.name }}. {{ record.ttl }} IN {{ record.type }} {{ record.value }}"
+  {% endfor %}
+
 forward-zone:
   name: "."
   {% for dns in unbound_upstream_dns %}

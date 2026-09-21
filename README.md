@@ -581,7 +581,8 @@ VMs with `role: dns` are configured with DNS services for the homelab:
   - Serves DNS records for homelab domain (`network.domain`, e.g. `internal.example.com`)
   - Falls back to `home.arpa` only when `network.domain` is not set
   - Forwards upstream queries to DNSSEC-validating public resolvers (1.1.1.1, 1.0.0.1)
-  - Configured with A, CNAME, and PTR records from `cluster.yaml`
+  - Generates VM/service A records and VM PTR records from `cluster.yaml`
+  - Supports additional A/AAAA records through `dns.records`
 
 - **AdGuard Home**: DNS filtering and ad-blocking proxy listening on port 53
   - HTTP interface on port 3000
@@ -589,6 +590,34 @@ VMs with `role: dns` are configured with DNS services for the homelab:
   - Provides DNS-based ad filtering and query logging
 
 All VMs are configured with systemd-resolved to use the homelab DNS server specified in `network.homelab_dns`.
+
+Optional `dns.records` entries have `name` (full hostname), `type` (`A` or
+`AAAA`), `value` (IP address), and optional `ttl` (seconds, default 300).
+See `cluster.yaml.example`. Existing VM/service records remain automatic;
+conflicting names, duplicates, invalid addresses and unsupported types fail
+before configuration replacement. CNAME, wildcards and custom PTR records are
+not supported. Extra names outside `network.domain` are scoped individually,
+so sibling public names retain normal upstream resolution. Clients must use
+this resolver, including the appropriate split-DNS scope for Tailnet clients.
+DNS records alone do not configure routing, HTTPS certificates or a proxy.
+
+After synchronizing the checkout and private `cluster.yaml` to the bastion,
+run from the bastion's repository root:
+
+```sh
+make -C bastion dns-check
+make -C bastion dns-apply
+```
+
+These commands target existing DNS hosts and only the Unbound record-generation
+tasks. They do not run Terraform, package installation, AdGuard configuration
+or other application roles. Apply validates the rendered file with
+`unbound-checkconf`, saves a previous-file backup and restarts Unbound only
+when its configuration changes. Check mode previews the diff without restarting;
+Ansible does not run the template's native validator in check mode.
+Removing a custom entry removes it from the managed configuration on the next
+apply, subject to client/cache TTLs. To roll back, restore the prior YAML entries
+and apply again. Keep private records in the untracked `cluster.yaml`.
 
 DNS resolution flow:
 ```
